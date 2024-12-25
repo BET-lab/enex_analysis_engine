@@ -3,5 +3,5 @@
 
 ## Installation
 ```
-pip install git+https://github.com/BET-lab/Thermal-network.git
+pip install git+https://github.com/BET-lab/En_system_Ex_analysis.git
 ```
