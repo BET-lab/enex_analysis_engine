@@ -3,7 +3,7 @@ import pandas as pd
 from tqdm import tqdm
 from typing import List
 from dataclasses import dataclass
-import thermal_network as tn
+import constant as c
 import math
 
 pi = math.pi
@@ -13,6 +13,12 @@ rho_air = 1.2 # [kg/m3]
 
 c_w   = 4186 # [J/kgK]
 rho_w = 1000 # [kg/m3]
+
+def C2K(temp):
+    return temp + 273.15
+
+def K2C(temp):
+    return temp - 273.15
 
 @dataclass
 class Pump:
@@ -35,7 +41,7 @@ class Compressor:
 @dataclass
 class Fan:
     '''
-    FanCoilUnit, 등에 Input으로 들어감
+    Fan_coil_unit, 등에 Input으로 들어감
     출력 및 유량을 인풋으로 받게할 것임
     '''
     E_fan: float # [W]
@@ -110,11 +116,11 @@ class Pipe:
         self.EX_con = self.ENT_gen * T0 # Exergy consumption [W]
     
     def info(self, decimal=2):
-        print(f"Inlet water temperature: {round(tn.K2C(self.inlet_water_temp), decimal)} °C")
-        print(f"Outlet water temperature: {round(tn.K2C(self.outlet_water_temp), decimal)} °C")
+        print(f"Inlet water temperature: {round(K2C(self.inlet_water_temp), decimal)} °C")
+        print(f"Outlet water temperature: {round(K2C(self.outlet_water_temp), decimal)} °C")
 
 @dataclass
-class FanCoilUnit:
+class Fan_coil_unit:
     capacity        : float # [W] (+: heating, -: cooling)
     Va              : float # [m3/s]
     intake_air_temp : float # [°C]
@@ -123,7 +129,7 @@ class FanCoilUnit:
     def activate_system(self, Vw, T0, inlet_water_temp): 
         self.inlet_water_temp  = inlet_water_temp
         self.outlet_water_temp = self.inlet_water_temp - self.capacity/(c_w * rho_w * Vw)
-        self.intake_air_temp   = tn.C2K(self.intake_air_temp) # [K]
+        self.intake_air_temp   = C2K(self.intake_air_temp) # [K]
         
         self.exhaust_air_temp  = self.intake_air_temp + (self.capacity + self.fan.Q_fan)/(c_air * rho_air * self.Va) # [K]
         self.mean_water_temp   = (self.inlet_water_temp + self.outlet_water_temp) / 2
@@ -166,9 +172,9 @@ class FanCoilUnit:
         self.EX_con          = self.ENT_gen * T0
         
     def info(self, decimal=2):
-        print(f"Inlet water temperature: {round(tn.K2C(self.inlet_water_temp), decimal)} °C")
-        print(f"Outlet water temperature: {round(tn.K2C(self.outlet_water_temp), decimal)} °C")
-        print(f"Exhaust air temperature: {round(tn.K2C(self.exhaust_air_temp), decimal)} °C")
+        print(f"Inlet water temperature: {round(K2C(self.inlet_water_temp), decimal)} °C")
+        print(f"Outlet water temperature: {round(K2C(self.outlet_water_temp), decimal)} °C")
+        print(f"Exhaust air temperature: {round(K2C(self.exhaust_air_temp), decimal)} °C")
         
 @dataclass
 class Gas_boiler:
@@ -179,8 +185,8 @@ class Gas_boiler:
     
     def activate_system(self, Vw, T0, inlet_water_temp):
         self.inlet_water_temp = inlet_water_temp # [K]
-        self.fire_temp        = tn.C2K(self.fire_temp) # [K]
-        self.exhaust_gas_temp = tn.C2K(self.exhaust_gas_temp) # [K]
+        self.fire_temp        = C2K(self.fire_temp) # [K]
+        self.exhaust_gas_temp = C2K(self.exhaust_gas_temp) # [K]
         self.Q_flame          = c_w * rho_w * Vw * (self.outlet_water_temp - self.inlet_water_temp)/(1-self.eta) # [W]
         
         # Energy balance [W]
@@ -221,9 +227,9 @@ class Gas_boiler:
         self.EX_con          = self.EX_in['total'] - self.EX_out['total']
     
     def info(self, decimal=2):
-        print(f"Inlet water temperature: {round(tn.K2C(self.inlet_water_temp), decimal)} °C")
-        print(f"Outlet water temperature: {round(tn.K2C(self.outlet_water_temp), decimal)} °C")
-        print(f"Exhaust gas temperature: {round(tn.K2C(self.exhaust_gas_temp), decimal)} °C")
+        print(f"Inlet water temperature: {round(K2C(self.inlet_water_temp), decimal)} °C")
+        print(f"Outlet water temperature: {round(K2C(self.outlet_water_temp), decimal)} °C")
+        print(f"Exhaust gas temperature: {round(K2C(self.exhaust_gas_temp), decimal)} °C")
     
 
 @dataclass
@@ -235,17 +241,17 @@ class Single_loop_system:
     Tsur                     : float # [°C] system surrounding temperature
     pipe_e2i_inlet_water_temp: float
     pipe_e2i                 : Pipe # Vw,        self.inlet_water_temp, T0 이 정의되어야 activate_psystem이 가능
-    internal_unit            : FanCoilUnit # Vw, self.inlet_water_temp, T0 이 정의되어야 activate_psystem이 가능
+    internal_unit            : Fan_coil_unit # Vw, self.inlet_water_temp, T0 이 정의되어야 activate_psystem이 가능
     pipe_i2e                 : Pipe # Vw,        self.inlet_water_temp, T0 이 정의되어야 activate_psystem이 가능
-    external_unit            : FanCoilUnit; Gas_boiler # capacity가 정의되어야 activate_psystem이 가능
+    external_unit            : Fan_coil_unit; Gas_boiler # capacity가 정의되어야 activate_psystem이 가능
     
     def __post_init__(self):
         '''
         우선 추후 계산에 필요한 온도들만 모두 정의하고, 각 서브시스템 별 result를 확인할 수 있는 함수를 만들어야 함
         '''
         # Temperature unit conversion
-        self.T0 = tn.C2K(self.T0)
-        self.Tsur = tn.C2K(self.Tsur)
+        self.T0 = C2K(self.T0)
+        self.Tsur = C2K(self.Tsur)
         
         # Volumetric flow rate from pump
         if self.pipe_i2e.pump is not None:
@@ -254,7 +260,7 @@ class Single_loop_system:
             self.volume_flow_rate = self.pipe_e2i.pump.Vw
                  
         # Pipe from external unit to internal unit
-        self.pipe_e2i.activate_system(self.volume_flow_rate, self.T0, self.Tsur, tn.C2K(self.pipe_e2i_inlet_water_temp))
+        self.pipe_e2i.activate_system(self.volume_flow_rate, self.T0, self.Tsur, C2K(self.pipe_e2i_inlet_water_temp))
 
         # Internal unit
         self.internal_unit.inlet_water_temp = self.pipe_e2i.outlet_water_temp
@@ -345,10 +351,11 @@ class Single_loop_system:
         print('')
         
     def show_whole_system_result(self, decimal=2):
+        '미완성, 전체 시스템 스케일에서 in, out, consumption을 올바르게 사전정의해야함'
         # Energy balance
         print("Whole System Energy Balance ======================")
         print(f"Exergy in: {round(sum([self.internal_unit.EX_in['total'], self.external_unit.EX_in['total'], self.pipe_e2i.EX_in['total'], self.pipe_i2e.EX_in['total']]), decimal)} W")
-        print(f"Exergy out: {round(sum([self.internal_unit.EX_out['total'], self.external_unit.EX_out['total'], self.pipe_e2i.EX_out['total'], self.pipe_i2e.EX_out['total']]), decimal)} W")
+        print(f"Exergy out: {round(self.internal_unit.EX_out['total'], decimal)} W")
         print(f"Exergy consumption: {round(sum([self.internal_unit.EX_con, self.external_unit.EX_con, self.pipe_e2i.EX_con, self.pipe_i2e.EX_con]), decimal)} W")
 
 
@@ -381,8 +388,8 @@ pipe2 = Pipe(length=10,
              diameter=0.1,
              R_pipe=R_pipe)
 
-# FanCoilUnit
-fancoil1 = FanCoilUnit(capacity=1000,
+# Fan_coil_unit
+fancoil1 = Fan_coil_unit(capacity=1000,
                        Va=0.1,
                        intake_air_temp=20,
                        fan=fan1)
@@ -402,7 +409,8 @@ system1 = Single_loop_system(T0=20,
                              pipe_i2e=pipe2,
                              external_unit=gas_boiler1)
 
-system1.external_unit.info() # Inlet water temp 지금 이상함
-system1.internal_unit.info() # in out 온도 지금 이상함
-system1.pipe_e2i.info() # in out 온도 지금 둘다 20도임 파이프에 의한 온도 하강이 매우 적어서 그런가봄
-system1.pipe_i2e.info() # in out 온도 지금 이상함
+system1.external_unit.info() 
+system1.internal_unit.info() 
+system1.pipe_e2i.info() 
+system1.pipe_i2e.info()
+system1.show_whole_system_result()
