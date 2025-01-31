@@ -1,5 +1,13 @@
 import math
 
+### Function
+def K2C(K):
+    return K - 273.15
+
+def C2K(C):
+    return C + 273.15
+
+### Constants
 ## Time conversion
 # Day
 d2h = 24

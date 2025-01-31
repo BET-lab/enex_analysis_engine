@@ -34,6 +34,7 @@ class Pump:
         self.Q_pmp_loss = self.eta * self.kappa * self.E_pmp # [W] 펌프에 의해 유체에 전달되는 열
         self.dT     = self.Q_pmp_water / (c_w * rho_w * self.Vw) # [K] 펌프에 의해 유체에 전달되는 열로 인한 온도 상승 -> 고려 안하는 듯 
 
+
 @dataclass
 class Compressor:
     pass
@@ -67,7 +68,8 @@ class Pipe:
         self.R_tot             = (1/self.water_hc) + self.R_pipe + (1/self.hco)   # [W/m2K] water + pipe + outer surface (thermal resistance)
         self.K_tot             = 1/self.R_tot # [W/mK] total thermal conductivity
         self.cross_area        = pi * self.diameter**2 / 4 # [m2]
-        self.ksi               = math.exp(- self.K_tot * self.cross_area * self.length / (c_w * rho_w * Vw)) # [-]
+        self.pump.v = self.pump.Vw/self.cross_area if self.pump is not None else 0
+        self.ksi               = math.exp(- self.K_tot * pi * self.diameter * self.length / (c_w * rho_w * Vw)) # [-]
         self.outlet_water_temp = Tsur + (self.inlet_water_temp - Tsur) * self.ksi + (self.pump.Q_pmp_water/(c_w*rho_w*Vw) if self.pump is not None else 0) # [K] 배관열손실, 펌프의 열전달을 고려한 outlet_water_temp
         self.mass_flow_rate    = Vw * rho_w # [kg/s]
         
@@ -118,7 +120,7 @@ class Pipe:
     def info(self, decimal=2):
         print(f"Inlet water temperature: {round(K2C(self.inlet_water_temp), decimal)} °C")
         print(f"Outlet water temperature: {round(K2C(self.outlet_water_temp), decimal)} °C")
-
+        
 @dataclass
 class Fan_coil_unit:
     capacity        : float # [W] (+: heating, -: cooling)
@@ -248,6 +250,7 @@ class Single_loop_system:
     def __post_init__(self):
         '''
         우선 추후 계산에 필요한 온도들만 모두 정의하고, 각 서브시스템 별 result를 확인할 수 있는 함수를 만들어야 함
+        각 시스템들의 activate_system 함수를 실행하는데 필요한 변수는 모두 똑같아야함.
         '''
         # Temperature unit conversion
         self.T0 = C2K(self.T0)
@@ -413,4 +416,4 @@ system1.external_unit.info()
 system1.internal_unit.info() 
 system1.pipe_e2i.info() 
 system1.pipe_i2e.info()
-system1.show_whole_system_result()
+system1.show_internal_unit_result()
