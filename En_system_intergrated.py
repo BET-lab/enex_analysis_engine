@@ -86,14 +86,14 @@ class ElectricBoiler:
       self.energy_balance = {
       'hot water tank': {
          "$E_{heater}$" : self.E_heater,                                                # input
-         "$X_{w,sup,tank}$": c_w * rho_w * self.dV_w_sup_tank * (self.T_w_sup - self.T0),  # input
-         "$X_{w,tank}$"   : c_w * rho_w * self.dV_w_sup_tank * (self.T_w_tank - self.T0), # output
-         "$X_{l,tank}$"   : self.Q_l_tank # output
+         "$E_{w,sup,tank}$": c_w * rho_w * self.dV_w_sup_tank * (self.T_w_sup - self.T0),  # input
+         "$E_{w,tank}$"   : c_w * rho_w * self.dV_w_sup_tank * (self.T_w_tank - self.T0), # output
+         "$E_{l,tank}$"   : self.Q_l_tank # output
          },
       'mixing': {
-         "$X_{w,tank}$"      : c_w * rho_w * self.dV_w_sup_tank * (self.T_w_tank - self.T0), # input
-         "$X_{w,sup,tap}$": c_w * rho_w * self.dV_w_sup_mix * (self.T_w_sup - self.T0),   # input
-         "$X_{w,tap}$"             : c_w * rho_w * self.dV_w_tap * (self.T_w_tap - self.T0),       # output
+         "$E_{w,tank}$"      : c_w * rho_w * self.dV_w_sup_tank * (self.T_w_tank - self.T0), # input
+         "$E_{w,sup,tap}$": c_w * rho_w * self.dV_w_sup_mix * (self.T_w_sup - self.T0),   # input
+         "$E_{w,tap}$"             : c_w * rho_w * self.dV_w_tap * (self.T_w_tap - self.T0),       # output
          }
       }
 
@@ -102,17 +102,17 @@ class ElectricBoiler:
 
       self.entropy_balance = {
       'hot water tank': {
-         "$E_{heater}$"    : (1/float('inf'))*self.E_heater,                                     # input
-         "$X_{w,sup,tank}$": c_w * rho_w * self.dV_w_sup_tank * math.log(self.T_w_sup/self.T0),  # input
+         "$s_{heater}$"    : (1/float('inf'))*self.E_heater,                                     # input
+         "$s_{w,sup,tank}$": c_w * rho_w * self.dV_w_sup_tank * math.log(self.T_w_sup/self.T0),  # input
          "$s_{g,tank}$"    : s_g_tank,                                                           # output
-         "$X_{w,tank}$"    : c_w * rho_w * self.dV_w_sup_tank * math.log(self.T_w_tank/self.T0), # output
-         "$X_{l,tank}$"    : (1/self.T_tank_is)*self.Q_l_tank # output
+         "$s_{w,tank}$"    : c_w * rho_w * self.dV_w_sup_tank * math.log(self.T_w_tank/self.T0), # output
+         "$s_{l,tank}$"    : (1/self.T_tank_is)*self.Q_l_tank # output
          },
       'mixing': {
-         "$X_{w,tank}$"   : c_w * rho_w * self.dV_w_sup_tank * math.log(self.T_w_tank/self.T0), # input
-         "$X_{w,sup,tap}$": c_w * rho_w * self.dV_w_sup_mix * math.log(self.T_w_sup/self.T0),   # input
+         "$s_{w,tank}$"   : c_w * rho_w * self.dV_w_sup_tank * math.log(self.T_w_tank/self.T0), # input
+         "$s_{w,sup,tap}$": c_w * rho_w * self.dV_w_sup_mix * math.log(self.T_w_sup/self.T0),   # input
          "$s_{g,mix}$"    : s_g_mix,
-         "$X_{w,tap}$"    : c_w * rho_w * self.dV_w_tap * math.log(self.T_w_tap/self.T0),       # output
+         "$s_{w,tap}$"    : c_w * rho_w * self.dV_w_tap * math.log(self.T_w_tap/self.T0),       # output
          }
       }
 
@@ -139,7 +139,7 @@ class GasBoiler:
     def __post_init__(self):
         # Parameters
         self.COP = 2.5
-        self.eta = 0.9  # Boiler efficiency [-]\
+        self.eta_boiler = 0.9  # Boiler efficiency [-]
         self.eta_NG = 0.93 # Net efficiency [-]
 
         # Temperature Parameters
@@ -209,28 +209,28 @@ class GasBoiler:
         # Energy balance for boiler
         self.Q_l_tank = self.U_tank * (self.T_tank_is - self.T0)  # Heat loss from tank
         self.T_w_boiler = self.T_w_tank + self.Q_l_tank / (c_w * rho_w * self.dV_w_sup_boiler)
-        self.E_NG = (c_w * rho_w * self.dV_w_sup_boiler * (self.T_w_boiler - self.T_w_sup)) / self.eta
+        self.E_NG = (c_w * rho_w * self.dV_w_sup_boiler * (self.T_w_boiler - self.T_w_sup)) / self.eta_boiler
 
         # Heat losses
-        self.Q_l_exh = (1 - self.eta) * self.E_NG  # Heat loss from exhaust gases
+        self.Q_l_exh = (1 - self.eta_boiler) * self.E_NG  # Heat loss from exhaust gases
 
         # Energy balances
         self.energy_balance = {
             "boiler": {
                 "$E_{NG}$": self.E_NG,
-                "$X_{w,sup}$":c_w * rho_w * self.dV_w_sup_boiler * (self.T_w_sup - self.T0),
-                "$X_{w,boiler,out}$": c_w * rho_w * self.dV_w_sup_boiler * (self.T_w_boiler -self.T0),
-                "$X_{a,exh}$": self.Q_l_exh
+                "$E_{w,sup}$":c_w * rho_w * self.dV_w_sup_boiler * (self.T_w_sup - self.T0),
+                "$E_{w,boiler,out}$": c_w * rho_w * self.dV_w_sup_boiler * (self.T_w_boiler -self.T0),
+                "$E_{a,exh}$": self.Q_l_exh
             },
             "hot water tank": {
-                "$X_{w,boiler,out}$": c_w * rho_w * self.dV_w_sup_boiler * (self.T_w_boiler - self.T0),
-                "$X_{w,tank}$": c_w * rho_w * self.dV_w_sup_boiler * (self.T_w_tank - self.T0),
-                "$X_{l,tank}$": self.Q_l_tank,
+                "$E_{w,boiler,out}$": c_w * rho_w * self.dV_w_sup_boiler * (self.T_w_boiler - self.T0),
+                "$E_{w,tank}$": c_w * rho_w * self.dV_w_sup_boiler * (self.T_w_tank - self.T0),
+                "$E_{l,tank}$": self.Q_l_tank,
             },
             "mixing": {
-                "$X_{w,tank}$": c_w * rho_w * self.dV_w_sup_boiler * (self.T_w_tank - self.T0),
-                "$X_{w,sup,tap}$": c_w * rho_w * self.dV_w_sup_mix * (self.T_w_sup - self.T0),
-                "$X_{w,tap}$": c_w * rho_w * self.dV_w_tap * (self.T_w_tap - self.T0)
+                "$E_{w,tank}$": c_w * rho_w * self.dV_w_sup_boiler * (self.T_w_tank - self.T0),
+                "$E_{w,sup,tap}$": c_w * rho_w * self.dV_w_sup_mix * (self.T_w_sup - self.T0),
+                "$E_{w,tap}$": c_w * rho_w * self.dV_w_tap * (self.T_w_tap - self.T0)
             }
         }
 
@@ -243,23 +243,23 @@ class GasBoiler:
         # Entropy balances
         self.entropy_balance = {
             "boiler": {
-                "$E_{NG}$": (1/self.T_NG) * self.E_NG,
-                "$X_{w,sup}$":c_w * rho_w * self.dV_w_sup_boiler * math.log(self.T_w_sup/self.T0),
+                "$s_{NG}$": (1/self.T_NG) * self.E_NG,
+                "$s_{w,sup}$":c_w * rho_w * self.dV_w_sup_boiler * math.log(self.T_w_sup/self.T0),
                 "$s_{g,boiler}$": s_g_boiler,
-                "$X_{w,boiler,out}$": c_w * rho_w * self.dV_w_sup_boiler * math.log(self.T_w_boiler/self.T0),
-                "$X_{a,exh}$": (1/self.T_exh) * self.Q_l_exh,
+                "$s_{w,boiler,out}$": c_w * rho_w * self.dV_w_sup_boiler * math.log(self.T_w_boiler/self.T0),
+                "$s_{a,exh}$": (1/self.T_exh) * self.Q_l_exh,
             },
             "hot water tank": {
-                "$X_{w,boiler,out}$" : c_w * rho_w * self.dV_w_sup_boiler * math.log(self.T_w_boiler/self.T0),
+                "$s_{w,boiler,out}$" : c_w * rho_w * self.dV_w_sup_boiler * math.log(self.T_w_boiler/self.T0),
                 "$s_{g,tank}$": s_g_tank,
-                "$X_{w,tank}$": c_w * rho_w * self.dV_w_sup_boiler * math.log(self.T_w_tank/self.T0),
-                "$X_{l,tank}$": (1/self.T_tank_is) * self.Q_l_tank,
+                "$s_{w,tank}$": c_w * rho_w * self.dV_w_sup_boiler * math.log(self.T_w_tank/self.T0),
+                "$s_{l,tank}$": (1/self.T_tank_is) * self.Q_l_tank,
             },
             "mixing": {
-                "$X_{w,tank}$": c_w * rho_w * self.dV_w_sup_boiler * math.log(self.T_w_tank/self.T0),
-                "$X_{w,sup,tap}$": c_w * rho_w * self.dV_w_sup_mix * math.log(self.T_w_sup/self.T0),
+                "$s_{w,tank}$": c_w * rho_w * self.dV_w_sup_boiler * math.log(self.T_w_tank/self.T0),
+                "$s_{w,sup,tap}$": c_w * rho_w * self.dV_w_sup_mix * math.log(self.T_w_sup/self.T0),
                 "$s_{g,mix}$": s_g_mix,
-                "$X_{w,tap}$": c_w * rho_w * self.dV_w_tap * math.log(self.T_w_tap/self.T0)
+                "$s_{w,tap}$": c_w * rho_w * self.dV_w_tap * math.log(self.T_w_tap/self.T0)
             }
         }
 
@@ -413,15 +413,15 @@ class HeatPumpBoiler:
                 "$E_{r,ext}$" : -self.Q_r_ext,
             },
             "hot water tank": {
-                "$X_{r,tank}$"    : self.Q_r_tank,
-                "$X_{w,sup,tank}$": c_w * rho_w * self.dV_w_sup_tank * (self.T_w_sup - self.T0),
-                "$X_{w,tank}$"    : c_w * rho_w * self.dV_w_sup_tank * (self.T_w_tank - self.T0),
-                "$X_{l,tank}$"    : self.Q_l_tank
+                "$E_{r,tank}$"    : self.Q_r_tank,
+                "$E_{w,sup,tank}$": c_w * rho_w * self.dV_w_sup_tank * (self.T_w_sup - self.T0),
+                "$E_{w,tank}$"    : c_w * rho_w * self.dV_w_sup_tank * (self.T_w_tank - self.T0),
+                "$E_{l,tank}$"    : self.Q_l_tank
             },
             "mixing": {
-                "$X_{w,tank}$"    : c_w * rho_w * self.dV_w_sup_tank * (self.T_w_tank - self.T0),
-                "$X_{w,sup,tank}$": c_w * rho_w * self.dV_w_sup_mix * (self.T_w_sup - self.T0),
-                "$X_{w,tap}$"     : c_w * rho_w * self.dV_w_tap * (self.T_w_tap - self.T0)
+                "$E_{w,tank}$"    : c_w * rho_w * self.dV_w_sup_tank * (self.T_w_tank - self.T0),
+                "$E_{w,sup,tank}$": c_w * rho_w * self.dV_w_sup_mix * (self.T_w_sup - self.T0),
+                "$E_{w,tap}$"     : c_w * rho_w * self.dV_w_tap * (self.T_w_tap - self.T0)
             }
         }
 
