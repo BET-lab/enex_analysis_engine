@@ -120,7 +120,7 @@ class ElectricBoiler:
       'hot water tank': { 
          "$E_{heater}$"    : self.E_heater,                                                                                          # input
          "$X_{w,sup,tank}$": c_w * rho_w * self.dV_w_sup_tank * ((self.T_w_sup-self.T0)-self.T0 * math.log(self.T_w_sup/self.T0)),   # input
-         "$X_{c,,tank}$"   : s_g_tank * self.T0,
+         "$X_{c,tank}$"   : s_g_tank * self.T0,
          "$X_{w,tank}$"    : c_w * rho_w * self.dV_w_sup_tank * ((self.T_w_tank-self.T0)-self.T0 * math.log(self.T_w_tank/self.T0)), # output
          "$X_{l,tank}$"    : (1-self.T0/self.T_tank_is)*self.Q_l_tank # output
          },
@@ -131,7 +131,7 @@ class ElectricBoiler:
          "$X_{w,tap}$"    : c_w * rho_w * self.dV_w_tap * ((self.T_w_tap - self.T0) - self.T0 * math.log(self.T_w_tap/self.T0)),    # output
          }
       }  
-      
+      self.exergy_consumption = self.exergy_balance['hot water tank']['$X_{c,tank}$'] + self.exergy_balance['mixing']['$X_{c,mix}$']
 
 
 @dataclass
@@ -285,7 +285,7 @@ class GasBoiler:
                 "$X_{w,tap}$"    : c_w * rho_w * self.dV_w_tap * ((self.T_w_tap-self.T0)-self.T0 * math.log(self.T_w_tap/self.T0))
             }
         }
-
+        self.exergy_consumption = self.exergy_balance['boiler']['$X_{c,boiler}$'] + self.exergy_balance['hot water tank']['$X_{c,tank}$'] + self.exergy_balance['mixing']['$X_{c,mix}$']
 
 
 
@@ -489,3 +489,4 @@ class HeatPumpBoiler:
                 "$X_{w,tap}$"     : c_w * rho_w * self.dV_w_tap * ((self.T_w_tap - self.T0) - self.T0 * math.log(self.T_w_tap / self.T0)),
             }
         }
+        self.exergy_consumption = self.exergy_balance["external unit"]["$X_{c,ext}$"] + self.exergy_balance["refrigerant"]["$X_{c,r}$"] + self.exergy_balance["hot water tank"]["$X_{c,tank}$"] + self.exergy_balance["mixing"]["$X_{c,mix}$"]
