@@ -1,0 +1,26 @@
+[project]
+name = "en-system-ex-analysis"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Habin Jo", email = "habinjo0608@gmail.com" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "dartwork-mpl",
+    "ipykernel>=6.29.5",
+    "matplotlib>=3.10.0",
+    "notebook>=7.3.2",
+    "pandas>=2.2.3",
+    "scipy>=1.15.1",
+    "tqdm>=4.67.1",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+no-cache = true
+
+[tool.uv.sources]
+dartwork-mpl = { git = "https://github.com/dartwork-repo/dartwork-mpl" }
