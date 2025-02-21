@@ -496,9 +496,7 @@ class HeatPumpBoiler:
         self.r0 = (self.V_tank / (2 * math.pi * self.n)) ** (1 / 3)  # Tank inner radius [m]
         self.r1 = self.r0 + self.x_shell  # Tank outer radius [m]
         self.r2 = self.r1 + self.x_ins  # Insulation outer radius [m]
-
         self.h = self.n * (2 * self.r0)  # Tank height [m]
-
         self.A_top_bottom = 2 * math.pi * self.r0 ** 2  # Total top and bottom area [m²]
 
         # Thermal resistances
