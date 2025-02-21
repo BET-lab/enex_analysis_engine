@@ -6,6 +6,7 @@ import dartwork_mpl as dm
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from tqdm import tqdm
+from scipy.optimize import curve_fit
 
 rho_w = 1000
 c_w   = 4186 # Water specific heat [J/kgK]
@@ -723,3 +724,199 @@ class HeatPumpBoiler:
                 {"symbol": "$X_{w,tap}$", "value": c_w * rho_w * self.dV_w_tap * ((self.T_w_tap - self.T0) - self.T0 * math.log(self.T_w_tap/self.T0))},
             ],
         }
+
+class ashp_gshp_anlyzer:
+    @staticmethod
+    def C2K(c):
+        return c + 273.15
+
+    def __init__(self, T_selection):
+        self.ashp_gshp_exergy(T_selection)
+
+    def ashp_gshp_exergy(self, T_selection):
+        # Temperature
+        self.dT_a        = 10
+        self.dT_r        = 15
+        self.dT_g        = 5
+        self.T_0         = self.C2K(32)
+        self.T_g         = self.C2K(22)
+        self.T_a_int_in  = self.C2K(T_selection)
+        self.T_a_int_out = self.T_a_int_in - self.dT_a
+        # ASHP temperature
+        self.T_r_int_A   = self.T_a_int_in - self.dT_r
+        self.T_a_ext_in  = self.T_0
+        self.T_a_ext_out = self.T_a_ext_in + self.dT_a
+        self.T_r_ext_A   = self.T_a_ext_in + self.dT_r
+        # GSHP temperature
+        self.T_r_int_G   = self.T_a_int_in - self.dT_r
+        self.T_r_ext_G   = self.T_g + self.dT_g
+
+        # Building load
+        self.K              = 0.2 # W/m2K
+        self.A_total        = (25 * 3 + 20 * 3 + 25 * 20) * 2 # m2
+        self.A              = 25 * 20 # m2
+        self.Q_heatrate     = - self.K * self.A_total * (self.T_a_int_in - self.T_0) # W
+        self.light          = 6.67 # W/m2
+        self.elec           = 8.07 # W/m2
+        self.gas            = 0 # W/m2
+        self.people         = 0.1 * 117 # W/m2
+        self.Q_internalgain = (self.light + self.elec + self.gas + self.people) * self.A # W
+        self.Q_r_int_A      = self.Q_heatrate + self.Q_internalgain # W
+        self.Q_r_int_G      = self.Q_heatrate + self.Q_internalgain # W
+
+        # ASHP, GSHP parameters
+        self.eta_hp = 0.4
+        self.cop_A = self.eta_hp * self.T_r_int_A / (self.T_r_ext_A - self.T_r_int_A)
+        self.cop_G = self.eta_hp * self.T_r_int_G / (self.T_r_ext_G - self.T_r_int_G)
+        self.E_cmp_A = self.Q_r_int_A / self.cop_A
+        self.E_cmp_G = self.Q_r_int_G / self.cop_G
+        self.Q_r_ext_A = self.Q_r_int_A + self.E_cmp_A
+        self.Q_r_ext_G = self.Q_r_int_G + self.E_cmp_G
+
+        # Air parameters
+        self.c_a = 1005 # J/kgK
+        self.rho_a = 1.2 # kg/m3
+        self.V_int = self.Q_r_int_A / (self.c_a * self.rho_a * self.dT_a) # m3/s
+        self.V_ext = self.Q_r_ext_A / (self.c_a * self.rho_a * self.dT_a) # m3/s
+
+        # Circulating water parameters
+        self.c_w = 4186 # J/kgK
+        self.rho_w = 1000 # kg/m3
+        self.mu_w = 0.001 # Pa s
+        self.V_pmp = self.Q_r_ext_G / (self.c_w * self.rho_w * self.dT_g) # m3/s
+
+        # function for curve fitting
+        def pressure_model(x, a, b, c, d, e):
+            return a * x ** 4 + b * x ** 3 + c * x ** 2 + d * x + e
+        def fan_efficiency_model(x, a, b, c, d):
+            return a * x ** 3 + b * x ** 2 + c * x + d
+        
+        ############# Fan of internal unit #############
+        flow_rate_int = [0.5, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.5] # m3/s
+        pressure_int = [137, 138, 143, 168, 182, 191, 198, 200, 201, 170] # Pa
+        efficiency_int = [0.45, 0.49, 0.57, 0.62, 0.67, 0.69, 0.68, 0.67, 0.63, 0.40]
+        # Curve fitting
+        self.total_pressure_int, _ = curve_fit(pressure_model, flow_rate_int, pressure_int)
+        self.fan_efficiency_int, _ = curve_fit(fan_efficiency_model, flow_rate_int, efficiency_int)
+        # Internal unit fan power calculation
+        self.dP_int = pressure_model(self.V_int, *self.total_pressure_int) # Pa
+        self.fan_eta_int = fan_efficiency_model(self.V_int, *self.fan_efficiency_int)
+        self.E_f_int = self.V_int * self.dP_int / self.fan_eta_int # W
+
+        ############# Fan of external unit #############
+        flow_rate_ext = [0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.5, 3.0] # m3/s
+        pressure_ext = [140, 136, 137, 147, 163, 178, 182, 190, 198, 181] # Pa
+        efficiency_ext = [0.43, 0.48, 0.52, 0.55, 0.60, 0.65, 0.68, 0.66, 0.63, 0.52]
+        # Curve fitting
+        self.total_pressure_ext, _ = curve_fit(pressure_model, flow_rate_ext, pressure_ext)
+        self.fan_efficiency_ext, _ = curve_fit(fan_efficiency_model, flow_rate_ext, efficiency_ext)
+        # External unit fan power calculation
+        self.dP_ext = pressure_model(self.V_ext, *self.total_pressure_ext) # Pa
+        self.fan_eta_ext = fan_efficiency_model(self.V_ext, *self.fan_efficiency_ext) 
+        self.E_f_ext = self.V_ext * self.dP_ext / self.fan_eta_ext # W
+
+        ############ Pump ############
+        # Pipe parameters
+        self.L = 800 # m
+        self.K = 0.2
+        self.pipe_outer_diameter = 0.032 # m
+        self.pipe_thickness = 0.0029 # m
+        self.D = self.pipe_outer_diameter - 2 * self.pipe_thickness # m
+        self.A_pipe = math.pi * self.D ** 2 / 4 # m2
+        self.v_pipe = self.V_pmp * 0.5 / self.A_pipe # m/s
+        self.epsilon = 0.003e-3 # m
+        self.e_d = self.epsilon / self.D
+        self.Re = self.rho_w * self.v_pipe * self.D / self.mu_w
+        # Pressure difference calculation
+        def dracy_friction_factor(Re, e_d):
+            # Laminar flow
+            if Re < 2300:
+                return 64 / Re
+            # Turbulent flow
+            else:
+                return 0.25 / (math.log10(e_d / 3.7 + 5.74 / Re ** 0.9)) ** 2
+        self.f = dracy_friction_factor(self.Re, self.e_d)
+        self.dP_pipe = self.f * (self.L / self.D) * (self.rho_w * self.v_pipe ** 2) / 2 # Pa
+        self.dP_minor = self.K * (self.v_pipe ** 2) * (self.rho_w / 2) # Pa
+        # Plate heat exchanger parameters
+        self.N_tot = 20
+        self.N_pass = 1
+        self.N_ch = int((self.N_tot - 1) / (2 * self.N_pass))
+        self.L_ex = 0.203 # m
+        self.L_w = 0.108 # m
+        self.b = 0.002 # m
+        self.lamda = 0.007 # m
+        self.psi = math.pi * self.b / self.lamda
+        self.phi = (1/6) * (1 + np.sqrt(1 + self.psi**2) + 4 * np.sqrt(1 + (self.psi**2) / 2))
+        self.D_ex = 2 * self.b / self.phi # m
+        self.G_c = self.V_pmp * self.rho_w / (self.N_ch * self.b * self.L_w) # kg/m2s
+        self.Re_ex = self.G_c * self.D_ex / self.mu_w
+        self.f_ex = 0.8 * self.phi ** (1.25) * self.Re_ex ** (-0.25) * (60/30) ** 3.6
+        self.dP_ex = 2 * self.f_ex * (self.L_ex / self.D_ex) * (self.G_c ** 2) / self.rho_w # Pa
+        self.dP_pmp = self.dP_pipe + self.dP_minor + self.dP_ex # Pa
+        def pump_efficiency_model(x, a, b, c, d):
+            return a * x ** 3 + b * x ** 2 + c * x + d
+        # Pump
+        flow_rate_pmp = [2/3600, 2.5/3600, 3/3600, 3.5/3600, 4/3600, 4.5/3600, 5/3600, 5.5/3600, 6/3600] # m3/s
+        efficiency_pmp = [0.255, 0.27, 0.3, 0.33, 0.34, 0.33, 0.32, 0.3, 0.26]
+        # Curve fitting
+        self.pump_efficiency, _ = curve_fit(pump_efficiency_model, flow_rate_pmp, efficiency_pmp)
+        # Pump power calculation
+        self.pmp_eta = pump_efficiency_model(self.V_pmp, *self.pump_efficiency)
+        self.E_pmp = self.V_pmp * self.dP_pmp / self.pmp_eta # W
+        
+        # Qg 
+        self.Q_g = self.Q_r_ext_G + self.E_pmp # W
+    
+        ############# ASHP #############
+        self.X_r_int_A   = - self.Q_r_int_A * (1 - self.T_0 / self.T_r_int_A)
+        self.X_r_ext_A   = self.Q_r_ext_A * (1 - self.T_0 / self.T_r_ext_A)
+        self.X_a_int_in  = self.c_a * self.rho_a * self.V_int * ((self.T_a_int_in - self.T_0) - self.T_0 * math.log(self.T_a_int_in / self.T_0))
+        self.X_a_int_out = self.c_a * self.rho_a * self.V_int * ((self.T_a_int_out - self.T_0) - self.T_0 * math.log(self.T_a_int_out / self.T_0))
+        self.X_a_ext_in  = self.c_a * self.rho_a * self.V_ext * ((self.T_a_ext_in - self.T_0) - self.T_0 * math.log(self.T_a_ext_in / self.T_0))
+        self.X_a_ext_out = self.c_a * self.rho_a * self.V_ext * ((self.T_a_ext_out - self.T_0) - self.T_0 * math.log(self.T_a_ext_out / self.T_0))
+
+        # Internal unit of ASHP
+        self.Xin_int_A  = self.E_f_int + self.X_r_int_A
+        self.Xout_int_A = self.X_a_int_out - self.X_a_int_in
+        self.Xc_int_A   = self.Xin_int_A - self.Xout_int_A
+
+        # Closed refrigerant loop system of ASHP
+        self.Xin_r_A  = self.E_cmp_A
+        self.Xout_r_A = self.X_r_int_A + self.X_r_ext_A
+        self.Xc_r_A   = self.Xin_r_A - self.Xout_r_A
+
+        # External unit of ASHP
+        self.Xin_ext_A  = self.E_f_ext + self.X_r_ext_A
+        self.Xout_ext_A = self.X_a_ext_out - self.X_a_ext_in
+        self.Xc_ext_A   = self.Xin_ext_A - self.Xout_ext_A
+
+        # Total exergy of ASHP
+        self.Xin_A  = self.E_f_int + self.E_cmp_A + self.E_f_ext
+        self.Xout_A = self.X_a_int_out - self.X_a_int_in
+        self.Xc_A   = self.Xin_A - self.Xout_A
+
+        ############# GSHP #############
+        self.X_r_int_G = - self.Q_r_int_G * (1 - self.T_0 / self.T_r_int_G)
+        self.X_r_ext_G = - self.Q_r_ext_G * (1 - self.T_0 / self.T_r_ext_G)
+        self.X_g = - self.Q_g * (1 - self.T_0 / self.T_g)
+
+        # Internal unit of GSHP
+        self.Xin_int_G  = self.E_f_int + self.X_r_int_G
+        self.Xout_int_G = self.X_a_int_out - self.X_a_int_in
+        self.Xc_int_G   = self.Xin_int_G - self.Xout_int_G
+
+        # Closed refrigerant loop system of GSHP
+        self.Xin_r_G  = self.E_cmp_G + self.X_r_ext_G
+        self.Xout_r_G = self.X_r_int_G
+        self.Xc_r_G   = self.Xin_r_G - self.Xout_r_G
+
+        # External unit of GSHP
+        self.Xin_ext_G  = self.E_pmp + self.X_g
+        self.Xout_ext_G = self.X_r_ext_G
+        self.Xc_ext_G   = self.Xin_ext_G - self.Xout_ext_G
+
+        # Total exergy of GSHP
+        self.Xin_G  = self.E_f_int + self.E_cmp_G + self.E_pmp
+        self.Xout_G = self.X_a_int_out - self.X_a_int_in
+        self.Xc_G   = self.Xin_G - self.Xout_G
