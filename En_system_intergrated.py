@@ -18,8 +18,6 @@ rho_w = 1000
 mu_w = 0.001 # Water dynamic viscosity [Pa.s]
 
 # function
-import math
-
 def darcy_friction_factor(Re, e_d):
     '''
     Calculate the Darcy friction factor for given Reynolds number and relative roughness.
@@ -37,6 +35,18 @@ def darcy_friction_factor(Re, e_d):
     # Turbulent flow
     else:
         return 0.25 / (math.log10(e_d / 3.7 + 5.74 / Re ** 0.9)) ** 2
+
+def linear_function(x, a, b):
+    return a * x + b
+
+def quadratic_function(x, a, b, c):
+    return a * x ** 2 + b * x + c
+
+def cubic_function(x, a, b, c, d):
+    return a * x ** 3 + b * x ** 2 + c * x + d
+
+def quartic_function(x, a, b, c, d, e):
+    return a * x ** 4 + b * x ** 3 + c * x ** 2 + d * x + e
 
 def print_balance(balance, balance_type, decimal=2):
     '''
@@ -750,7 +760,65 @@ class HeatPumpBoiler:
         }
 
 @dataclass
-class ASHP:
+class Fan:
+    def __post_init__(self): 
+        # Parameters
+        self.fan1 = {
+            'flow rate'  : [0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.5, 3.0], # [m3/s]
+            'pressure'   : [140, 136, 137, 147, 163, 178, 182, 190, 198, 181], # [Pa]
+            'efficiency' : [0.43, 0.48, 0.52, 0.55, 0.60, 0.65, 0.68, 0.66, 0.63, 0.52], # [-]
+        }
+        self.fan2 = {
+            'flow rate'  : [0.5, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.5], # [m3/s]
+            'pressure'   : [137, 138, 143, 168, 182, 191, 198, 200, 201, 170], # [Pa]
+            'efficiency' : [0.45, 0.49, 0.57, 0.62, 0.67, 0.69, 0.68, 0.67, 0.63, 0.40], # [-]
+        }
+
+    def get_effieciency(self, fan, dV_fan):
+        self.coeffs, _ = curve_fit(cubic_function, fan['flow rate'], fan['efficiency'])
+        eff = cubic_function(dV_fan, *self.coeffs)
+        return eff
+    
+    def get_pressure(self, fan, dV_fan):
+        self.coeffs, _ = curve_fit(cubic_function, fan['flow rate'], fan['pressure'])
+        pressure = cubic_function(dV_fan, *self.coeffs)
+        return pressure
+    
+    def get_power(self, fan, dV_fan):
+        eff = self.get_effieciency(fan, dV_fan)
+        pressure = self.get_pressure(fan, dV_fan)
+        power = pressure * dV_fan / eff
+        return power
+
+    def show_graph(self, fan_list):
+        """
+        선택한 팬 리스트에 대해 그래프를 출력.
+        :param fan_list: 리스트 형태로 fan1, fan2 등을 선택하여 비교 가능
+        """
+        fig, axes = plt.subplots(1, 2, figsize=(dm.cm2in(15), dm.cm2in(5)))
+
+        # Plot parameters
+        data_pairs = [
+            ("pressure", "Pressure [Pa]", "Flow Rate vs Pressure"), # (key, ylabel, title)
+            ("efficiency", "Efficiency [-]", "Flow Rate vs Efficiency"),
+        ]
+
+        colors = ['dm.red6', 'dm.blue6', 'dm.green6', 'dm.orange6']  # 추가 가능
+
+        for ax, (key, ylabel, title) in zip(axes, data_pairs):
+            for i, fan in enumerate(fan_list):
+                ax.plot(fan['flow rate'], fan[key], label=f'Fan {i+1}', color=colors[i % len(colors)], linewidth=0.5)
+            ax.set_xlabel('Flow Rate [m3/s]', fontsize=dm.fs(0.5))
+            ax.set_ylabel(ylabel, fontsize=dm.fs(0.5))
+            ax.set_title(title, fontsize=dm.fs(0.5))
+            ax.legend()
+
+        plt.subplots_adjust(wspace=0.3)
+        dm.simple_layout(fig, margins=(0.05, 0.05, 0.05, 0.05), bbox=(0, 1, 0, 1), verbose=False)
+        dm.save_and_show(fig)
+
+@dataclass
+class AirSourceHeatPump:
     def __post_init__(self):
 
         # efficiency
@@ -767,83 +835,87 @@ class ASHP:
         self.K_pipe = 0.2 # thermal conductance of pipe 
         self.D_outer_pipe = 0.032 # m
         self.pipe_thick = 0.0029 # m
-        self.epsilon_pipe = 0.003e-3 # m
+        self.epsilon_pipe = 0.003e-3 # 조도 [m]
 
         # load
         self.Q_r_int = 10000 # [W]
 
-        # units parameters
-        self.E_f_int = 100  # power input of internal unit [W]
-        self.E_f_ext = 100  # power input of external unit [W]
+        # fan
+        self.fan_int = Fan().fan1
+        self.fan_ext = Fan().fan2
 
-        def system_update(self):
-            ## ASHP parameters
+    def system_update(self):
+        ## ASHP parameters
 
-            # temperature
-            self.T_a_int_out = self.T_a_int_in - self.dT_a # internal unit air outlet temperature [K]
+        # temperature
+        self.T_a_int_out = self.T_a_int_in - self.dT_a # internal unit air outlet temperature [K]
 
-            self.T_a_ext_in  = self.T_0 # external unit air inlet temperature [K]
-            self.T_a_ext_out = self.T_a_ext_in + self.dT_a # external unit outlet air temperature [K]
+        self.T_a_ext_in  = self.T_0 # external unit air inlet temperature [K]
+        self.T_a_ext_out = self.T_a_ext_in + self.dT_a # external unit outlet air temperature [K]
 
-            self.T_r_int = self.T_a_int_in - self.dT_r # internal unit refrigerant temperature [K]
-            self.T_r_ext = self.T_a_ext_in + self.dT_r # external unit refrigerant temperature [K]
+        self.T_r_int = self.T_a_int_in - self.dT_r # internal unit refrigerant temperature [K]
+        self.T_r_ext = self.T_a_ext_in + self.dT_r # external unit refrigerant temperature [K]
 
-            # others
-            self.cop     = self.eta_hp * self.T_r_int / (self.T_r_ext - self.T_r_int) # COP of ASHP [K]
-            self.E_cmp   = self.Q_r_int / self.cop # compressor power input [W]
-            self.Q_r_ext = self.Q_r_int + self.E_cmp # heat transfer from external unit to refrigerant [W]
+        # others
+        self.COP     = self.eta_hp * self.T_r_int / (self.T_r_ext - self.T_r_int) # COP [-]
+        self.E_cmp   = self.Q_r_int / self.COP # compressor power input [W]
+        self.Q_r_ext = self.Q_r_int + self.E_cmp # heat transfer from external unit to refrigerant [W]
 
-            # internal, external unit
-            self.dV_int = self.Q_r_int / (c_a * rho_a * self.dT_a) # volumetric flow rate of internal unit [m3/s]
-            self.dV_ext = self.Q_r_ext / (c_a * rho_a * self.dT_a) # volumetric flow rate of external unit [m3/s]
+        # internal, external unit
+        self.dV_int = self.Q_r_int / (c_a * rho_a * self.dT_a) # volumetric flow rate of internal unit [m3/s]
+        self.dV_ext = self.Q_r_ext / (c_a * rho_a * self.dT_a) # volumetric flow rate of external unit [m3/s]
 
-            ## pipe parameters
-            self.D_inner_pipe      = self.D_outer_pipe - 2 * self.pipe_thick # inner diameter of pipe [m]
-            self.A_pipe = math.pi * self.D_inner_pipe ** 2 / 4 # area of pipe [m2]
-            self.v_pipe = self.dV_pmp * 0.5 / self.A_pipe # velocity in pipe [m/s]
-            self.e_d    = self.epsilon_pipe / self.D_inner_pipe # relative roughness [-]
-            self.Re     = rho_w * self.v_pipe * self.D_inner_pipe / mu_w # Reynolds number [-]
-            
-            self.f = darcy_friction_factor(self.Re, self.e_d) # darcey friction factor [-]
-            self.dP_pipe = (1/2) * (rho_w * self.v_pipe ** 2) * self.f * (self.L_pipe) / self.D_inner_pipe  # pipe pressure drop [Pa]
-            self.dP_minor = self.K_pipe * (self.v_pipe ** 2) * (rho_w / 2) # minor loss pressure drop [Pa]
+        # fan power
+        self.E_fan_int = Fan().get_power(self.fan_int, self.dV_int) # power input of internal unit fan [W]
+        self.E_fan_ext = Fan().get_power(self.fan_ext, self.dV_ext) # power input of external unit fan [W]
 
-            # Circulating water parameters
-            self.X_a_int_in  = c_a * rho_a * self.dV_int * ((self.T_a_int_in - self.T_0) - self.T_0 * math.log(self.T_a_int_in / self.T_0))
-            self.X_a_int_out = c_a * rho_a * self.dV_int * ((self.T_a_int_out - self.T_0) - self.T_0 * math.log(self.T_a_int_out / self.T_0))
-            self.X_a_ext_in  = c_a * rho_a * self.dV_ext * ((self.T_a_ext_in - self.T_0) - self.T_0 * math.log(self.T_a_ext_in / self.T_0))
-            self.X_a_ext_out = c_a * rho_a * self.dV_ext * ((self.T_a_ext_out - self.T_0) - self.T_0 * math.log(self.T_a_ext_out / self.T_0))
+        ## pipe parameters
+        self.D_inner_pipe      = self.D_outer_pipe - 2 * self.pipe_thick # inner diameter of pipe [m]
+        self.A_pipe = math.pi * self.D_inner_pipe ** 2 / 4 # area of pipe [m2]
+        self.v_pipe = self.dV_pmp * 0.5 / self.A_pipe # velocity in pipe [m/s]
+        self.e_d    = self.epsilon_pipe / self.D_inner_pipe # relative roughness [-]
+        self.Re     = rho_w * self.v_pipe * self.D_inner_pipe / mu_w # Reynolds number [-]
+        
+        self.f = darcy_friction_factor(self.Re, self.e_d) # darcey friction factor [-]
+        self.dP_pipe = (1/2) * (rho_w * self.v_pipe ** 2) * self.f * (self.L_pipe) / self.D_inner_pipe  # pipe pressure drop [Pa]
+        self.dP_minor = self.K_pipe * (self.v_pipe ** 2) * (rho_w / 2) # minor loss pressure drop [Pa]
 
-            self.X_r_int   = - self.Q_r_int * (1 - self.T_0 / self.T_r_int)
-            self.X_r_ext   = self.Q_r_ext * (1 - self.T_0 / self.T_r_ext)
+        # Circulating water parameters
+        self.X_a_int_in  = c_a * rho_a * self.dV_int * ((self.T_a_int_in - self.T_0) - self.T_0 * math.log(self.T_a_int_in / self.T_0))
+        self.X_a_int_out = c_a * rho_a * self.dV_int * ((self.T_a_int_out - self.T_0) - self.T_0 * math.log(self.T_a_int_out / self.T_0))
+        self.X_a_ext_in  = c_a * rho_a * self.dV_ext * ((self.T_a_ext_in - self.T_0) - self.T_0 * math.log(self.T_a_ext_in / self.T_0))
+        self.X_a_ext_out = c_a * rho_a * self.dV_ext * ((self.T_a_ext_out - self.T_0) - self.T_0 * math.log(self.T_a_ext_out / self.T_0))
 
-            # Internal unit of ASHP
-            self.Xin_int  = self.E_f_int + self.X_r_int
-            self.Xout_int = self.X_a_int_out - self.X_a_int_in
-            self.Xc_int   = self.Xin_int - self.Xout_int
+        self.X_r_int   = - self.Q_r_int * (1 - self.T_0 / self.T_r_int)
+        self.X_r_ext   = self.Q_r_ext * (1 - self.T_0 / self.T_r_ext)
 
-            # Closed refrigerant loop system of ASHP
-            self.Xin_r  = self.E_cmp
-            self.Xout_r = self.X_r_int + self.X_r_ext
-            self.Xc_r   = self.Xin_r - self.Xout_r
+        # Internal unit of ASHP
+        self.Xin_int  = self.E_f_int + self.X_r_int
+        self.Xout_int = self.X_a_int_out - self.X_a_int_in
+        self.Xc_int   = self.Xin_int - self.Xout_int
 
-            # External unit of ASHP
-            self.Xin_ext  = self.E_f_ext + self.X_r_ext
-            self.Xout_ext = self.X_a_ext_out - self.X_a_ext_in
-            self.Xc_ext   = self.Xin_ext - self.Xout_ext
+        # Closed refrigerant loop system of ASHP
+        self.Xin_r  = self.E_cmp
+        self.Xout_r = self.X_r_int + self.X_r_ext
+        self.Xc_r   = self.Xin_r - self.Xout_r
 
-            # Total exergy of ASHP
-            self.Xin  = self.E_f_int + self.E_cmp + self.E_f_ext
-            self.Xout = self.X_a_int_out - self.X_a_int_in
-            self.Xc   = self.Xin - self.Xout
+        # External unit of ASHP
+        self.Xin_ext  = self.E_f_ext + self.X_r_ext
+        self.Xout_ext = self.X_a_ext_out - self.X_a_ext_in
+        self.Xc_ext   = self.Xin_ext - self.Xout_ext
+
+        # Total exergy of ASHP
+        self.Xin  = self.E_f_int + self.E_cmp + self.E_f_ext
+        self.Xout = self.X_a_int_out - self.X_a_int_in
+        self.Xc   = self.Xin - self.Xout
 
 @dataclass
-class GSHP:
+class GroundSourceHeatPump:
     def __post_init__(self):
 
         # efficiency
-        self.eta_hp = 0.4
-        self.pmp_eta = 0.8  # pump efficiency of pump [-]
+        self.eta_hp = 0.4 # efficiency of heat pump [-]
+        self.pmp_eta = 0.8  # efficiency of pump [-]
 
         # temperature
         self.dT_a        = 10 # internal unit air temperature difference 
@@ -872,84 +944,85 @@ class GSHP:
         self.Q_r_int = 10000 # [W]
 
         # units parameters
+        self.fan = Fan
+
         self.E_f_int = 100  # poweri input of internal unit [W]
         self.E_f_ext = 100  # poweri input of external unit [W]
 
         # pump
         self.dP_pmp = 1000 # pressure difference of pump [Pa]
 
+    def system_update(self):
 
-        def system_update(self):
+        # temperature
+        self.T_r_int = self.T_a_int_in - self.dT_r # internal unit refrigerant temperature [K]
+        self.T_r_ext = self.T_g + self.dT_g # external unit refrigerant temperature [K]
+        
+        # others
+        self.COP = self.eta_hp * self.T_r_int / (self.T_r_ext - self.T_r_int) # COP of GSHP [K]
 
-            # temperature
-            self.T_r_int = self.T_a_int_in - self.dT_r # internal unit refrigerant temperature [K]
-            self.T_r_ext = self.T_g + self.dT_g # external unit refrigerant temperature [K]
-            
-            # others
-            self.cop = self.eta_hp * self.T_r_int / (self.T_r_ext - self.T_r_int) # COP of GSHP [K]
+        # pump, compressor
+        self.E_cmp = self.Q_r_int / self.COP # compressor power input [W]
+        self.E_pmp   = self.dV_pmp * self.dP_pmp / self.pmp_eta # pump power input [W]
+        self.dV_pmp  = self.Q_r_ext / (c_w * rho_w * self.dT_g) # volumetric flow rate of pump [m3/s]
 
-            # pump, compressor
-            self.E_cmp = self.Q_r_int / self.cop # compressor power input [W]
-            self.E_pmp   = self.dV_pmp * self.dP_pmp / self.pmp_eta # pump power input [W]
-            self.dV_pmp  = self.Q_r_ext / (c_w * rho_w * self.dT_g) # volumetric flow rate of pump [m3/s]
+        # heat rate
+        self.Q_r_ext = self.Q_r_int + self.E_cmp # heat transfer from external unit to refrigerant [W]
+        self.Q_g = self.Q_r_ext + self.E_pmp # heat transfer from GHE to ground [W]
 
-            # heat rate
-            self.Q_r_ext = self.Q_r_int + self.E_cmp # heat transfer from external unit to refrigerant [W]
-            self.Q_g = self.Q_r_ext + self.E_pmp # heat transfer from GHE to ground [W]
+        # internal, external unit
+        self.dV_int = self.Q_r_int / (c_a * rho_a * self.dT_a) # volumetric flow rate of internal unit [m3/s]
+        self.dV_ext = self.Q_r_ext / (c_a * rho_a * self.dT_a) # volumetric flow rate of external unit [m3/s]
 
-            # internal, external unit
-            self.dV_int = self.Q_r_int_A / (c_a * rho_a * self.dT_a) # volumetric flow rate of internal unit [m3/s]
-            self.dV_ext = self.Q_r_ext_A / (c_a * rho_a * self.dT_a) # volumetric flow rate of external unit [m3/s]
+        ## pipe parameters
+        self.D_inner_pipe      = self.D_outer_pipe - 2 * self.pipe_thick # inner diameter of pipe [m]
+        self.A_pipe = math.pi * self.D_inner_pipe ** 2 / 4 # area of pipe [m2]
+        self.v_pipe = self.dV_pmp * 0.5 / self.A_pipe # velocity in pipe [m/s] 0.5는 왜 곱하는거지?
+        self.e_d    = self.epsilon_pipe / self.D_inner_pipe # relative roughness [-]
+        self.Re     = rho_w * self.v_pipe * self.D_inner_pipe / mu_w # Reynolds number [-]
+        
+        self.f = darcy_friction_factor(self.Re, self.e_d) # darcey friction factor [-]
+        self.dP_pipe = self.f * (self.L_pipe) / self.D_inner_pipe * (rho_w * self.v_pipe ** 2) / 2 # pipe pressure drop [Pa]
+        self.dP_minor = self.K_pipe * (self.v_pipe ** 2) * (rho_w / 2) # minor loss pressure drop [Pa]
 
-            ## pipe parameters
-            self.D_inner_pipe      = self.D_outer_pipe - 2 * self.pipe_thick # inner diameter of pipe [m]
-            self.A_pipe = math.pi * self.D_inner_pipe ** 2 / 4 # area of pipe [m2]
-            self.v_pipe = self.dV_pmp * 0.5 / self.A_pipe # velocity in pipe [m/s] 0.5는 왜 곱하는거지?
-            self.e_d    = self.epsilon_pipe / self.D_inner_pipe # relative roughness [-]
-            self.Re     = rho_w * self.v_pipe * self.D_inner_pipe / mu_w # Reynolds number [-]
-            
-            self.f = darcy_friction_factor(self.Re, self.e_d) # darcey friction factor [-]
-            self.dP_pipe = self.f * (self.L_pipe) / self.D_inner_pipe * (rho_w * self.v_pipe ** 2) / 2 # pipe pressure drop [Pa]
-            self.dP_minor = self.K_pipe * (self.v_pipe ** 2) * (rho_w / 2) # minor loss pressure drop [Pa]
+        # plate heatexchanger
+        self.N_ch   = int((self.N_tot - 1) / (2 * self.N_pass))
+        self.psi    = math.pi * self.b / self.lamda
+        self.phi    = (1/6) * (1 + np.sqrt(1 + self.psi**2) + 4 * np.sqrt(1 + (self.psi**2) / 2))
+        self.D_ex   = 2 * self.b / self.phi # m
+        self.G_c    = self.dV_pmp * rho_w / (self.N_ch * self.b * self.L_w) # [kg/m2s]
+        self.Re_ex  = self.G_c * self.D_ex / mu_w # 
+        self.f_ex   = 0.8 * self.phi ** (1.25) * self.Re_ex ** (-0.25) * (60/30) ** 3.6 # friction factor [-]
+        self.dP_ex  = 2 * self.f_ex * (self.L_ex / self.D_ex) * (self.G_c ** 2) / rho_w # Pa
+        self.dP_pmp = self.dP_pipe + self.dP_minor + self.dP_ex # pressure difference of pump [Pa]
 
-            # plate heatexchanger
-            self.N_ch   = int((self.N_tot - 1) / (2 * self.N_pass))
-            self.psi    = math.pi * self.b / self.lamda
-            self.phi    = (1/6) * (1 + np.sqrt(1 + self.psi**2) + 4 * np.sqrt(1 + (self.psi**2) / 2))
-            self.D_ex   = 2 * self.b / self.phi # m
-            self.G_c    = self.dV_pmp * rho_w / (self.N_ch * self.b * self.L_w) # [kg/m2s]
-            self.Re_ex  = self.G_c * self.D_ex / mu_w # 
-            self.f_ex   = 0.8 * self.phi ** (1.25) * self.Re_ex ** (-0.25) * (60/30) ** 3.6 # friction factor [-]
-            self.dP_ex  = 2 * self.f_ex * (self.L_ex / self.D_ex) * (self.G_c ** 2) / rho_w # Pa
-            self.dP_pmp = self.dP_pipe + self.dP_minor + self.dP_ex # pressure difference of pump [Pa]
+        # Circulating water parameters
+        self.X_a_int_in  = c_a * rho_a * self.dV_int * ((self.T_a_int_in - self.T_0) - self.T_0 * math.log(self.T_a_int_in / self.T_0))
+        self.X_a_int_out = c_a * rho_a * self.dV_int * ((self.T_a_int_out - self.T_0) - self.T_0 * math.log(self.T_a_int_out / self.T_0))
+        self.X_a_ext_in  = c_a * rho_a * self.dV_ext * ((self.T_a_ext_in - self.T_0) - self.T_0 * math.log(self.T_a_ext_in / self.T_0))
+        self.X_a_ext_out = c_a * rho_a * self.dV_ext * ((self.T_a_ext_out - self.T_0) - self.T_0 * math.log(self.T_a_ext_out / self.T_0))
 
-            # Circulating water parameters
-            self.X_a_int_in  = c_a * rho_a * self.dV_int * ((self.T_a_int_in - self.T_0) - self.T_0 * math.log(self.T_a_int_in / self.T_0))
-            self.X_a_int_out = c_a * rho_a * self.dV_int * ((self.T_a_int_out - self.T_0) - self.T_0 * math.log(self.T_a_int_out / self.T_0))
-            self.X_a_ext_in  = c_a * rho_a * self.dV_ext * ((self.T_a_ext_in - self.T_0) - self.T_0 * math.log(self.T_a_ext_in / self.T_0))
-            self.X_a_ext_out = c_a * rho_a * self.dV_ext * ((self.T_a_ext_out - self.T_0) - self.T_0 * math.log(self.T_a_ext_out / self.T_0))
+        ## exergy results
+        self.X_r_int = - self.Q_r_int * (1 - self.T_0 / self.T_r_int)
+        self.X_r_ext = - self.Q_r_ext * (1 - self.T_0 / self.T_r_ext)
+        self.X_g = - self.Q_g * (1 - self.T_0 / self.T_g)
 
-            ## exergy results
-            self.X_r_int = - self.Q_r_int * (1 - self.T_0 / self.T_r_int)
-            self.X_r_ext = - self.Q_r_ext * (1 - self.T_0 / self.T_r_ext)
-            self.X_g = - self.Q_g * (1 - self.T_0 / self.T_g)
+        # Internal unit
+        self.Xin_int  = self.E_f_int + self.X_r_int
+        self.Xout_int = self.X_a_int_out - self.X_a_int_in
+        self.Xc_int   = self.Xin_int - self.Xout_int
 
-            # Internal unit
-            self.Xin_int  = self.E_f_int + self.X_r_int
-            self.Xout_int = self.X_a_int_out - self.X_a_int_in
-            self.Xc_int   = self.Xin_int - self.Xout_int
+        # Closed refrigerant loop system
+        self.Xin_r  = self.E_cmp + self.X_r_ext
+        self.Xout_r = self.X_r_int
+        self.Xc_r   = self.Xin_r - self.Xout_r
 
-            # Closed refrigerant loop system
-            self.Xin_r  = self.E_cmp + self.X_r_ext
-            self.Xout_r = self.X_r_int
-            self.Xc_r   = self.Xin_r - self.Xout_r
+        # External unit
+        self.Xin_ext  = self.E_pmp + self.X_g
+        self.Xout_ext = self.X_r_ext
+        self.Xc_ext   = self.Xin_ext - self.Xout_ext
 
-            # External unit
-            self.Xin_ext  = self.E_pmp + self.X_g
-            self.Xout_ext = self.X_r_ext
-            self.Xc_ext   = self.Xin_ext - self.Xout_ext
-
-            # Total exergy
-            self.Xin  = self.E_f_int + self.E_cmp + self.E_pmp
-            self.Xout = self.X_a_int_out - self.X_a_int_in
-            self.Xc   = self.Xin - self.Xout
+        # Total exergy
+        self.Xin  = self.E_f_int + self.E_cmp + self.E_pmp
+        self.Xout = self.X_a_int_out - self.X_a_int_in
+        self.Xc   = self.Xin - self.Xout
