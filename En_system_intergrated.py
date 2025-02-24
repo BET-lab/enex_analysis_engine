@@ -828,7 +828,7 @@ class Fan:
             ax.legend()
 
         plt.subplots_adjust(wspace=0.3)
-        dm.simple_layout(fig, margins=(0.05, 0.05, 0.05, 0.05), bbox=(0, 0.95, 0, 1), verbose=False)
+        dm.simple_layout(fig, margins=(0.05, 0.05, 0.05, 0.05), bbox=(0, 1, 0, 1), verbose=False)
         dm.save_and_show(fig)
 
 @dataclass
@@ -904,12 +904,11 @@ class Pump:
             # 피팅된 곡선 (line 형태)
             ax.plot(flow_range, fitted_values, label=f'Pump {i+1} Fit', color=plot_colors[i], linestyle='-')
 
-        ax.set_xlabel('Flow Rate [m3/h]', fontsize=dm.fs(0.5))
+        ax.set_xlabel('Flow Rate [m$^3$/h]', fontsize=dm.fs(0.5))
         ax.set_ylabel('Efficiency [-]', fontsize=dm.fs(0.5))
-        ax.set_title('Flow Rate vs Efficiency', fontsize=dm.fs(0.5))
         ax.legend()
 
-        dm.simple_layout(fig, margins=(0.05, 0.05, 0.05, 0.05), bbox=(0, 0.9, 0, 1), verbose=False)
+        dm.simple_layout(fig, margins=(0.05, 0.05, 0.05, 0.05), bbox=(0, 1, 0, 1), verbose=False)
         dm.save_and_show(fig)
 
 @dataclass
