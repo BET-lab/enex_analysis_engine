@@ -847,14 +847,15 @@ class Pump:
         두 개의 펌프의 유량 및 효율 데이터를 저장.
         """
         self.pump1 = {
-            'flow rate'  : [2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6], # m3/h
+            'flow rate'  : np.array([2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6])/c.h2s, # m3/s
             'efficiency' : [0.255, 0.27, 0.3, 0.33, 0.34, 0.33, 0.32, 0.3, 0.26], # [-]
         }
         self.pump2 = {
-            'flow rate'  : [1.8, 2.2, 2.8, 3.3, 3.8, 4.3, 4.8, 5.3, 5.8], # m3/h
+            'flow rate'  : np.array([1.8, 2.2, 2.8, 3.3, 3.8, 4.3, 4.8, 5.3, 5.8])/c.h2s, # m3/s
             'efficiency' : [0.23, 0.26, 0.29, 0.32, 0.35, 0.34, 0.33, 0.31, 0.28], # [-]
         }
         self.pump_list = [self.pump1, self.pump2]
+        
     def get_efficiency(self, pump, dV_pmp):
         """
         주어진 유량(V_pmp)에 대해 3차 곡선 피팅을 통해 펌프 효율을 예측.
@@ -894,11 +895,11 @@ class Pump:
 
         for i, pump in enumerate(self.pump_list):
             # 원본 데이터 (dot 형태)
-            ax.scatter(pump['flow rate'], pump['efficiency'], label=f'Pump {i+1} Data', color=scatter_colors[i], s=1)
+            ax.scatter(pump['flow rate']*c.h2s, pump['efficiency'], label=f'Pump {i+1} Data', color=scatter_colors[i], s=1)
 
             # 곡선 피팅 수행
-            coeffs, _ = curve_fit(cubic_function, pump['flow rate'], pump['efficiency'])
-            flow_range = np.linspace(min(pump['flow rate']), max(pump['flow rate']), 100)
+            coeffs, _ = curve_fit(cubic_function, pump['flow rate']*c.h2s, pump['efficiency'])
+            flow_range = np.linspace(min(pump['flow rate']), max(pump['flow rate']), 100)*c.h2s
             fitted_values = cubic_function(flow_range, *coeffs)
 
             # 피팅된 곡선 (line 형태)
@@ -931,9 +932,7 @@ class AirSourceHeatPump:
         # load
         self.Q_r_int = 10000 # [W]
 
-
     def system_update(self):
-        ## ASHP parameters
 
         # temperature
         self.T_a_int_out = self.T_a_int_in - self.dT_a # internal unit air outlet temperature [K]
@@ -957,18 +956,7 @@ class AirSourceHeatPump:
         self.E_fan_int = Fan().get_power(self.fan_int, self.dV_int) # power input of internal unit fan [W]
         self.E_fan_ext = Fan().get_power(self.fan_ext, self.dV_ext) # power input of external unit fan [W]
 
-        ## pipe parameters
-        self.D_inner_pipe      = self.D_outer_pipe - 2 * self.pipe_thick # inner diameter of pipe [m]
-        self.A_pipe = math.pi * self.D_inner_pipe ** 2 / 4 # area of pipe [m2]
-        self.v_pipe = self.dV_pmp * 0.5 / self.A_pipe # velocity in pipe [m/s]
-        self.e_d    = self.epsilon_pipe / self.D_inner_pipe # relative roughness [-]
-        self.Re     = rho_w * self.v_pipe * self.D_inner_pipe / mu_w # Reynolds number [-]
-        
-        self.f = darcy_friction_factor(self.Re, self.e_d) # darcey friction factor [-]
-        self.dP_pipe = (1/2) * (rho_w * self.v_pipe ** 2) * self.f * (self.L_pipe) / self.D_inner_pipe  # pipe pressure drop [Pa]
-        self.dP_minor = self.K_pipe * (self.v_pipe ** 2) * (rho_w / 2) # minor loss pressure drop [Pa]
-
-        # Circulating water parameters
+        # exergy result 
         self.X_a_int_in  = c_a * rho_a * self.dV_int * ((self.T_a_int_in - self.T_0) - self.T_0 * math.log(self.T_a_int_in / self.T_0))
         self.X_a_int_out = c_a * rho_a * self.dV_int * ((self.T_a_int_out - self.T_0) - self.T_0 * math.log(self.T_a_int_out / self.T_0))
         self.X_a_ext_in  = c_a * rho_a * self.dV_ext * ((self.T_a_ext_in - self.T_0) - self.T_0 * math.log(self.T_a_ext_in / self.T_0))
@@ -1019,8 +1007,8 @@ class GroundSourceHeatPump:
         # Pipe parameters
         self.L_pipe       = 800 # length of pipe [m]
         self.K_pipe       = 0.2 # thermal conductance of pipe [W/m2K]
-        self.D_outer_pipe = c.cm2m(3.2) # outer diameter of pipe [m]
-        self.pipe_thick   = c.cm2m(0.29) # thickness of pipe [m]
+        self.D_outer_pipe = c.mm2m(32) # outer diameter of pipe [m]
+        self.pipe_thick   = c.mm2m(2.9) # thickness of pipe [m]
         self.epsilon_pipe = 0.003e-3 # m
 
         # plate heat exchanger
@@ -1030,6 +1018,7 @@ class GroundSourceHeatPump:
         self.L_w = 0.108 # m
         self.b = 0.002 # m
         self.lamda = 0.007 # m
+        self.beta = 60
 
         # load
         self.Q_r_int = 10000 # [W]
@@ -1055,14 +1044,14 @@ class GroundSourceHeatPump:
         self.dP_pipe = self.f * (self.L_pipe) / self.D_inner_pipe * (rho_w * self.v_pipe ** 2) / 2 # pipe pressure drop [Pa]
         self.dP_minor = self.K_pipe * (self.v_pipe ** 2) * (rho_w / 2) # minor loss pressure drop [Pa]
 
-        # plate heatexchanger (이거 너무 복잡한데 따로 빼서 쓸수는 없나)
+        # plate heatexchanger (이거 너무 복잡한데 따로 빼서 쓸수는 없나) -> 변수명도 수정
         self.N_ch   = int((self.N_tot - 1) / (2 * self.N_pass))
         self.psi    = math.pi * self.b / self.lamda
         self.phi    = (1/6) * (1 + np.sqrt(1 + self.psi**2) + 4 * np.sqrt(1 + (self.psi**2) / 2))
         self.D_ex   = 2 * self.b / self.phi # m
         self.G_c    = self.dV_pmp * rho_w / (self.N_ch * self.b * self.L_w) # [kg/m2s]
         self.Re_ex  = self.G_c * self.D_ex / mu_w # 
-        self.f_ex   = 0.8 * self.phi ** (1.25) * self.Re_ex ** (-0.25) * (60/30) ** 3.6 # friction factor [-]
+        self.f_ex   = 0.8 * self.phi ** (1.25) * self.Re_ex ** (-0.25) * (self.beta/30) ** 3.6 # friction factor [-]
         self.dP_ex  = 2 * self.f_ex * (self.L_ex / self.D_ex) * (self.G_c ** 2) / rho_w # Pa
         self.dP_pmp = self.dP_pipe + self.dP_minor + self.dP_ex # pressure difference of pump [Pa]
 
@@ -1078,7 +1067,6 @@ class GroundSourceHeatPump:
         # internal, external unit
         self.dV_int = self.Q_r_int / (c_a * rho_a * self.dT_a) # volumetric flow rate of internal unit [m3/s]
         self.dV_ext = self.Q_r_ext / (c_a * rho_a * self.dT_a) # volumetric flow rate of external unit [m3/s]
-
 
         # Circulating water parameters
         self.X_a_int_in  = c_a * rho_a * self.dV_int * ((self.T_a_int_in - self.T_0) - self.T_0 * math.log(self.T_a_int_in / self.T_0))
