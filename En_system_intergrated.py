@@ -1098,5 +1098,3 @@ class GroundSourceHeatPump:
         self.Xin  = self.E_f_int + self.E_cmp + self.E_pmp
         self.Xout = self.X_a_int_out - self.X_a_int_in
         self.Xc   = self.Xin - self.Xout
-
-self
