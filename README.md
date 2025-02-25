@@ -13,7 +13,9 @@
 
 ```bash
 uv add git+https://github.com/BET-lab/En_system_Ex_analysis.git
+```
 
+```bash
 uv sync
 ```
 
