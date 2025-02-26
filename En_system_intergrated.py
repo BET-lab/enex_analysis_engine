@@ -197,7 +197,7 @@ class ElectricBoiler:
         self.energy_balance = {}
         # hot water tank
         self.energy_balance["hot water tank"] = {
-            "in": [
+            "in": [ 
                 {"symbol": "$E_{heater}$", "value": self.E_heater},
                 {"symbol": "$E_{w,sup,tank}$", "value": c_w * rho_w * self.dV_w_sup_tank * (self.T_w_sup - self.T0)},
             ],
