@@ -1,6 +1,6 @@
 import numpy as np
 import math
-import constant as c
+import calc_util as cu
 from dataclasses import dataclass
 import dartwork_mpl as dm
 import matplotlib.pyplot as plt
@@ -130,10 +130,10 @@ def calculate_total_exergy_consumption(exergy_balance):
 class ElectricBoiler:
     def __post_init__(self):
         # Temperature Parameters
-        self.T_w_tank  = c.C2K(60) # Hot water temperature [K]
-        self.T_w_sup  = c.C2K(10) # Supply water temperature [K]
-        self.T_w_tap = c.C2K(45) # Tap water temperature [K]
-        self.T0    = c.C2K(0)  # Ambient temperature [K]
+        self.T_w_tank  = cu.C2K(60) # Hot water temperature [K]
+        self.T_w_sup  = cu.C2K(10) # Supply water temperature [K]
+        self.T_w_tap = cu.C2K(45) # Tap water temperature [K]
+        self.T0    = cu.C2K(0)  # Ambient temperature [K]
 
         # Tank Volume Parameters
         self.water_use_in_a_day = 0.2 # Usable volume [m³/day]
@@ -151,7 +151,7 @@ class ElectricBoiler:
     def system_update(self):
         self.T_tank_is     = self.T_w_tank # inner surface temperature of tank [K]
         self.hour_w_use    = 3 # water use hours [h]
-        self.dV_w_tap      = self.water_use_in_a_day/(self.hour_w_use*c.h2s) # mean volume variation [m³/s]
+        self.dV_w_tap      = self.water_use_in_a_day/(self.hour_w_use*cu.h2s) # mean volume variation [m³/s]
         self.alp           = (self.T_w_tap - self.T_w_sup)/(self.T_w_tank - self.T_w_sup) # if 문으로 음수 제한
         self.alp           = print("alp is negative") if self.alp < 0 else self.alp
         self.dV_w_sup_tank = self.alp * self.dV_w_tap
@@ -285,12 +285,12 @@ class GasBoiler:
         self.eta_NG = 0.93 # Net efficiency [-]
 
         # Temperature Parameters
-        self.T_w_tank = c.C2K(60)  # Hot water temperature [K]
-        self.T_w_sup  = c.C2K(10)  # Supply water temperature [K]
-        self.T_w_tap  = c.C2K(45)  # Tap water temperature [K]
-        self.T0       = c.C2K(0)  # Surrounding temperature [K]
-        self.T_flame  = c.C2K(1200)  # Flame temperature [K]
-        self.T_exh    = c.C2K(70)  # Exhaust gas temperature [K]
+        self.T_w_tank = cu.C2K(60)  # Hot water temperature [K]
+        self.T_w_sup  = cu.C2K(10)  # Supply water temperature [K]
+        self.T_w_tap  = cu.C2K(45)  # Tap water temperature [K]
+        self.T0       = cu.C2K(0)  # Surrounding temperature [K]
+        self.T_flame  = cu.C2K(1200)  # Flame temperature [K]
+        self.T_exh    = cu.C2K(70)  # Exhaust gas temperature [K]
 
         # Tank Volume Parameters
         self.water_use_in_a_day = 0.2  # [m³/day]
@@ -338,7 +338,7 @@ class GasBoiler:
         self.U_tank = self.U_side*self.h + self.U_top_bottom*self.A_top_bottom # Overall heat transfer coefficient [W/K]
 
         # Water flow rates and temperatures
-        self.dV_w_tap = self.water_use_in_a_day / (self.hour_w_use*c.h2s)  # Average tap water flow rate [m³/s]
+        self.dV_w_tap = self.water_use_in_a_day / (self.hour_w_use*cu.h2s)  # Average tap water flow rate [m³/s]
         self.alp = (self.T_w_tap - self.T_w_sup) / (self.T_w_tank - self.T_w_sup)
         if self.alp < 0:
             raise ValueError("Alpha (mixing ratio) is negative, check temperature inputs.")
@@ -494,13 +494,13 @@ class HeatPumpBoiler:
         self.dP = 200   # Pressure difference [Pa]
 
         # Temperature Parameters
-        self.T0          = c.C2K(0)  # Environment temperature [K]
-        self.T_a_ext_out = c.C2K(-5)  # External unit outlet air temperature [K]
-        self.T_w_tank    = c.C2K(60)  # Hot water temperature [K]
-        self.T_w_sup     = c.C2K(10)  # Supply water temperature [K]
-        self.T_w_tap     = c.C2K(45)  # Tap water temperature [K]
-        self.T_r_ext     = c.C2K(-10)  # Refrigerant temperature at external unit [K]
-        self.T_r_tank    = c.C2K(65)  # Refrigerant temperature at tank [K]
+        self.T0          = cu.C2K(0)  # Environment temperature [K]
+        self.T_a_ext_out = cu.C2K(-5)  # External unit outlet air temperature [K]
+        self.T_w_tank    = cu.C2K(60)  # Hot water temperature [K]
+        self.T_w_sup     = cu.C2K(10)  # Supply water temperature [K]
+        self.T_w_tap     = cu.C2K(45)  # Tap water temperature [K]
+        self.T_r_ext     = cu.C2K(-10)  # Refrigerant temperature at external unit [K]
+        self.T_r_tank    = cu.C2K(65)  # Refrigerant temperature at tank [K]
 
         # Tank Volume Parameters
         self.water_use_in_a_day = 0.2 # Usable volume [m³/day]
@@ -523,7 +523,7 @@ class HeatPumpBoiler:
         rho_a = 1.225  # Density of air [kg/m³]
 
         # Water flow rates
-        self.dV_w_tap      = self.water_use_in_a_day / (3 * c.h2s)  # Average tap water flow rate [m³/s]
+        self.dV_w_tap      = self.water_use_in_a_day / (3 * cu.h2s)  # Average tap water flow rate [m³/s]
         self.alpha         = (self.T_w_tap - self.T_w_sup) / (self.T_w_tank - self.T_w_sup)  # Mixing ratio
         self.dV_w_sup_tank = self.alpha * self.dV_w_tap  # Supply flow rate to tank [m³/s]
         self.dV_w_sup_mix  = (1 - self.alpha) * self.dV_w_tap  # Supply flow rate to mixing [m³/s]
@@ -810,6 +810,7 @@ class Fan:
         ]
 
         for ax, (key, ylabel, title) in zip(axes, data_pairs):
+            print(f"\n{'='*10} {title} {'='*10}")
             for i, fan in enumerate(self.fan_list):
                 # 원본 데이터 (dot 형태)
                 ax.scatter(fan['flow rate'], fan[key], label=f'Fan {i+1} Data', color=scatter_colors[i], s=1)
@@ -821,6 +822,8 @@ class Fan:
 
                 # 피팅된 곡선 (line 형태)
                 ax.plot(flow_range, fitted_values, label=f'Fan {i+1} Fit', color=plot_colors[i], linestyle='-')
+                a,b,c,d = coeffs
+                print(f"fan {i+1}: {a:.4f}x³ + {b:.4f}x² + {c:.4f}x + {d:.4f}")
 
             ax.set_xlabel('Flow Rate [m$^3$/s]', fontsize=dm.fs(0.5))
             ax.set_ylabel(ylabel, fontsize=dm.fs(0.5))
@@ -847,11 +850,11 @@ class Pump:
         두 개의 펌프의 유량 및 효율 데이터를 저장.
         """
         self.pump1 = {
-            'flow rate'  : np.array([2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6])/c.h2s, # m3/s
+            'flow rate'  : np.array([2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6])/cu.h2s, # m3/s
             'efficiency' : [0.255, 0.27, 0.3, 0.33, 0.34, 0.33, 0.32, 0.3, 0.26], # [-]
         }
         self.pump2 = {
-            'flow rate'  : np.array([1.8, 2.2, 2.8, 3.3, 3.8, 4.3, 4.8, 5.3, 5.8])/c.h2s, # m3/s
+            'flow rate'  : np.array([1.8, 2.2, 2.8, 3.3, 3.8, 4.3, 4.8, 5.3, 5.8])/cu.h2s, # m3/s
             'efficiency' : [0.23, 0.26, 0.29, 0.32, 0.35, 0.34, 0.33, 0.31, 0.28], # [-]
         }
         self.pump_list = [self.pump1, self.pump2]
@@ -895,15 +898,17 @@ class Pump:
 
         for i, pump in enumerate(self.pump_list):
             # 원본 데이터 (dot 형태)
-            ax.scatter(pump['flow rate']*c.h2s, pump['efficiency'], label=f'Pump {i+1} Data', color=scatter_colors[i], s=1)
+            ax.scatter(pump['flow rate']*cu.h2s, pump['efficiency'], label=f'Pump {i+1} Data', color=scatter_colors[i], s=1)
 
             # 곡선 피팅 수행
-            coeffs, _ = curve_fit(cubic_function, pump['flow rate']*c.h2s, pump['efficiency'])
-            flow_range = np.linspace(min(pump['flow rate']), max(pump['flow rate']), 100)*c.h2s
+            coeffs, _ = curve_fit(cubic_function, pump['flow rate']*cu.h2s, pump['efficiency'])
+            flow_range = np.linspace(min(pump['flow rate']), max(pump['flow rate']), 100)*cu.h2s
             fitted_values = cubic_function(flow_range, *coeffs)
 
             # 피팅된 곡선 (line 형태)
+            a,b,c,d = coeffs
             ax.plot(flow_range, fitted_values, label=f'Pump {i+1} Fit', color=plot_colors[i], linestyle='-')
+            print(f"fan {i+1}: {a:.4f}x³ + {b:.4f}x² + {c:.4f}x + {d:.4f}")
 
         ax.set_xlabel('Flow Rate [m$^3$/h]', fontsize=dm.fs(0.5))
         ax.set_ylabel('Efficiency [-]', fontsize=dm.fs(0.5))
@@ -926,8 +931,8 @@ class AirSourceHeatPump:
         # temperature
         self.dT_a        = 10 # internal unit air temperature difference 
         self.dT_r        = 15 # refrigerant temperature difference 
-        self.T_0         = c.C2K(32) # environmental temperature [K]
-        self.T_a_int_in  = c.C2K(20) # internal unit air inlet temperature [K]
+        self.T_0         = cu.C2K(32) # environmental temperature [K]
+        self.T_a_int_in  = cu.C2K(20) # internal unit air inlet temperature [K]
 
         # load
         self.Q_r_int = 10000 # [W]
@@ -1000,15 +1005,15 @@ class GroundSourceHeatPump:
         self.dT_a        = 10 # internal unit air temperature difference 
         self.dT_r        = 15 # refrigerant temperature difference 
         self.dT_g        = 5  # circulating water temperature difference
-        self.T_0         = c.C2K(32) # environmental temperature [K]
-        self.T_g         = c.C2K(22) # ground temperature [K]
-        self.T_a_int_in  = c.C2K(20) # internal unit air inlet temperature [K]
+        self.T_0         = cu.C2K(32) # environmental temperature [K]
+        self.T_g         = cu.C2K(22) # ground temperature [K]
+        self.T_a_int_in  = cu.C2K(20) # internal unit air inlet temperature [K]
 
         # Pipe parameters
         self.L_pipe       = 800 # length of pipe [m]
         self.K_pipe       = 0.2 # thermal conductance of pipe [W/m2K]
-        self.D_outer_pipe = c.mm2m(32) # outer diameter of pipe [m]
-        self.pipe_thick   = c.mm2m(2.9) # thickness of pipe [m]
+        self.D_outer_pipe = cu.mm2m(32) # outer diameter of pipe [m]
+        self.pipe_thick   = cu.mm2m(2.9) # thickness of pipe [m]
         self.epsilon_pipe = 0.003e-3 # m
 
         # plate heat exchanger
