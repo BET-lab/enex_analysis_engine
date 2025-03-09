@@ -932,10 +932,10 @@ class AirSourceHeatPump:
         self.dT_a        = 10 # internal unit air temperature difference 
         self.dT_r        = 15 # refrigerant temperature difference 
         self.T_0         = cu.C2K(32) # environmental temperature [K]
-        self.T_a_int_in  = cu.C2K(20) # internal unit air inlet temperature [K]
+        self.T_a_int_in  = cu.C2K(22) # internal unit air inlet temperature [K]
 
         # load
-        self.Q_r_int = 10000 # [W]
+        self.Q_r_int = 25000 # [W]
 
     def system_update(self):
 
@@ -949,7 +949,7 @@ class AirSourceHeatPump:
         self.T_r_ext = self.T_a_ext_in + self.dT_r # external unit refrigerant temperature [K]
 
         # others
-        self.COP     = self.eta_hp * self.T_r_int / (self.T_r_ext - self.T_r_int) # COP [-]
+        self.COP     = 6.08 - 0.09 * (self.T_a_ext_in - self.T_a_int_in) + 0.0005 * (self.T_a_ext_in - self.T_a_int_in) ** 2 # COP [-]
         self.E_cmp   = self.Q_r_int / self.COP # compressor power input [W]
         self.Q_r_ext = self.Q_r_int + self.E_cmp # heat transfer from external unit to refrigerant [W]
 
@@ -971,7 +971,7 @@ class AirSourceHeatPump:
         self.X_r_ext   = self.Q_r_ext * (1 - self.T_0 / self.T_r_ext)
 
         # Internal unit of ASHP
-        self.Xin_int  = self.E_f_int + self.X_r_int
+        self.Xin_int  = self.E_fan_int + self.X_r_int
         self.Xout_int = self.X_a_int_out - self.X_a_int_in
         self.Xc_int   = self.Xin_int - self.Xout_int
 
@@ -981,12 +981,12 @@ class AirSourceHeatPump:
         self.Xc_r   = self.Xin_r - self.Xout_r
 
         # External unit of ASHP
-        self.Xin_ext  = self.E_f_ext + self.X_r_ext
+        self.Xin_ext  = self.E_fan_ext + self.X_r_ext
         self.Xout_ext = self.X_a_ext_out - self.X_a_ext_in
         self.Xc_ext   = self.Xin_ext - self.Xout_ext
 
         # Total exergy of ASHP
-        self.Xin  = self.E_f_int + self.E_cmp + self.E_f_ext
+        self.Xin  = self.E_fan_int + self.E_cmp + self.E_fan_ext
         self.Xout = self.X_a_int_out - self.X_a_int_in
         self.Xc   = self.Xin - self.Xout
 
@@ -1085,7 +1085,7 @@ class GroundSourceHeatPump:
         self.X_g = - self.Q_g * (1 - self.T_0 / self.T_g)
 
         # Internal unit
-        self.Xin_int  = self.E_f_int + self.X_r_int
+        self.Xin_int  = self.E_fan_int + self.X_r_int
         self.Xout_int = self.X_a_int_out - self.X_a_int_in
         self.Xc_int   = self.Xin_int - self.Xout_int
 
@@ -1100,6 +1100,6 @@ class GroundSourceHeatPump:
         self.Xc_ext   = self.Xin_ext - self.Xout_ext
 
         # Total exergy
-        self.Xin  = self.E_f_int + self.E_cmp + self.E_pmp
+        self.Xin  = self.E_fan_int + self.E_cmp + self.E_pmp
         self.Xout = self.X_a_int_out - self.X_a_int_in
         self.Xc   = self.Xin - self.Xout
