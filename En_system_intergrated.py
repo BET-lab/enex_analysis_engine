@@ -998,24 +998,52 @@ class AirSourceHeatPump:
         self.X_r_ext   = self.Q_r_ext * (1 - self.T_0 / self.T_r_ext)
 
         # Internal unit of ASHP
-        self.Xin_int  = self.E_f_int + self.X_r_int
-        self.Xout_int = self.X_a_int_out - self.X_a_int_in
-        self.Xc_int   = self.Xin_int - self.Xout_int
+        
+        ## Exergy Balance ========================================
+        self.exergy_balance = {}
+        # Internal Unit
+        self.exergy_balance["internal unit"] = {
+            "in": {
+            "$E_{f,int}$": self.E_fan_int,
+            "$X_{r,int}$": self.X_r_int,
+            },
+            "consumed": {
+            "$X_{c,int}$": self.Xc_int,
+            },
+            "out": {
+            "$X_{a,int,out}$": self.X_a_int_out,
+            "$X_{a,int,in}$": self.X_a_int_in,
+            }
+        }
+        
+        # Refrigerant
+        self.exergy_balance["refrigerant loop"] = {
+            "in": {
+            "$E_{cmp}$": self.E_cmp,
+            },
+            "consumed": {
+            "$X_{c,r}$": self.Xc_r,
+            },
+            "out": {
+            "$X_{r,int}$": self.X_r_int,
+            "$X_{r,ext}$": self.X_r_ext,
+            }
+        }
 
-        # Closed refrigerant loop system of ASHP
-        self.Xin_r  = self.E_cmp
-        self.Xout_r = self.X_r_int + self.X_r_ext
-        self.Xc_r   = self.Xin_r - self.Xout_r
-
-        # External unit of ASHP
-        self.Xin_ext  = self.E_f_ext + self.X_r_ext
-        self.Xout_ext = self.X_a_ext_out - self.X_a_ext_in
-        self.Xc_ext   = self.Xin_ext - self.Xout_ext
-
-        # Total exergy of ASHP
-        self.Xin  = self.E_f_int + self.E_cmp + self.E_f_ext
-        self.Xout = self.X_a_int_out - self.X_a_int_in
-        self.Xc   = self.Xin - self.Xout
+        # External Unit
+        self.exergy_balance["external unit"] = {
+            "in": {
+            "$E_{f,ext}$": self.E_fan_ext,
+            "$X_{r,ext}$": self.X_r_ext,
+            },
+            "consumed": {
+            "$X_{c,ext}$": self.Xc_ext,
+            },
+            "out": {
+            "$X_{a,ext,out}$": self.X_a_ext_out,
+            "$X_{a,ext,in}$": self.X_a_ext_in,
+            }
+        }
 
 @dataclass
 class GroundSourceHeatPump:
