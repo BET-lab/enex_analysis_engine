@@ -150,10 +150,10 @@ def calculate_total_exergy_consumption(exergy_balance):
 class ElectricBoiler:
     def __post_init__(self):
         # Temperature Parameters
-        self.T_w_tank  = cu.C2K(60) # Hot water temperature [K]
+        self.T_w_tank = cu.C2K(60) # Hot water temperature [K]
         self.T_w_sup  = cu.C2K(10) # Supply water temperature [K]
-        self.T_w_tap = cu.C2K(45) # Tap water temperature [K]
-        self.T0    = cu.C2K(0)  # Ambient temperature [K]
+        self.T_w_tap  = cu.C2K(45) # Tap water temperature [K]
+        self.T0       = cu.C2K(0)  # Ambient temperature [K]
 
         # Tank Volume Parameters
         self.water_use_in_a_day = 0.2 # Usable volume [m³/day]
@@ -161,12 +161,12 @@ class ElectricBoiler:
         self.n                  = 3   # Height to diameter ratio [-] (height = n * diameter)
 
         # Heat Transfer Parameters
-        self.h_co   = 2    # Convective heat transfer coefficient [W/m²K]
-        self.h_ro   = 5    # Radiative heat transfer coefficient [W/m²K]
+        self.h_co    = 2    # Convective heat transfer coefficient [W/m²K]
+        self.h_ro    = 5    # Radiative heat transfer coefficient [W/m²K]
         self.x_shell = 0.01 # tank shell thickness [m]
         self.k_shell = 50   # tank shell thermal conductivity [W/mK]
-        self.x_ins  = 0.10 # Insulation thickness [m]
-        self.k_ins  = 0.03 # Insulation thermal conductivity [W/mK]
+        self.x_ins   = 0.10 # Insulation thickness [m]
+        self.k_ins   = 0.03 # Insulation thermal conductivity [W/mK]
 
     def system_update(self):
         self.T_tank_is     = self.T_w_tank # inner surface temperature of tank [K]
@@ -1054,7 +1054,6 @@ class GroundSourceHeatPump:
 
         # load
         self.Q_r_int = 10000 # [W]
-
 
     def system_update(self):
 
