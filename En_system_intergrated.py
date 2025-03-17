@@ -524,11 +524,11 @@ class HeatPumpBoiler:
 
         # Temperature Parameters
         self.T0          = cu.C2K(0)   # Environment temperature [K]
-        self.dT_a_ext    = -5          # Temperature difference between outlet and inlet air of external unit [K]
+        self.dT_a_ext    = 5          # Temperature difference between outlet and inlet air of external unit [K]
+        self.dT_r_ext    = 10           # Temperature difference between refrigerant and external unit [K]
         self.T_w_tank    = cu.C2K(60)  # Hot water temperature [K]
         self.T_w_sup     = cu.C2K(10)  # Supply water temperature [K]
         self.T_w_tap     = cu.C2K(45)  # Tap water temperature [K]
-        self.T_r_ext     = cu.C2K(-10) # Refrigerant temperature at external unit [K]
         self.T_r_tank    = cu.C2K(65)  # Refrigerant temperature at tank [K]
 
         # Tank Volume Parameters
@@ -579,7 +579,8 @@ class HeatPumpBoiler:
 
         # Temperature
         self.T_a_ext_in = self.T0  # External unit inlet air temperature [K]
-        self.T_a_ext_out = self.T_a_ext_in + self.dT_a_ext  # External unit outlet air temperature [K]
+        self.T_a_ext_out = self.T_a_ext_in - self.dT_a_ext  # External unit outlet air temperature [K]
+        self.T_r_ext     = self.T0 - self.dT_r_ext  # Refrigerant temperature at external unit [K]
         self.T_tank_is  = self.T_w_tank # inner surface temperature of the tank [K]
 
         # Fan and Compressor Parameters
