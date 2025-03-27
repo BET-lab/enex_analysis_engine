@@ -147,6 +147,163 @@ def calculate_total_exergy_consumption(exergy_balance):
     return total_exergy_consumption
 
 @dataclass
+class Fan:
+    def __post_init__(self): 
+        # Parameters
+        self.fan1 = {
+            'flow rate'  : [0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.5, 3.0], # [m3/s]
+            'pressure'   : [140, 136, 137, 147, 163, 178, 182, 190, 198, 181], # [Pa]
+            'efficiency' : [0.43, 0.48, 0.52, 0.55, 0.60, 0.65, 0.68, 0.66, 0.63, 0.52], # [-]
+        }
+        self.fan2 = {
+            'flow rate'  : [0.5, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.5], # [m3/s]
+            'pressure'   : [137, 138, 143, 168, 182, 191, 198, 200, 201, 170], # [Pa]
+            'efficiency' : [0.45, 0.49, 0.57, 0.62, 0.67, 0.69, 0.68, 0.67, 0.63, 0.40], # [-]
+        }
+        self.fan_list = [self.fan1, self.fan2]
+
+    def get_effieciency(self, fan, dV_fan):
+        self.efficiency_coeffs, _ = curve_fit(cubic_function, fan['flow rate'], fan['efficiency'])
+        eff = cubic_function(dV_fan, *self.efficiency_coeffs)
+        return eff
+    
+    def get_pressure(self, fan, dV_fan):
+        self.pressure_coeffs, _ = curve_fit(cubic_function, fan['flow rate'], fan['pressure'])
+        pressure = cubic_function(dV_fan, *self.pressure_coeffs)
+        return pressure
+    
+    def get_power(self, fan, dV_fan):
+        eff = self.get_effieciency(fan, dV_fan)
+        pressure = self.get_pressure(fan, dV_fan)
+        power = pressure * dV_fan / eff
+        return power
+
+    def show_graph(self):
+        """
+        유량(flow rate) 대비 압력(pressure) 및 효율(efficiency) 그래프를 출력.
+        - 원본 데이터는 점(dot)으로 표시.
+        - 커브 피팅된 곡선은 선(line)으로 표시.
+        """
+        fig, axes = plt.subplots(1, 2, figsize=(dm.cm2in(15), dm.cm2in(5)))
+
+        # 그래프 색상 설정
+        scatter_colors = ['dm.red3', 'dm.blue3', 'dm.green3', 'dm.orange3']
+        plot_colors = ['dm.red6', 'dm.blue6', 'dm.green6', 'dm.orange6']
+
+        data_pairs = [
+            ("pressure", "Pressure [Pa]", "Flow Rate vs Pressure"),
+            ("efficiency", "Efficiency [-]", "Flow Rate vs Efficiency"),
+        ]
+
+        for ax, (key, ylabel, title) in zip(axes, data_pairs):
+            print(f"\n{'='*10} {title} {'='*10}")
+            for i, fan in enumerate(self.fan_list):
+                # 원본 데이터 (dot 형태)
+                ax.scatter(fan['flow rate'], fan[key], label=f'Fan {i+1} Data', color=scatter_colors[i], s=2)
+
+                # 곡선 피팅 수행
+                coeffs, _ = curve_fit(cubic_function, fan['flow rate'], fan[key])
+                flow_range = np.linspace(min(fan['flow rate']), max(fan['flow rate']), 100)
+                fitted_values = cubic_function(flow_range, *coeffs)
+
+                # 피팅된 곡선 (line 형태)
+                ax.plot(flow_range, fitted_values, label=f'Fan {i+1} Fit', color=plot_colors[i], linestyle='-')
+                a,b,c,d = coeffs
+                print(f"fan {i+1}: {a:.4f}x³ + {b:.4f}x² + {c:.4f}x + {d:.4f}")
+
+            ax.set_xlabel('Flow Rate [m$^3$/s]', fontsize=dm.fs(0.5))
+            ax.set_ylabel(ylabel, fontsize=dm.fs(0.5))
+            ax.set_title(title, fontsize=dm.fs(0.5))
+            ax.legend()
+
+        plt.subplots_adjust(wspace=0.3)
+        dm.simple_layout(fig, margins=(0.05, 0.05, 0.05, 0.05), bbox=(0, 1, 0, 1), verbose=False)
+        dm.save_and_show(fig)
+
+@dataclass
+class Pump:
+    """
+    Pump 클래스: 펌프의 성능 데이터를 저장하고 분석하는 클래스.
+    
+    - 유량(flow rate)과 효율(efficiency) 데이터를 보유.
+    - 효율 데이터를 기반으로 곡선 피팅(curve fitting)을 수행하여 예측 값 계산.
+    - 주어진 압력 차이(dP_pmp)와 유량(V_pmp)을 이용하여 펌프의 전력 소비량 계산.
+    """
+
+    def __post_init__(self):
+        """
+        클래스 초기화 후 자동 실행되는 메서드.
+        두 개의 펌프의 유량 및 효율 데이터를 저장.
+        """
+        self.pump1 = {
+            'flow rate'  : np.array([2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6])/cu.h2s, # m3/s
+            'efficiency' : [0.255, 0.27, 0.3, 0.33, 0.34, 0.33, 0.32, 0.3, 0.26], # [-]
+        }
+        self.pump2 = {
+            'flow rate'  : np.array([1.8, 2.2, 2.8, 3.3, 3.8, 4.3, 4.8, 5.3, 5.8])/cu.h2s, # m3/s
+            'efficiency' : [0.23, 0.26, 0.29, 0.32, 0.35, 0.34, 0.33, 0.31, 0.28], # [-]
+        }
+        self.pump_list = [self.pump1, self.pump2]
+        
+    def get_efficiency(self, pump, dV_pmp):
+        """
+        주어진 유량(V_pmp)에 대해 3차 곡선 피팅을 통해 펌프 효율을 예측.
+        
+        :param pump: 선택한 펌프 (self.pump1 또는 self.pump2)
+        :param V_pmp: 유량 (m3/h)
+        :return: 예측된 펌프 효율
+        """
+        self.efficiency_coeffs, _ = curve_fit(cubic_function, pump['flow rate'], pump['efficiency'])
+        eff = cubic_function(dV_pmp, *self.efficiency_coeffs)
+        return eff
+
+    def get_power(self, pump, V_pmp, dP_pmp):
+        """
+        주어진 유량(V_pmp)과 압력 차이(dP_pmp)를 이용하여 펌프의 전력 소비량을 계산.
+        
+        :param pump: 선택한 펌프 (self.pump1 또는 self.pump2)
+        :param V_pmp: 유량 (m3/h)
+        :param dP_pmp: 펌프 압력 차이 (Pa)
+        :return: 펌프의 소비 전력 (W)
+        """
+        efficiency = self.get_efficiency(pump, V_pmp)
+        power = (V_pmp * dP_pmp) / efficiency
+        return power
+
+    def show_graph(self):
+        """
+        유량(flow rate) 대비 효율(efficiency) 그래프를 출력.
+        - 원본 데이터는 점(dot)으로 표시.
+        - 커브 피팅된 곡선은 선(line)으로 표시.
+        """
+        fig, ax = plt.subplots(figsize=(dm.cm2in(10), dm.cm2in(5)))
+
+        # 그래프 색상 설정
+        scatter_colors = ['dm.red3', 'dm.blue3', 'dm.green3', 'dm.orange3']
+        plot_colors = ['dm.red6', 'dm.blue6', 'dm.green6', 'dm.orange6']
+
+        for i, pump in enumerate(self.pump_list):
+            # 원본 데이터 (dot 형태)
+            ax.scatter(pump['flow rate']*cu.h2s, pump['efficiency'], label=f'Pump {i+1} Data', color=scatter_colors[i], s=2)
+
+            # 곡선 피팅 수행
+            coeffs, _ = curve_fit(cubic_function, pump['flow rate']*cu.h2s, pump['efficiency'])
+            flow_range = np.linspace(min(pump['flow rate']), max(pump['flow rate']), 100)*cu.h2s
+            fitted_values = cubic_function(flow_range, *coeffs)
+
+            # 피팅된 곡선 (line 형태)
+            a,b,c,d = coeffs
+            ax.plot(flow_range, fitted_values, label=f'Pump {i+1} Fit', color=plot_colors[i], linestyle='-')
+            print(f"fan {i+1}: {a:.4f}x³ + {b:.4f}x² + {c:.4f}x + {d:.4f}")
+
+        ax.set_xlabel('Flow Rate [m$^3$/h]', fontsize=dm.fs(0.5))
+        ax.set_ylabel('Efficiency [-]', fontsize=dm.fs(0.5))
+        ax.legend()
+
+        dm.simple_layout(fig, margins=(0.05, 0.05, 0.05, 0.05), bbox=(0, 1, 0, 1), verbose=False)
+        dm.save_and_show(fig)
+
+@dataclass
 class ElectricBoiler:
     def __post_init__(self):
         # Temperature Parameters
@@ -790,161 +947,72 @@ class HeatPumpBoiler:
         }
 
 @dataclass
-class Fan:
-    def __post_init__(self): 
-        # Parameters
-        self.fan1 = {
-            'flow rate'  : [0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.5, 3.0], # [m3/s]
-            'pressure'   : [140, 136, 137, 147, 163, 178, 182, 190, 198, 181], # [Pa]
-            'efficiency' : [0.43, 0.48, 0.52, 0.55, 0.60, 0.65, 0.68, 0.66, 0.63, 0.52], # [-]
-        }
-        self.fan2 = {
-            'flow rate'  : [0.5, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.5], # [m3/s]
-            'pressure'   : [137, 138, 143, 168, 182, 191, 198, 200, 201, 170], # [Pa]
-            'efficiency' : [0.45, 0.49, 0.57, 0.62, 0.67, 0.69, 0.68, 0.67, 0.63, 0.40], # [-]
-        }
-        self.fan_list = [self.fan1, self.fan2]
-
-    def get_effieciency(self, fan, dV_fan):
-        self.efficiency_coeffs, _ = curve_fit(cubic_function, fan['flow rate'], fan['efficiency'])
-        eff = cubic_function(dV_fan, *self.efficiency_coeffs)
-        return eff
-    
-    def get_pressure(self, fan, dV_fan):
-        self.pressure_coeffs, _ = curve_fit(cubic_function, fan['flow rate'], fan['pressure'])
-        pressure = cubic_function(dV_fan, *self.pressure_coeffs)
-        return pressure
-    
-    def get_power(self, fan, dV_fan):
-        eff = self.get_effieciency(fan, dV_fan)
-        pressure = self.get_pressure(fan, dV_fan)
-        power = pressure * dV_fan / eff
-        return power
-
-    def show_graph(self):
-        """
-        유량(flow rate) 대비 압력(pressure) 및 효율(efficiency) 그래프를 출력.
-        - 원본 데이터는 점(dot)으로 표시.
-        - 커브 피팅된 곡선은 선(line)으로 표시.
-        """
-        fig, axes = plt.subplots(1, 2, figsize=(dm.cm2in(15), dm.cm2in(5)))
-
-        # 그래프 색상 설정
-        scatter_colors = ['dm.red3', 'dm.blue3', 'dm.green3', 'dm.orange3']
-        plot_colors = ['dm.red6', 'dm.blue6', 'dm.green6', 'dm.orange6']
-
-        data_pairs = [
-            ("pressure", "Pressure [Pa]", "Flow Rate vs Pressure"),
-            ("efficiency", "Efficiency [-]", "Flow Rate vs Efficiency"),
-        ]
-
-        for ax, (key, ylabel, title) in zip(axes, data_pairs):
-            print(f"\n{'='*10} {title} {'='*10}")
-            for i, fan in enumerate(self.fan_list):
-                # 원본 데이터 (dot 형태)
-                ax.scatter(fan['flow rate'], fan[key], label=f'Fan {i+1} Data', color=scatter_colors[i], s=2)
-
-                # 곡선 피팅 수행
-                coeffs, _ = curve_fit(cubic_function, fan['flow rate'], fan[key])
-                flow_range = np.linspace(min(fan['flow rate']), max(fan['flow rate']), 100)
-                fitted_values = cubic_function(flow_range, *coeffs)
-
-                # 피팅된 곡선 (line 형태)
-                ax.plot(flow_range, fitted_values, label=f'Fan {i+1} Fit', color=plot_colors[i], linestyle='-')
-                a,b,c,d = coeffs
-                print(f"fan {i+1}: {a:.4f}x³ + {b:.4f}x² + {c:.4f}x + {d:.4f}")
-
-            ax.set_xlabel('Flow Rate [m$^3$/s]', fontsize=dm.fs(0.5))
-            ax.set_ylabel(ylabel, fontsize=dm.fs(0.5))
-            ax.set_title(title, fontsize=dm.fs(0.5))
-            ax.legend()
-
-        plt.subplots_adjust(wspace=0.3)
-        dm.simple_layout(fig, margins=(0.05, 0.05, 0.05, 0.05), bbox=(0, 1, 0, 1), verbose=False)
-        dm.save_and_show(fig)
-
-@dataclass
-class Pump:
-    """
-    Pump 클래스: 펌프의 성능 데이터를 저장하고 분석하는 클래스.
-    
-    - 유량(flow rate)과 효율(efficiency) 데이터를 보유.
-    - 효율 데이터를 기반으로 곡선 피팅(curve fitting)을 수행하여 예측 값 계산.
-    - 주어진 압력 차이(dP_pmp)와 유량(V_pmp)을 이용하여 펌프의 전력 소비량 계산.
-    """
-
+class SolarHotWater:
     def __post_init__(self):
-        """
-        클래스 초기화 후 자동 실행되는 메서드.
-        두 개의 펌프의 유량 및 효율 데이터를 저장.
-        """
-        self.pump1 = {
-            'flow rate'  : np.array([2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6])/cu.h2s, # m3/s
-            'efficiency' : [0.255, 0.27, 0.3, 0.33, 0.34, 0.33, 0.32, 0.3, 0.26], # [-]
-        }
-        self.pump2 = {
-            'flow rate'  : np.array([1.8, 2.2, 2.8, 3.3, 3.8, 4.3, 4.8, 5.3, 5.8])/cu.h2s, # m3/s
-            'efficiency' : [0.23, 0.26, 0.29, 0.32, 0.35, 0.34, 0.33, 0.31, 0.28], # [-]
-        }
-        self.pump_list = [self.pump1, self.pump2]
         
-    def get_efficiency(self, pump, dV_pmp):
-        """
-        주어진 유량(V_pmp)에 대해 3차 곡선 피팅을 통해 펌프 효율을 예측.
+        # environment conditions
+        self.h_co = 2 # Convective heat transfer coefficient [W/m²K]
+        self.h_ro = 5 # Radiative heat transfer coefficient [W/m²K]
+        self.T0 = cu.C2K(0) # Environment temperature [K]
         
-        :param pump: 선택한 펌프 (self.pump1 또는 self.pump2)
-        :param V_pmp: 유량 (m3/h)
-        :return: 예측된 펌프 효율
-        """
-        self.efficiency_coeffs, _ = curve_fit(cubic_function, pump['flow rate'], pump['efficiency'])
-        eff = cubic_function(dV_pmp, *self.efficiency_coeffs)
-        return eff
-
-    def get_power(self, pump, V_pmp, dP_pmp):
-        """
-        주어진 유량(V_pmp)과 압력 차이(dP_pmp)를 이용하여 펌프의 전력 소비량을 계산.
+        # solar thermal panel
+        self.eta_stp = 0.8 # Solar to thermal panel efficiency [-]
+        self.Q_sol = 900 # Solar radiation [W/m²]
+        self.A_stp = 2 # Solar thermal panel area [m²]
         
-        :param pump: 선택한 펌프 (self.pump1 또는 self.pump2)
-        :param V_pmp: 유량 (m3/h)
-        :param dP_pmp: 펌프 압력 차이 (Pa)
-        :return: 펌프의 소비 전력 (W)
-        """
-        efficiency = self.get_efficiency(pump, V_pmp)
-        power = (V_pmp * dP_pmp) / efficiency
-        return power
+        # pump
+        self.pmp = Pump().pump1
+        
+        # hot water tank
+        self.T_w_tank = cu.C2K(60)
+        self.T_w_sup = cu.C2K(10)
+        self.T_w_tap = cu.C2K(45)
+        self.water_use_in_a_day = 0.2 # Usable volume [m³/day]
+        self.V_tank = 0.1 # Total tank volume [m³]
+        self.n = 3
+        self.x_shell = 0.01 # tank shell thickness [m]
+        self.k_shell = 50 # tank shell thermal conductivity [W/mK]
+        self.x_ins = 0.10 # Insulation thickness [m]
+        self.k_ins = 0.03 # Insulation thermal conductivity [W/mK]
+    
+    def system_update(self):
+        
+        self.T_stp_in = cu.C2K(20) # Solar thermal panel inlet temperature [K]
+        self.T_stp_out = cu.C2K(40) # Solar thermal panel outlet temperature [K]
 
-    def show_graph(self):
-        """
-        유량(flow rate) 대비 효율(efficiency) 그래프를 출력.
-        - 원본 데이터는 점(dot)으로 표시.
-        - 커브 피팅된 곡선은 선(line)으로 표시.
-        """
-        fig, ax = plt.subplots(figsize=(dm.cm2in(10), dm.cm2in(5)))
+        # Water flow rates
+        self.dV_w_tap      = self.water_use_in_a_day / (3 * cu.h2s)  # Average tap water flow rate [m³/s]
+        self.alpha         = (self.T_w_tap - self.T_w_sup) / (self.T_w_tank - self.T_w_sup)  # Mixing ratio
+        self.dV_w_sup_tank = self.alpha * self.dV_w_tap  # Supply flow rate to tank [m³/s]
+        self.dV_w_sup_mix  = (1 - self.alpha) * self.dV_w_tap  # Supply flow rate to mixing [m³/s]
 
-        # 그래프 색상 설정
-        scatter_colors = ['dm.red3', 'dm.blue3', 'dm.green3', 'dm.orange3']
-        plot_colors = ['dm.red6', 'dm.blue6', 'dm.green6', 'dm.orange6']
+        # Surface areas
+        self.r0 = (self.V_tank / (2 * math.pi * self.n)) ** (1 / 3)  # Tank inner radius [m]
+        self.r1 = self.r0 + self.x_shell  # Tank outer radius [m]
+        self.r2 = self.r1 + self.x_ins  # Insulation outer radius [m]
+        self.h = self.n * (2 * self.r0)  # Tank height [m]
+        self.A_top_bottom = 2 * math.pi * self.r0 ** 2  # Total top and bottom area [m²]
 
-        for i, pump in enumerate(self.pump_list):
-            # 원본 데이터 (dot 형태)
-            ax.scatter(pump['flow rate']*cu.h2s, pump['efficiency'], label=f'Pump {i+1} Data', color=scatter_colors[i], s=2)
+        # Thermal resistances
+        self.h_o = self.h_co + self.h_ro  # Overall heat transfer coefficient [W/m²K]
+        # Cylindrical coordinates ========================================
+        self.R_side_shell = math.log((self.r1) / self.r0) / (2 * math.pi * self.k_shell) # Shell thermal resistance [mK/W]
+        self.R_side_ins   = math.log((self.r2) / (self.r1)) / (2 * math.pi * self.k_ins) # Insulation thermal resistance [mK/W]
+        self.R_side_ext   = 1 / (2 * math.pi * self.r2 * self.h_o)  # External thermal resistance [mK/W]
+        self.R_side_tot   = self.R_side_shell + self.R_side_ins + self.R_side_ext # Total side thermal resistance [mK/W]
+        self.U_side       = 1 / self.R_side_tot # Overall heat transfer coefficient [W/mK]
+        # Cartesian coordinates ==========================================
+        self.R_top_bottom_shell = (self.x_shell) / (self.k_shell) # Insulation thermal resistance [m2K/W]
+        self.R_top_bottom_ins   = (self.x_ins) / (self.k_ins) # Insulation thermal resistance [m2K/W]
+        self.R_top_bottom_ext   = 1/self.h_o  # Combined external thermal resistance [m2K/W]
+        self.R_top_bottom_tot   = self.R_top_bottom_shell + self.R_top_bottom_ins + self.R_top_bottom_ext # Total top and bottom thermal resistance [m2K/W]
+        self.U_top_bottom       = 1 / self.R_top_bottom_tot # Overall heat transfer coefficient [W/m2K]
 
-            # 곡선 피팅 수행
-            coeffs, _ = curve_fit(cubic_function, pump['flow rate']*cu.h2s, pump['efficiency'])
-            flow_range = np.linspace(min(pump['flow rate']), max(pump['flow rate']), 100)*cu.h2s
-            fitted_values = cubic_function(flow_range, *coeffs)
+        # Total heat transfer coefficient
+        self.U_tank = self.U_side*self.h + self.U_top_bottom*self.A_top_bottom # Overall heat transfer coefficient [W/K]
 
-            # 피팅된 곡선 (line 형태)
-            a,b,c,d = coeffs
-            ax.plot(flow_range, fitted_values, label=f'Pump {i+1} Fit', color=plot_colors[i], linestyle='-')
-            print(f"fan {i+1}: {a:.4f}x³ + {b:.4f}x² + {c:.4f}x + {d:.4f}")
-
-        ax.set_xlabel('Flow Rate [m$^3$/h]', fontsize=dm.fs(0.5))
-        ax.set_ylabel('Efficiency [-]', fontsize=dm.fs(0.5))
-        ax.legend()
-
-        dm.simple_layout(fig, margins=(0.05, 0.05, 0.05, 0.05), bbox=(0, 1, 0, 1), verbose=False)
-        dm.save_and_show(fig)
+        # Temperature
+        self.T_tank_is  = self.T_w_tank # inner surface temperature of the tank [K]
 
 @dataclass
 class AirSourceHeatPump:
@@ -1123,7 +1191,7 @@ class GroundSourceHeatPump:
         # pump, compressor
         self.E_cmp = self.Q_r_int / self.COP # compressor power input [W]
         self.dV_pmp  = self.Q_r_ext / (c_w * rho_w * self.dT_g) # volumetric flow rate of pump [m3/s]
-        self.E_pmp   = self.pump.get_power() # pump power input [W]
+        self.E_pmp   = Pump().get_power(pump, dV_pmp, dP_pmp) # pump power input [W]
 
         # internal, external unit
         self.dV_int = self.Q_r_int / (c_a * rho_a * self.dT_a) # volumetric flow rate of internal unit [m3/s]
