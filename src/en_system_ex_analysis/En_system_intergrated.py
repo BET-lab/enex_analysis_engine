@@ -341,25 +341,27 @@ class ElectricBoiler:
 
         self.h = self.n * (2 * self.r0)  # Tank height [m]
 
-        self.A_top_bottom = 2 * math.pi * self.r0 ** 2  # Total top and bottom area [m²]
-
         # Thermal resistances
         self.h_o = self.h_co + self.h_ro  # Overall heat transfer coefficient [W/m²K]
-        # Cylindrical coordinates ========================================
-        self.R_side_shell = math.log((self.r1) / self.r0) / (2 * math.pi * self.k_shell) # Shell thermal resistance [mK/W]
-        self.R_side_ins   = math.log((self.r2) / (self.r1)) / (2 * math.pi * self.k_ins) # Insulation thermal resistance [mK/W]
-        self.R_side_ext   = 1 / (2 * math.pi * self.r2 * self.h_o)  # External thermal resistance [mK/W]
-        self.R_side_tot = self.R_side_shell + self.R_side_ins + self.R_side_ext # Total side thermal resistance [mK/W]
-        self.U_side       = 1 / self.R_side_tot # Overall heat transfer coefficient [W/mK]
-        # Cartesian coordinates ==========================================
-        self.R_top_bottom_shell = (self.x_shell) / (self.k_shell) # Insulation thermal resistance [m2K/W]
-        self.R_top_bottom_ins   = (self.x_ins) / (self.k_ins) # Insulation thermal resistance [m2K/W]
-        self.R_top_bottom_ext   = 1/self.h_o  # Combined external thermal resistance [m2K/W]
-        self.R_top_bottom_tot   = self.R_top_bottom_shell + self.R_top_bottom_ins + self.R_top_bottom_ext # Total top and bottom thermal resistance [m2K/W]
-        self.U_top_bottom       = 1 / self.R_top_bottom_tot # Overall heat transfer coefficient [W/m2K]
+        self.A_side = 2 * math.pi * self.r2 * self.h           # 측면 면적 [m2]
+        self.A_base = math.pi * self.r0**2              # 상하단 면적 [m2]
 
-        # Total heat transfer coefficient
-        self.U_tank = self.U_side*self.h + self.U_top_bottom*self.A_top_bottom # Overall heat transfer coefficient [W/K]
+        # 원통좌표계(측면) 열저항
+        self.R_side_shell = math.log(self.r1 / self.r0) / (2 * math.pi * self.k_shell)    # Shell thermal resistance [mK/W]
+        self.R_side_ins   = math.log(self.r2 / self.r1) / (2 * math.pi * self.k_ins)      # Insulation thermal resistance [mK/W]
+        self.R_side_cond  = self.R_side_shell + self.R_side_ins                           # Total conduction resistance [mK/W]
+        self.R_side_ext   = 1 / (self.h_o * self.A_side)                                  # External convection resistance [mK/W]
+        self.R_side_tot   = self.R_side_cond + self.R_side_ext                            # Total side thermal resistance [K/W]
+
+        # 직교좌표계(상·하단) 열저항
+        self.R_base_shell = self.x_shell / self.k_shell             # Shell thermal resistance [m2K/W]
+        self.R_base_ins   = self.x_ins / self.k_ins                 # Insulation thermal resistance [m2K/W]
+        self.R_base_cond  = self.R_base_shell + self.R_base_ins     # Total conduction resistance [m2K/W]
+        self.R_base_ext   = 1 / (self.h_o * self.A_base)            # External convection resistance [m2K/W]
+        self.R_base_tot   = self.R_base_cond + self.R_base_ext      # Total top/bottom resistance [K/W]
+
+        # 전체 열전달계수 [W/K]
+        self.U_tank = 1 / (2 * self.R_base_tot + self.R_side_tot)
 
         # Heat loss calculation
         self.Q_l_tank = self.U_tank * (self.T_w_tank - self.T0)
@@ -506,25 +508,27 @@ class GasBoiler:
 
         self.h = self.n * (2 * self.r0)  # Tank height [m]
 
-        self.A_top_bottom = 2 * math.pi * self.r0 ** 2  # Total top and bottom area [m²]
-
         # Thermal resistances
         self.h_o = self.h_co + self.h_ro  # Overall heat transfer coefficient [W/m²K]
-        # Cylindrical coordinates ========================================
-        self.R_side_shell = math.log((self.r1) / self.r0) / (2 * math.pi * self.k_shell) # Shell thermal resistance [mK/W]
-        self.R_side_ins   = math.log((self.r2) / (self.r1)) / (2 * math.pi * self.k_ins) # Insulation thermal resistance [mK/W]
-        self.R_side_ext   = 1 / (2 * math.pi * self.r2 * self.h_o)  # External thermal resistance [mK/W]
-        self.R_side_tot = self.R_side_shell + self.R_side_ins + self.R_side_ext # Total side thermal resistance [mK/W]
-        self.U_side       = 1 / self.R_side_tot # Overall heat transfer coefficient [W/mK]
-        # Cartesian coordinates ==========================================
-        self.R_top_bottom_shell = (self.x_shell) / (self.k_shell) # Insulation thermal resistance [m2K/W]
-        self.R_top_bottom_ins   = (self.x_ins) / (self.k_ins) # Insulation thermal resistance [m2K/W]
-        self.R_top_bottom_ext   = 1/self.h_o  # Combined external thermal resistance [m2K/W]
-        self.R_top_bottom_tot   = self.R_top_bottom_shell + self.R_top_bottom_ins + self.R_top_bottom_ext # Total top and bottom thermal resistance [m2K/W]
-        self.U_top_bottom       = 1 / self.R_top_bottom_tot # Overall heat transfer coefficient [W/m2K]
+        self.A_side = 2 * math.pi * self.r2 * self.h           # 측면 면적 [m2]
+        self.A_base = math.pi * self.r0**2              # 상하단 면적 [m2]
 
-        # Total heat transfer coefficient
-        self.U_tank = self.U_side*self.h + self.U_top_bottom*self.A_top_bottom # Overall heat transfer coefficient [W/K]
+        # 원통좌표계(측면) 열저항
+        self.R_side_shell = math.log(self.r1 / self.r0) / (2 * math.pi * self.k_shell)    # Shell thermal resistance [mK/W]
+        self.R_side_ins   = math.log(self.r2 / self.r1) / (2 * math.pi * self.k_ins)      # Insulation thermal resistance [mK/W]
+        self.R_side_cond  = self.R_side_shell + self.R_side_ins                           # Total conduction resistance [mK/W]
+        self.R_side_ext   = 1 / (self.h_o * self.A_side)                                  # External convection resistance [mK/W]
+        self.R_side_tot   = self.R_side_cond + self.R_side_ext                            # Total side thermal resistance [K/W]
+
+        # 직교좌표계(상·하단) 열저항
+        self.R_base_shell = self.x_shell / self.k_shell             # Shell thermal resistance [m2K/W]
+        self.R_base_ins   = self.x_ins / self.k_ins                 # Insulation thermal resistance [m2K/W]
+        self.R_base_cond  = self.R_base_shell + self.R_base_ins     # Total conduction resistance [m2K/W]
+        self.R_base_ext   = 1 / (self.h_o * self.A_base)            # External convection resistance [m2K/W]
+        self.R_base_tot   = self.R_base_cond + self.R_base_ext      # Total top/bottom resistance [K/W]
+
+        # 전체 열전달계수 [W/K]
+        self.U_tank = 1 / (2 * self.R_base_tot + self.R_side_tot)
 
         # Water flow rates and temperatures
         self.dV_w_tap = self.water_use_in_a_day / (self.hour_w_use*cu.h2s)  # Average tap water flow rate [m³/s]
@@ -718,21 +722,25 @@ class HeatPumpBoiler:
 
         # Thermal resistances
         self.h_o = self.h_co + self.h_ro  # Overall heat transfer coefficient [W/m²K]
-        # Cylindrical coordinates ========================================
-        self.R_side_shell = math.log((self.r1) / self.r0) / (2 * math.pi * self.k_shell) # Shell thermal resistance [mK/W]
-        self.R_side_ins   = math.log((self.r2) / (self.r1)) / (2 * math.pi * self.k_ins) # Insulation thermal resistance [mK/W]
-        self.R_side_ext   = 1 / (2 * math.pi * self.r2 * self.h_o)  # External thermal resistance [mK/W]
-        self.R_side_tot   = self.R_side_shell + self.R_side_ins + self.R_side_ext # Total side thermal resistance [mK/W]
-        self.U_side       = 1 / self.R_side_tot # Overall heat transfer coefficient [W/mK]
-        # Cartesian coordinates ==========================================
-        self.R_top_bottom_shell = (self.x_shell) / (self.k_shell) # Insulation thermal resistance [m2K/W]
-        self.R_top_bottom_ins   = (self.x_ins) / (self.k_ins) # Insulation thermal resistance [m2K/W]
-        self.R_top_bottom_ext   = 1/self.h_o  # Combined external thermal resistance [m2K/W]
-        self.R_top_bottom_tot   = self.R_top_bottom_shell + self.R_top_bottom_ins + self.R_top_bottom_ext # Total top and bottom thermal resistance [m2K/W]
-        self.U_top_bottom       = 1 / self.R_top_bottom_tot # Overall heat transfer coefficient [W/m2K]
+        self.A_side = 2 * math.pi * self.r2 * self.h           # 측면 면적 [m2]
+        self.A_base = math.pi * self.r0**2              # 상하단 면적 [m2]
 
-        # Total heat transfer coefficient
-        self.U_tank = self.U_side*self.h + self.U_top_bottom*self.A_top_bottom # Overall heat transfer coefficient [W/K]
+        # 원통좌표계(측면) 열저항
+        self.R_side_shell = math.log(self.r1 / self.r0) / (2 * math.pi * self.k_shell)    # Shell thermal resistance [mK/W]
+        self.R_side_ins   = math.log(self.r2 / self.r1) / (2 * math.pi * self.k_ins)      # Insulation thermal resistance [mK/W]
+        self.R_side_cond  = self.R_side_shell + self.R_side_ins                           # Total conduction resistance [mK/W]
+        self.R_side_ext   = 1 / (self.h_o * self.A_side)                                  # External convection resistance [mK/W]
+        self.R_side_tot   = self.R_side_cond + self.R_side_ext                            # Total side thermal resistance [K/W]
+
+        # 직교좌표계(상·하단) 열저항
+        self.R_base_shell = self.x_shell / self.k_shell             # Shell thermal resistance [m2K/W]
+        self.R_base_ins   = self.x_ins / self.k_ins                 # Insulation thermal resistance [m2K/W]
+        self.R_base_cond  = self.R_base_shell + self.R_base_ins     # Total conduction resistance [m2K/W]
+        self.R_base_ext   = 1 / (self.h_o * self.A_base)            # External convection resistance [m2K/W]
+        self.R_base_tot   = self.R_base_cond + self.R_base_ext      # Total top/bottom resistance [K/W]
+
+        # 전체 열전달계수 [W/K]
+        self.U_tank = 1 / (2 * self.R_base_tot + self.R_side_tot)
 
         # Temperature
         self.T_a_ext_in = self.T0  # External unit inlet air temperature [K]
