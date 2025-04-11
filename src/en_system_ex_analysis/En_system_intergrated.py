@@ -303,6 +303,19 @@ class Pump:
         dm.simple_layout(fig, margins=(0.05, 0.05, 0.05, 0.05), bbox=(0, 1, 0, 1), verbose=False)
         dm.save_and_show(fig)
 
+def COP_by_PLR_cooling(T_a_int_out, T_a_ext_in, Q_r_int):
+    COP_ref = 4.0
+    PLR = Q_r_int / 24000
+    EIR_by_T = 0.38 + 0.02 * T_a_int_out + 0.01 * T_a_ext_in
+    EIR_by_PLR = 0.22 + 0.50 * PLR + 0.26 * PLR**2
+    COP = PLR * COP_ref / (EIR_by_T * EIR_by_PLR)
+    return COP
+
+def COP_by_PLR_heating(T_0, Q_r_int):
+    PLR = Q_r_int / 24000
+    COP = -7.46 * (PLR - 0.0047 * T_0 - 0.477)**2 + 0.0941 * T_0 + 4.34
+    return COP
+
 @dataclass
 class ElectricBoiler:
     def __post_init__(self):
@@ -1052,7 +1065,7 @@ class AirSourceHeatPump_cooling:
         self.T_r_ext = self.T_a_ext_in + self.dT_r # external unit refrigerant temperature [K]
 
         # others
-        self.COP     = 5.06 - 0.05 * (self.T_a_ext_in - self.T_a_int_in) + 0.00006 * (self.T_a_ext_in - self.T_a_int_in) ** 2 # COP [-]
+        self.COP     = COP_by_PLR_cooling(self.T_a_int_out, self.T_a_ext_in, self.Q_r_int) # COP [-]
         self.E_cmp   = self.Q_r_int / self.COP # compressor power input [W]
         self.Q_r_ext = self.Q_r_int + self.E_cmp # heat transfer from external unit to refrigerant [W]
 
@@ -1229,7 +1242,7 @@ class AirSourceHeatPump_heating:
         self.T_r_ext = self.T_a_ext_in - self.dT_r # external unit refrigerant temperature [K]
 
         # others
-        self.COP     = 5.06 - 0.05 * (self.T_a_int_in - self.T_a_ext_in) + 0.00006 * (self.T_a_int_in - self.T_a_ext_in) ** 2 # COP [-]
+        self.COP     = COP_by_PLR_heating(self.T_0, self.Q_r_int) # COP [-]
         self.E_cmp   = self.Q_r_int / self.COP # compressor power input [W]
         self.Q_r_ext = self.Q_r_int - self.E_cmp # heat transfer from external unit to refrigerant [W]
 
