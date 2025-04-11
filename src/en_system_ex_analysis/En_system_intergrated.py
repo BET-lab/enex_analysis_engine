@@ -1023,15 +1023,13 @@ class SolarHotWater:
         self.T_tank_is  = self.T_w_tank # inner surface temperature of the tank [K]
 
 @dataclass
-class AirSourceHeatPump:
+class AirSourceHeatPump_cooling:
     def __post_init__(self):
 
         # fan
         self.fan_int = Fan().fan1
         self.fan_ext = Fan().fan2
         
-        # efficiency
-        self.eta_hp = 0.4
 
         # temperature
         self.dT_a        = 10 # internal unit air temperature difference 
@@ -1075,6 +1073,25 @@ class AirSourceHeatPump:
         self.X_r_int   = - self.Q_r_int * (1 - self.T_0 / self.T_r_int)
         self.X_r_ext   = self.Q_r_ext * (1 - self.T_0 / self.T_r_ext)
 
+        # Internal unit of ASHP
+        self.Xin_int  = self.E_fan_int + self.X_r_int
+        self.Xout_int = self.X_a_int_out - self.X_a_int_in
+        self.Xc_int   = self.Xin_int - self.Xout_int
+
+        # Closed refrigerant loop system of ASHP
+        self.Xin_r  = self.E_cmp
+        self.Xout_r = self.X_r_int + self.X_r_ext
+        self.Xc_r   = self.Xin_r - self.Xout_r
+
+        # External unit of ASHP
+        self.Xin_ext  = self.E_fan_ext + self.X_r_ext
+        self.Xout_ext = self.X_a_ext_out - self.X_a_ext_in
+        self.Xc_ext   = self.Xin_ext - self.Xout_ext
+
+        # Total exergy of ASHP
+        self.Xin  = self.E_fan_int + self.E_cmp + self.E_fan_ext
+        self.Xout = self.X_a_int_out - self.X_a_int_in
+        self.Xc   = self.Xin - self.Xout
         
         ## Exergy Balance ========================================
         self.exergy_balance = {}
@@ -1121,25 +1138,6 @@ class AirSourceHeatPump:
             "$X_{a,ext,in}$": self.X_a_ext_in,
             }
         }
-
-        self.Xin_int  = self.E_fan_int + self.X_r_int
-        self.Xout_int = self.X_a_int_out - self.X_a_int_in
-        self.Xc_int   = self.Xin_int - self.Xout_int
-
-        # Closed refrigerant loop system of ASHP
-        self.Xin_r  = self.E_cmp
-        self.Xout_r = self.X_r_int + self.X_r_ext
-        self.Xc_r   = self.Xin_r - self.Xout_r
-
-        # External unit of ASHP
-        self.Xin_ext  = self.E_fan_ext + self.X_r_ext
-        self.Xout_ext = self.X_a_ext_out - self.X_a_ext_in
-        self.Xc_ext   = self.Xin_ext - self.Xout_ext
-
-        # Total exergy of ASHP
-        self.Xin  = self.E_fan_int + self.E_cmp + self.E_fan_ext
-        self.Xout = self.X_a_int_out - self.X_a_int_in
-        self.Xc   = self.Xin - self.Xout
 
         ## Exergy Balance ========================================
         self.exergy_balance = {}
@@ -1200,6 +1198,119 @@ class AirSourceHeatPump:
                 {"symbol": "$X_{c,ext}$", "value": self.Xc_ext},
                 {"symbol": "$X_{out,ext}$", "value": self.Xout_ext},
             ]
+        }
+
+@dataclass
+class AirSourceHeatPump_heating:
+    def __post_init__(self):
+
+        # fan
+        self.fan_int = Fan().fan1
+        self.fan_ext = Fan().fan2
+
+        # temperature
+        self.dT_a        = 10 # internal unit air temperature difference 
+        self.dT_r        = 15 # refrigerant temperature difference 
+        self.T_0         = cu.C2K(0) # environmental temperature [K]
+        self.T_a_int_in  = cu.C2K(20) # internal unit air inlet temperature [K]
+
+        # load
+        self.Q_r_int = 10000 # [W]
+
+    def system_update(self):
+
+        # temperature
+        self.T_a_int_out = self.T_a_int_in + self.dT_a # internal unit air outlet temperature [K]
+
+        self.T_a_ext_in  = self.T_0 # external unit air inlet temperature [K]
+        self.T_a_ext_out = self.T_a_ext_in - self.dT_a # external unit outlet air temperature [K]
+
+        self.T_r_int = self.T_a_int_in + self.dT_r # internal unit refrigerant temperature [K]
+        self.T_r_ext = self.T_a_ext_in - self.dT_r # external unit refrigerant temperature [K]
+
+        # others
+        self.COP     = 5.06 - 0.05 * (self.T_a_int_in - self.T_a_ext_in) + 0.00006 * (self.T_a_int_in - self.T_a_ext_in) ** 2 # COP [-]
+        self.E_cmp   = self.Q_r_int / self.COP # compressor power input [W]
+        self.Q_r_ext = self.Q_r_int - self.E_cmp # heat transfer from external unit to refrigerant [W]
+
+        # internal, external unit
+        self.dV_int = self.Q_r_int / (c_a * rho_a * self.dT_a) # volumetric flow rate of internal unit [m3/s]
+        self.dV_ext = self.Q_r_ext / (c_a * rho_a * self.dT_a) # volumetric flow rate of external unit [m3/s]
+
+        # fan power
+        self.E_fan_int = Fan().get_power(self.fan_int, self.dV_int) # power input of internal unit fan [W]
+        self.E_fan_ext = Fan().get_power(self.fan_ext, self.dV_ext) # power input of external unit fan [W]
+
+        # exergy result 
+        self.X_a_int_in  = c_a * rho_a * self.dV_int * ((self.T_a_int_in - self.T_0) - self.T_0 * math.log(self.T_a_int_in / self.T_0))
+        self.X_a_int_out = c_a * rho_a * self.dV_int * ((self.T_a_int_out - self.T_0) - self.T_0 * math.log(self.T_a_int_out / self.T_0))
+        self.X_a_ext_in  = c_a * rho_a * self.dV_ext * ((self.T_a_ext_in - self.T_0) - self.T_0 * math.log(self.T_a_ext_in / self.T_0))
+        self.X_a_ext_out = c_a * rho_a * self.dV_ext * ((self.T_a_ext_out - self.T_0) - self.T_0 * math.log(self.T_a_ext_out / self.T_0))
+
+        self.X_r_int   = self.Q_r_int * (1 - self.T_0 / self.T_r_int)
+        self.X_r_ext   = - self.Q_r_ext * (1 - self.T_0 / self.T_r_ext)
+
+        # Internal unit of ASHP
+        self.Xin_int = self.E_fan_int + self.X_r_int
+        self.Xout_int = self.X_a_int_out - self.X_a_int_in
+        self.Xc_int = self.E_fan_int + self.X_r_int - (self.X_a_int_out - self.X_a_int_in)
+
+        # Refrigerant loop of ASHP
+        self.Xin_r = self.E_cmp
+        self.Xout_r = self.X_r_int + self.X_r_ext
+        self.Xc_r = self.E_cmp - (self.X_r_int + self.X_r_ext)
+
+        # External unit of ASHP
+        self.Xin_ext = self.E_fan_ext + self.X_r_ext
+        self.Xout_ext = self.X_a_ext_out - self.X_a_ext_in
+        
+        self.Xc_ext = self.E_fan_ext + self.X_r_ext - (self.X_a_ext_out - self.X_a_ext_in)
+
+        ## Exergy Balance ========================================
+        self.exergy_balance = {}
+
+        # Internal Unit of ASHP
+        self.exergy_balance["internal unit"] = {
+            "in": {
+            "$E_{f,int}$": self.E_fan_int,
+            "$X_{r,int}$": self.X_r_int,
+            },
+            "consumed": {
+            "$X_{c,int}$": self.Xc_int,
+            },
+            "out": {
+            "$X_{a,int,out}$": self.X_a_int_out,
+            "$X_{a,int,in}$": self.X_a_int_in,
+            }
+        }
+        
+        # Refrigerant loop of ASHP
+        self.exergy_balance["refrigerant loop"] = {
+            "in": {
+            "$E_{cmp}$": self.E_cmp,
+            },
+            "consumed": {
+            "$X_{c,r}$": self.Xc_r,
+            },
+            "out": {
+            "$X_{r,int}$": self.X_r_int,
+            "$X_{r,ext}$": self.X_r_ext,
+            }
+        }
+
+        # External Unit of ASHP
+        self.exergy_balance["external unit"] = {
+            "in": {
+            "$E_{f,ext}$": self.E_fan_ext,
+            "$X_{r,ext}$": self.X_r_ext,
+            },
+            "consumed": {
+            "$X_{c,ext}$": self.Xc_ext,
+            },
+            "out": {
+            "$X_{a,ext,out}$": self.X_a_ext_out,
+            "$X_{a,ext,in}$": self.X_a_ext_in,
+            }
         }
 
 @dataclass
