@@ -306,14 +306,14 @@ class Pump:
 def COP_by_PLR_cooling(T_a_int_out, T_a_ext_in, Q_r_int):
     COP_ref = 4.0
     PLR = Q_r_int / 24000
-    EIR_by_T = 0.38 + 0.02 * T_a_int_out + 0.01 * T_a_ext_in
+    EIR_by_T = 0.38 + 0.02 * cu.K2C(T_a_int_out) + 0.01 * cu.K2C(T_a_ext_in)
     EIR_by_PLR = 0.22 + 0.50 * PLR + 0.26 * PLR**2
     COP = PLR * COP_ref / (EIR_by_T * EIR_by_PLR)
     return COP
 
 def COP_by_PLR_heating(T_0, Q_r_int):
     PLR = Q_r_int / 24000
-    COP = -7.46 * (PLR - 0.0047 * T_0 - 0.477)**2 + 0.0941 * T_0 + 4.34
+    COP = -7.46 * (PLR - 0.0047 * cu.K2C(T_0) - 0.477)**2 + 0.0941 * cu.K2C(T_0) + 4.34
     return COP
 
 @dataclass
