@@ -369,7 +369,6 @@ class ElectricBoiler:
         self.E_heater = self.Q_w_tank + self.Q_l_tank - self.Q_w_sup # Electric Power input [W]
 
         # Pre-calculate Energy values
-        self.E_heater = self.E_heater
         self.E_w_sup_tank = c_w * rho_w * self.dV_w_sup_tank * (self.T_w_sup - self.T0)
         self.E_w_tank = c_w * rho_w * self.dV_w_sup_tank * (self.T_w_tank - self.T0)
         self.E_l_tank = self.Q_l_tank
@@ -387,7 +386,7 @@ class ElectricBoiler:
         self.s_g_mix = self.s_w_serv - (self.s_w_tank + self.s_w_sup_serv)
 
         # Pre-calculate Exergy values for hot water tank
-        self.X_heater = (1 / float('inf')) * self.E_heater
+        self.X_heater = self.E_heater - self.s_heater * self.T0
         self.X_w_sup_tank = c_w * rho_w * self.dV_w_sup_tank * ((self.T_w_sup - self.T0) - self.T0 * math.log(self.T_w_sup / self.T0))
         self.X_w_tank = c_w * rho_w * self.dV_w_sup_tank * ((self.T_w_tank - self.T0) - self.T0 * math.log(self.T_w_tank / self.T0))
         self.X_l_tank = (1 - self.T0 / self.T_tank_is) * self.Q_l_tank
@@ -875,8 +874,8 @@ class HeatPumpBoiler:
         self.X_c_mix = self.s_g_mix * self.T0
 
         # 미리 계산된 엑서지 관련 식
-        self.X_fan = (1 / float('inf')) * self.E_fan
-        self.X_cmp = (1 / float('inf')) * self.E_cmp
+        self.X_fan = self.E_fan - self.s_fan * self.T0
+        self.X_cmp = self.E_cmp - self.s_cmp * self.T0
         self.X_r_ext = -(1 - self.T0 / self.T_r_ext) * self.Q_r_ext
         self.X_r_tank = (1 - self.T0 / self.T_r_tank) * self.Q_r_tank
         self.X_w_sup_tank = c_w * rho_w * self.dV_w_sup_tank * (
