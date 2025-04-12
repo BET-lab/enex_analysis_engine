@@ -1,6 +1,6 @@
 import numpy as np
 import math
-from . import calc_util as cu
+import calc_util as cu
 from dataclasses import dataclass
 import dartwork_mpl as dm
 import matplotlib.pyplot as plt
@@ -368,65 +368,89 @@ class ElectricBoiler:
         self.Q_l_tank = self.U_tank * (self.T_tank_is - self.T0)
         self.E_heater = self.Q_w_tank + self.Q_l_tank - self.Q_w_sup # Electric Power input [W]
 
+        # Pre-calculate Energy values
+        E_heater = self.E_heater
+        E_w_sup_tank = c_w * rho_w * self.dV_w_sup_tank * (self.T_w_sup - self.T0)
+        E_w_tank = c_w * rho_w * self.dV_w_sup_tank * (self.T_w_tank - self.T0)
+        E_l_tank = self.Q_l_tank
+        E_w_sup_serv = c_w * rho_w * self.dV_w_sup_mix * (self.T_w_sup - self.T0)
+        E_w_serv = c_w * rho_w * self.dV_w_tap * (self.T_w_tap - self.T0)
+
+        # Pre-calculate Entropy values
+        s_heater = (1 / float('inf')) * self.E_heater
+        s_w_sup_tank = c_w * rho_w * self.dV_w_sup_tank * math.log(self.T_w_sup / self.T0)
+        s_w_tank = c_w * rho_w * self.dV_w_sup_tank * math.log(self.T_w_tank / self.T0)
+        s_l_tank = (1 / self.T_tank_is) * self.Q_l_tank
+        s_w_sup_serv = c_w * rho_w * self.dV_w_sup_mix * math.log(self.T_w_sup / self.T0)
+        s_w_serv = c_w * rho_w * self.dV_w_tap * math.log(self.T_w_tap / self.T0)
+        s_g_tank = (s_w_tank + s_l_tank) - (s_heater + s_w_sup_tank)
+        s_g_mix = s_w_serv - (s_w_tank + s_w_sup_serv)
+
+        # Pre-calculate Exergy values for hot water tank
+        X_w_sup_tank = c_w * rho_w * self.dV_w_sup_tank * ((self.T_w_sup - self.T0) - self.T0 * math.log(self.T_w_sup / self.T0))
+        X_w_tank = c_w * rho_w * self.dV_w_sup_tank * ((self.T_w_tank - self.T0) - self.T0 * math.log(self.T_w_tank / self.T0))
+        X_l_tank = (1 - self.T0 / self.T_tank_is) * self.Q_l_tank
+        X_c_tank = s_g_tank * self.T0
+
+        # Pre-calculate Exergy values for mixing valve
+        X_w_sup_serv = c_w * rho_w * self.dV_w_sup_mix * ((self.T_w_sup - self.T0) - self.T0 * math.log(self.T_w_sup / self.T0))
+        X_w_serv = c_w * rho_w * self.dV_w_tap * ((self.T_w_tap - self.T0) - self.T0 * math.log(self.T_w_tap / self.T0))
+        X_c_mix = s_g_mix * self.T0
+
         # Energy Balance ========================================
         self.energy_balance = {}
-        # hot water tank
-        # Hot water tank energy balance (without using lists)
+        # hot water tank energy balance (without using lists)
         self.energy_balance["hot water tank"] = {
             "in": {
-            "$E_{heater}$": self.E_heater,
-            "$E_{w,sup,tank}$": c_w * rho_w * self.dV_w_sup_tank * (self.T_w_sup - self.T0)
+            "E_heater": E_heater,
+            "E_w_sup_tank": E_w_sup_tank
             },
             "out": {
-            "$E_{w,tank}$": c_w * rho_w * self.dV_w_sup_tank * (self.T_w_tank - self.T0),
-            "$E_{l,tank}$": self.Q_l_tank
+            "E_w_tank": E_w_tank,
+            "E_l_tank": E_l_tank
             }
         }
 
         # Mixing valve energy balance (without using lists)
         self.energy_balance["mixing valve"] = {
             "in": {
-            "$E_{w,tank}$": c_w * rho_w * self.dV_w_sup_tank * (self.T_w_tank - self.T0),
-            "$E_{w,sup,serv}$": c_w * rho_w * self.dV_w_sup_mix * (self.T_w_sup - self.T0)
+            "E_w_tank": E_w_tank,
+            "E_w_sup_serv": E_w_sup_serv
             },
             "out": {
-            "$E_{w,serv}$": c_w * rho_w * self.dV_w_tap * (self.T_w_tap - self.T0)
+            "E_w_serv": E_w_serv
             }
         }
 
         ## Entropy Balance ========================================
-        self.entropy_balance = {}
-        # Hot water tank entropy balance (without using lists)
-        self.entropy_balance["hot water tank"] = {
+        self.entropy_balance = {
+            "hot water tank": {
             "in": {
-            "$s_{heater}$": (1 / float('inf')) * self.E_heater,
-            "$s_{w,sup,tank}$": c_w * rho_w * self.dV_w_sup_tank * math.log(self.T_w_sup / self.T0)
+                "s_heater": s_heater,
+                "s_w_sup_tank": s_w_sup_tank
             },
             "out": {
-            "$s_{w,tank}$": c_w * rho_w * self.dV_w_sup_tank * math.log(self.T_w_tank / self.T0),
-            "$s_{l,tank}$": (1 / self.T_tank_is) * self.Q_l_tank
+                "s_w_tank": s_w_tank,
+                "s_l_tank": s_l_tank
+            },
+            
+            "generated": {
+                "s_g_tank": s_g_tank
             }
-        }
-        # Calculate generated entropy for hot water tank
-        self.entropy_balance["hot water tank"]["generated"] = {
-            "$s_{g,tank}$": sum(self.entropy_balance["hot water tank"]["out"].values()) -
-                      sum(self.entropy_balance["hot water tank"]["in"].values())
-        }
-
-        # Mixing valve entropy balance (without using lists)
-        self.entropy_balance["mixing valve"] = {
+            },
+            
+            "mixing valve": {
             "in": {
-            "$s_{w,tank}$": c_w * rho_w * self.dV_w_sup_tank * math.log(self.T_w_tank / self.T0),
-            "$s_{w,sup,serv}$": c_w * rho_w * self.dV_w_sup_mix * math.log(self.T_w_sup / self.T0)
+                "s_w_tank": s_w_tank,
+                "s_w_sup_serv": s_w_sup_serv
             },
             "out": {
-            "$s_{w,serv}$": c_w * rho_w * self.dV_w_tap * math.log(self.T_w_tap / self.T0)
+                "s_w_serv": s_w_serv
+            },
+            "generated": {
+                "s_g_mix": s_g_mix
             }
-        }
-        # Calculate generated entropy for mixing valve
-        self.entropy_balance["mixing valve"]["generated"] = {
-            "$s_{g,mix}$": sum(self.entropy_balance["mixing valve"]["out"].values()) 
-                         - sum(self.entropy_balance["mixing valve"]["in"].values())
+            }
         }
 
         ## Exergy Balance ========================================
@@ -434,34 +458,29 @@ class ElectricBoiler:
         # Hot water tank exergy balance (without using lists)
         self.exergy_balance["hot water tank"] = {
             "in": {
-            "$E_{heater}$": self.E_heater,
-            "$X_{w,sup,tank}$": c_w * rho_w * self.dV_w_sup_tank *
-                        ((self.T_w_sup - self.T0) - self.T0 * math.log(self.T_w_sup / self.T0))
+            "E_heater": E_heater,
+            "X_w_sup_tank": X_w_sup_tank
             },
             "out": {
-            "$X_{w,tank}$": c_w * rho_w * self.dV_w_sup_tank *
-                    ((self.T_w_tank - self.T0) - self.T0 * math.log(self.T_w_tank / self.T0)),
-            "$X_{l,tank}$": (1 - self.T0 / self.T_tank_is) * self.Q_l_tank
+            "X_w_tank": X_w_tank,
+            "X_l_tank": X_l_tank
+            },
+            "consumed": {
+            "X_c_tank": X_c_tank
             }
         }
-        # Use the already calculated generated entropy to compute consumed exergy
-        self.exergy_balance["hot water tank"]["consumed"] = {
-            "$X_{c,tank}$": self.entropy_balance["hot water tank"]["generated"]["$s_{g,tank}$"] * self.T0
-        }
-
         # Mixing valve exergy balance (without using lists)
         self.exergy_balance["mixing valve"] = {
             "in": {
-            "$X_{w,tank}$": c_w * rho_w * self.dV_w_sup_tank * ((self.T_w_tank - self.T0) - self.T0 * math.log(self.T_w_tank / self.T0)),
-            "$X_{w,sup,serv}$": c_w * rho_w * self.dV_w_sup_mix * ((self.T_w_sup - self.T0) - self.T0 * math.log(self.T_w_sup / self.T0))
+            "X_w_tank": X_w_tank,
+            "X_w_sup_serv": X_w_sup_serv
             },
             "out": {
-            "$X_{w,serv}$": c_w * rho_w * self.dV_w_tap * ((self.T_w_tap - self.T0) - self.T0 * math.log(self.T_w_tap / self.T0))
+            "X_w_serv": X_w_serv
+            },
+            "consumed": {
+            "X_c_mix": X_c_mix
             }
-        }
-        # Use the already calculated generated entropy for mixing valve to compute consumed exergy
-        self.exergy_balance["mixing valve"]["consumed"] = {
-            "$X_{c,mix}$": self.entropy_balance["mixing valve"]["generated"]["$s_{g,mix}$"] * self.T0
         }
 
 @dataclass
@@ -543,126 +562,159 @@ class GasBoiler:
         # Temperature calculations
         self.T_NG = self.T0 / (1 - self.eta_NG) # eta_NG = 1 - T0/T_NG => T_NG = T0/(1-eta_NG) [K]
         
+        # Pre-define variables for balance dictionaries
+        self.E_w_sup = c_w * rho_w * self.dV_w_sup_boiler * (self.T_w_sup - self.T0)
+        self.E_w_comb_out = c_w * rho_w * self.dV_w_sup_boiler * (self.T_w_boiler - self.T0)
+        self.E_a_exh = self.Q_l_exh
+        self.E_w_tank = c_w * rho_w * self.dV_w_sup_boiler * (self.T_w_tank - self.T0)
+        self.E_l_tank = self.Q_l_tank
+        self.E_w_sup_serv = c_w * rho_w * self.dV_w_sup_mix * (self.T_w_sup - self.T0)
+        self.E_w_serv = c_w * rho_w * self.dV_w_tap * (self.T_w_tap - self.T0)
+
+        self.s_NG = (1 / self.T_NG) * self.E_NG
+        self.s_w_sup = c_w * rho_w * self.dV_w_sup_boiler * math.log(self.T_w_sup / self.T0)
+        self.s_w_comb_out = c_w * rho_w * self.dV_w_sup_boiler * math.log(self.T_w_boiler / self.T0)
+        self.s_a_exh = (1 / self.T_exh) * self.Q_l_exh
+        self.s_g_boiler = (self.s_w_comb_out + self.s_a_exh) - (self.s_NG + self.s_w_sup)
+
+        self.s_w_tank = c_w * rho_w * self.dV_w_sup_boiler * math.log(self.T_w_tank / self.T0)
+        self.s_l_tank = (1 / self.T_tank_is) * self.Q_l_tank
+        self.s_g_tank = (self.s_w_tank + self.s_l_tank) - self.s_w_comb_out
+
+        self.s_w_sup_serv = c_w * rho_w * self.dV_w_sup_mix * math.log(self.T_w_sup / self.T0)
+        self.s_w_serv = c_w * rho_w * self.dV_w_tap * math.log(self.T_w_tap / self.T0)
+        self.s_g_mix = self.s_w_serv - (self.s_w_tank + self.s_w_sup_serv)
+
+        self.X_NG = self.eta_NG * self.E_NG
+        self.X_w_sup = c_w * rho_w * self.dV_w_sup_boiler * ((self.T_w_sup - self.T0) - self.T0 * math.log(self.T_w_sup / self.T0))
+        self.X_w_comb_out = c_w * rho_w * self.dV_w_sup_boiler * ((self.T_w_boiler - self.T0) - self.T0 * math.log(self.T_w_boiler / self.T0))
+        self.X_a_exh = (1 - self.T0 / self.T_exh) * self.Q_l_exh
+        self.X_c_boiler = self.s_g_boiler * self.T0
+
+        self.X_w_tank = c_w * rho_w * self.dV_w_sup_boiler * ((self.T_w_tank - self.T0) - self.T0 * math.log(self.T_w_tank / self.T0))
+        self.X_l_tank = (1 - self.T0 / self.T_tank_is) * self.Q_l_tank
+        self.X_c_tank = self.s_g_tank * self.T0
+
+        self.X_w_sup_serv = c_w * rho_w * self.dV_w_sup_mix * ((self.T_w_sup - self.T0) - self.T0 * math.log(self.T_w_sup / self.T0))
+        self.X_w_serv = c_w * rho_w * self.dV_w_tap * ((self.T_w_tap - self.T0) - self.T0 * math.log(self.T_w_tap / self.T0))
+        self.X_c_mix = self.s_g_mix * self.T0
+
         # Energy Balance ========================================
         self.energy_balance = {}
         # Combustion chamber
         self.energy_balance["combustion chamber"] = {
             "in": {
-            "$E_{NG}$": self.E_NG,
-            "$E_{w,sup}$": c_w * rho_w * self.dV_w_sup_boiler * (self.T_w_sup - self.T0)
+            "E_NG": self.E_NG,
+            "E_w_sup": self.E_w_sup
             },
             "out": {
-            "$E_{w,comb,out}$": c_w * rho_w * self.dV_w_sup_boiler * (self.T_w_boiler - self.T0),
-            "$E_{a,exh}$": self.Q_l_exh
+            "E_w_comb_out": self.E_w_comb_out,
+            "E_a_exh": self.E_a_exh
             }
         }
 
         self.energy_balance["hot water tank"] = {
             "in": {
-            "$E_{w,comb,out}$": c_w * rho_w * self.dV_w_sup_boiler * (self.T_w_boiler - self.T0)
+            "E_w_comb_out": self.E_w_comb_out
             },
             "out": {
-            "$E_{w,tank}$": c_w * rho_w * self.dV_w_sup_boiler * (self.T_w_tank - self.T0),
-            "$E_{l,tank}$": self.Q_l_tank
+            "E_w_tank": self.E_w_tank,
+            "E_l_tank": self.E_l_tank
             }
         }
 
         self.energy_balance["mixing valve"] = {
             "in": {
-            "$E_{w,tank}$": c_w * rho_w * self.dV_w_sup_boiler * (self.T_w_tank - self.T0),
-            "$E_{w,sup,serv}$": c_w * rho_w * self.dV_w_sup_mix * (self.T_w_sup - self.T0)
+            "E_w_tank": self.E_w_tank,
+            "E_w_sup_serv": self.E_w_sup_serv
             },
             "out": {
-            "$E_{w,serv}$": c_w * rho_w * self.dV_w_tap * (self.T_w_tap - self.T0)
+            "E_w_serv": self.E_w_serv
             }
         }
 
         # Entropy Balance ========================================
-        self.entropy_balance = {}
-        self.entropy_balance["combustion chamber"] = {
+        self.entropy_balance = {
+            "combustion chamber": {
             "in": {
-            "$s_{NG}$": (1 / self.T_NG) * self.E_NG,
-            "$s_{w,sup}$": c_w * rho_w * self.dV_w_sup_boiler * math.log(self.T_w_sup / self.T0)
+                "s_NG": self.s_NG,
+                "s_w_sup": self.s_w_sup
             },
             "out": {
-            "$s_{w,comb,out}$": c_w * rho_w * self.dV_w_sup_boiler * math.log(self.T_w_boiler / self.T0),
-            "$s_{a,exh}$": (1 / self.T_exh) * self.Q_l_exh
+                "s_w_comb_out": self.s_w_comb_out,
+                "s_a_exh": self.s_a_exh
+            },
+            "generated": {
+                "s_g_boiler": self.s_g_boiler
             }
-        }
-        self.entropy_balance["combustion chamber"]["generated"] = {
-            "$s_{g,boiler}$": sum(self.entropy_balance["combustion chamber"]["out"].values()) 
-                            - sum(self.entropy_balance["combustion chamber"]["in"].values())
+            }
         }
 
         self.entropy_balance["hot water tank"] = {
             "in": {
-            "$s_{w,comb,out}$": c_w * rho_w * self.dV_w_sup_boiler * math.log(self.T_w_boiler / self.T0)
+            "s_w_comb_out": self.s_w_comb_out
             },
             "out": {
-            "$s_{w,tank}$": c_w * rho_w * self.dV_w_sup_boiler * math.log(self.T_w_tank / self.T0),
-            "$s_{l,tank}$": (1 / self.T_tank_is) * self.Q_l_tank
-            }
-        }
-        self.entropy_balance["hot water tank"]["generated"] = {
-            "$s_{g,tank}$": sum(self.entropy_balance["hot water tank"]["out"].values()) 
-                          - sum(self.entropy_balance["hot water tank"]["in"].values())
-        }
-
-        self.entropy_balance["mixing valve"] = {
-            "in": {
-            "$s_{w,tank}$": c_w * rho_w * self.dV_w_sup_boiler * math.log(self.T_w_tank / self.T0),
-            "$s_{w,sup,serv}$": c_w * rho_w * self.dV_w_sup_mix * math.log(self.T_w_sup / self.T0)
+            "s_w_tank": self.s_w_tank,
+            "s_l_tank": self.s_l_tank
             },
-            "out": {
-            "$s_{w,serv}$": c_w * rho_w * self.dV_w_tap * math.log(self.T_w_tap / self.T0)
+            "generated": {
+            "s_g_tank": self.s_g_tank
             }
-        }
-        self.entropy_balance["mixing valve"]["generated"] = {
-            "$s_{g,mix}$": sum(self.entropy_balance["mixing valve"]["out"].values()) 
-                         - sum(self.entropy_balance["mixing valve"]["in"].values())
         }
         
+        self.entropy_balance["mixing valve"] = {
+            "in": {
+            "s_w_tank": self.s_w_tank,
+            "s_w_sup_serv": self.s_w_sup_serv
+            },
+            "out": {
+            "s_w_serv": self.s_w_serv
+            },
+            "generated": {
+            "s_g_mix": self.s_g_mix
+            }
+        }
+
         # Exergy Balance ========================================
         self.exergy_balance = {}
         self.exergy_balance["combustion chamber"] = {
             "in": {
-            "$X_{NG}$": self.eta_NG * self.E_NG,
-            "$X_{w,sup}$": c_w * rho_w * self.dV_w_sup_boiler *
-                       ((self.T_w_sup - self.T0) - self.T0 * math.log(self.T_w_sup / self.T0))
+            "X_NG": self.X_NG,
+            "X_w_sup": self.X_w_sup
             },
             "out": {
-            "$X_{w,comb,out}$": c_w * rho_w * self.dV_w_sup_boiler * ((self.T_w_boiler - self.T0) - self.T0 * math.log(self.T_w_boiler / self.T0)),
-            "$X_{a,exh}$": (1 - self.T0 / self.T_exh) * self.Q_l_exh
+            "X_w_comb_out": self.X_w_comb_out,
+            "X_a_exh": self.X_a_exh
             },
             "consumed": {
-            "$X_{c,boiler}$": self.entropy_balance["combustion chamber"]["generated"]["$s_{g,boiler}$"] * self.T0
+            "X_c_boiler": self.X_c_boiler
             }
         }
 
         self.exergy_balance["hot water tank"] = {
             "in": {
-            "$X_{w,comb,out}$": c_w * rho_w * self.dV_w_sup_boiler *
-                          ((self.T_w_boiler - self.T0) - self.T0 * math.log(self.T_w_boiler / self.T0))
+            "X_w_comb_out": self.X_w_comb_out
             },
             "out": {
-            "$X_{w,tank}$": c_w * rho_w * self.dV_w_sup_boiler * ((self.T_w_tank - self.T0) - self.T0 * math.log(self.T_w_tank / self.T0)),
-            "$X_{l,tank}$": (1 - self.T0 / self.T_tank_is) * self.Q_l_tank
+            "X_w_tank": self.X_w_tank,
+            "X_l_tank": self.X_l_tank
             },
             "consumed": {
-            "$X_{c,tank}$": self.entropy_balance["hot water tank"]["generated"]["$s_{g,tank}$"] * self.T0
+            "X_c_tank": self.X_c_tank
             }
         }
 
         self.exergy_balance["mixing valve"] = {
             "in": {
-            "$X_{w,tank}$": c_w * rho_w * self.dV_w_sup_boiler * ((self.T_w_tank - self.T0) - self.T0 * math.log(self.T_w_tank / self.T0)),
-            "$X_{w,sup,serv}$": c_w * rho_w * self.dV_w_sup_mix * ((self.T_w_sup - self.T0) - self.T0 * math.log(self.T_w_sup / self.T0))
+            "X_w_tank": self.X_w_tank,
+            "X_w_sup_serv": self.X_w_sup_serv
             },
             "out": {
-            "$X_{w,serv}$": c_w * rho_w * self.dV_w_tap * ((self.T_w_tap - self.T0) - self.T0 * math.log(self.T_w_tap / self.T0))
+            "X_w_serv": self.X_w_serv
             },
             "consumed": {
-            "$X_{c,mix}$": self.entropy_balance["mixing valve"]["generated"]["$s_{g,mix}$"] * self.T0
+            "X_c_mix": self.X_c_mix
             }
         }
 
@@ -774,175 +826,213 @@ class HeatPumpBoiler:
         self.E_fan   = self.dP * self.dV_a_ext/self.eta_fan  # Power input to external fan [W] (\Delta P = 0.5 * rho * V^2)
         self.v_a_ext = self.dV_a_ext / self.A_ext  # Air velocity [m/s]
 
+        # 미리 계산된 변수들 (변수명은 키에서 $$, {} 제거하고 ','는 '_'로 변경)
+        E_fan = self.E_fan
+        E_cmp = self.E_cmp
+        Q_r_ext = self.Q_r_ext
+        Q_r_tank = self.Q_r_tank
+        E_w_sup_tank = c_w * rho_w * self.dV_w_sup_tank * (self.T_w_sup - self.T0)
+        E_w_tank = c_w * rho_w * self.dV_w_sup_tank * (self.T_w_tank - self.T0)
+        E_l_tank = self.Q_l_tank
+        E_w_sup_serv = c_w * rho_w * self.dV_w_sup_mix * (self.T_w_sup - self.T0)
+        E_w_serv = c_w * rho_w * self.dV_w_tap * (self.T_w_tap - self.T0)
+
+        s_fan = (1 / float('inf')) * self.E_fan
+        s_a_ext_in = c_a * rho_a * self.dV_a_ext * math.log(self.T_a_ext_in / self.T0)
+        s_a_ext_out = c_a * rho_a * self.dV_a_ext * math.log(self.T_a_ext_out / self.T0)
+        s_r_ext = (1 / self.T_r_ext) * self.Q_r_ext
+
+        s_cmp = (1 / float('inf')) * self.E_cmp
+        s_r_ext_cmp = (1 / self.T_r_ext) * self.Q_r_ext
+        s_r_tank = (1 / self.T_r_tank) * self.Q_r_tank
+
+        s_w_sup_tank = c_w * rho_w * self.dV_w_sup_tank * math.log(self.T_w_sup / self.T0)
+        s_w_tank = c_w * rho_w * self.dV_w_sup_tank * math.log(self.T_w_tank / self.T0)
+        s_l_tank = (1 / self.T_tank_is) * self.Q_l_tank
+
+        s_w_sup_serv = c_w * rho_w * self.dV_w_sup_mix * math.log(self.T_w_sup / self.T0)
+        s_w_tap = c_w * rho_w * self.dV_w_tap * math.log(self.T_w_tap / self.T0)
+
+        # 엔트로피 생성(term): generated = out - in
+        s_g_ext = s_a_ext_out + s_r_ext - (s_fan + s_a_ext_in)
+        s_g_r = s_r_tank - (s_cmp + s_r_ext_cmp)
+        s_g_tank = (s_w_tank + s_l_tank) - (s_r_tank + s_w_sup_tank)
+        s_g_mix = s_w_tap - (s_w_tank + s_w_sup_serv)
+
+        # 엑서지 소비(term): consumed = generated * T0
+        X_c_ext = s_g_ext * self.T0
+        X_c_r = s_g_r * self.T0
+        X_c_tank = s_g_tank * self.T0
+        X_c_mix = s_g_mix * self.T0
+
+        # 미리 계산된 엑서지 관련 식
+        X_r_ext = -(1 - self.T0 / self.T_r_ext) * self.Q_r_ext
+        X_r_tank = (1 - self.T0 / self.T_r_tank) * self.Q_r_tank
+        X_w_sup_tank = c_w * rho_w * self.dV_w_sup_tank * ((self.T_w_sup - self.T0) - self.T0 * math.log(self.T_w_sup / self.T0))
+        X_w_tank = c_w * rho_w * self.dV_w_sup_tank * ((self.T_w_tank - self.T0) - self.T0 * math.log(self.T_w_tank / self.T0))
+        X_l_tank = (1 - self.T0 / self.T_tank_is) * self.Q_l_tank
+        X_w_sup_serv = c_w * rho_w * self.dV_w_sup_mix * ((self.T_w_sup - self.T0) - self.T0 * math.log(self.T_w_sup / self.T0))
+        X_w_serv = c_w * rho_w * self.dV_w_tap * ((self.T_w_tap - self.T0) - self.T0 * math.log(self.T_w_tap / self.T0))
+        # External unit 에서의 대기엑서지
+        X_a_ext_in = c_a * rho_a * self.dV_a_ext * ((self.T_a_ext_in - self.T0) - self.T0 * math.log(self.T_a_ext_in / self.T0))
+        X_a_ext_out = c_a * rho_a * self.dV_a_ext * ((self.T_a_ext_out - self.T0) - self.T0 * math.log(self.T_a_ext_out / self.T0))
+
         # Energy Balance ========================================
         self.energy_balance = {}
-        # External Unit
+
         self.energy_balance["external unit"] = {
             "in": {
-            "$E_{fan}$": self.E_fan,
-            "$E_{a,ext,in}$": c_a * rho_a * self.dV_a_ext * (self.T_a_ext_in - self.T0)
+            "E_fan": E_fan,
+            "E_a_ext_in": c_a * rho_a * self.dV_a_ext * (self.T_a_ext_in - self.T0)
             },
             "out": {
-            "$E_{a,ext,out}$": c_a * rho_a * self.dV_a_ext * (self.T_a_ext_out - self.T0),
-            "$E_{r,ext}$": self.Q_r_ext
+            "E_a_ext_out": c_a * rho_a * self.dV_a_ext * (self.T_a_ext_out - self.T0),
+            "E_r_ext": Q_r_ext
             }
         }
 
-        # Refrigerant loop
         self.energy_balance["refrigerant loop"] = {
             "in": {
-            "$E_{cmp}$": self.E_cmp,
-            "$E_{r,ext}$": self.Q_r_ext
+            "E_cmp": E_cmp,
+            "E_r_ext": Q_r_ext
             },
             "out": {
-            "$E_{r,tank}$": self.Q_r_tank
+            "E_r_tank": Q_r_tank
             }
         }
 
-        # Hot Water Tank
         self.energy_balance["hot water tank"] = {
             "in": {
-            "$E_{r,tank}$": self.Q_r_tank,
-            "$E_{w,sup,tank}$": c_w * rho_w * self.dV_w_sup_tank * (self.T_w_sup - self.T0)
+            "E_r_tank": Q_r_tank,
+            "E_w_sup_tank": E_w_sup_tank
             },
             "out": {
-            "$E_{w,tank}$": c_w * rho_w * self.dV_w_sup_tank * (self.T_w_tank - self.T0),
-            "$E_{l,tank}$": self.Q_l_tank
+            "E_w_tank": E_w_tank,
+            "E_l_tank": E_l_tank
             }
         }
 
-        # Mixing Valve
         self.energy_balance["mixing valve"] = {
             "in": {
-            "$E_{w,tank}$": c_w * rho_w * self.dV_w_sup_tank * (self.T_w_tank - self.T0),
-            "$E_{w,sup,serv}$": c_w * rho_w * self.dV_w_sup_mix * (self.T_w_sup - self.T0)
+            "E_w_tank": E_w_tank,
+            "E_w_sup_serv": E_w_sup_serv
             },
             "out": {
-            "$E_{w,serv}$": c_w * rho_w * self.dV_w_tap * (self.T_w_tap - self.T0)
+            "E_w_serv": E_w_serv
             }
         }
 
         ## Entropy Balance ========================================
         self.entropy_balance = {}
-        # External Unit
+
         self.entropy_balance["external unit"] = {
             "in": {
-            "$s_{fan}$": (1 / float('inf')) * self.E_fan,
-            "$s_{a,ext,in}$": c_a * rho_a * self.dV_a_ext * math.log(self.T_a_ext_in / self.T0)
+            "s_fan": s_fan,
+            "s_a_ext_in": s_a_ext_in
             },
             "out": {
-            "$s_{a,ext,out}$": c_a * rho_a * self.dV_a_ext * math.log(self.T_a_ext_out / self.T0),
-            "$s_{r,ext}$": (1 / self.T_r_ext) * self.Q_r_ext
+            "s_a_ext_out": s_a_ext_out,
+            "s_r_ext": s_r_ext
+            },
+            "generated": {
+            "s_g_ext": s_g_ext
             }
         }
-        self.entropy_balance["external unit"]["generated"] = {
-            "$s_{g,ext}$": sum(self.entropy_balance["external unit"]["out"].values()) 
-                         - sum(self.entropy_balance["external unit"]["in"].values())
-        }
 
-        # Refrigerant Loop
         self.entropy_balance["refrigerant loop"] = {
             "in": {
-            "$s_{cmp}$": (1 / float('inf')) * self.E_cmp,
-            "$s_{r,ext}$": (1 / self.T_r_ext) * self.Q_r_ext
+            "s_cmp": s_cmp,
+            "s_r_ext": s_r_ext_cmp
             },
             "out": {
-            "$s_{r,tank}$": (1 / self.T_r_tank) * self.Q_r_tank
+            "s_r_tank": s_r_tank
+            },
+            "generated": {
+            "s_g_r": s_g_r
             }
         }
-        self.entropy_balance["refrigerant loop"]["generated"] = {
-            "$s_{g,r}$": sum(self.entropy_balance["refrigerant loop"]["out"].values()) 
-                        - sum(self.entropy_balance["refrigerant loop"]["in"].values())
-        }
 
-        # Hot Water Tank
         self.entropy_balance["hot water tank"] = {
             "in": {
-            "$s_{r,tank}$": (1 / self.T_r_tank) * self.Q_r_tank,
-            "$s_{w,sup,tank}$": c_w * rho_w * self.dV_w_sup_tank * math.log(self.T_w_sup / self.T0)
+            "s_r_tank": s_r_tank,
+            "s_w_sup_tank": s_w_sup_tank
             },
             "out": {
-            "$s_{w,tank}$": c_w * rho_w * self.dV_w_sup_tank * math.log(self.T_w_tank / self.T0),
-            "$s_{l,tank}$": (1 / self.T_tank_is) * self.Q_l_tank
+            "s_w_tank": s_w_tank,
+            "s_l_tank": s_l_tank
+            },
+            "generated": {
+            "s_g_tank": s_g_tank
             }
-        }
-        self.entropy_balance["hot water tank"]["generated"] = {
-            "$s_{g,tank}$": sum(self.entropy_balance["hot water tank"]["out"].values()) -
-                      sum(self.entropy_balance["hot water tank"]["in"].values())
         }
 
-        # Mixing Valve
         self.entropy_balance["mixing valve"] = {
             "in": {
-            "$s_{w,tank}$": c_w * rho_w * self.dV_w_sup_tank * math.log(self.T_w_tank / self.T0),
-            "$s_{w,sup,serv}$": c_w * rho_w * self.dV_w_sup_mix * math.log(self.T_w_sup / self.T0)
+            "s_w_tank": s_w_tank,
+            "s_w_sup_serv": s_w_sup_serv
             },
             "out": {
-            "$s_{w,serv}$": c_w * rho_w * self.dV_w_tap * math.log(self.T_w_tap / self.T0)
+            "s_w_serv": s_w_tap
+            },
+            "generated": {
+            "s_g_mix": s_g_mix
             }
-        }
-        self.entropy_balance["mixing valve"]["generated"] = {
-            "$s_{g,mix}$": sum(self.entropy_balance["mixing valve"]["out"].values()) -
-                     sum(self.entropy_balance["mixing valve"]["in"].values())
         }
 
         ## Exergy Balance ========================================
         self.exergy_balance = {}
-        # External Unit
+
         self.exergy_balance["external unit"] = {
             "in": {
-            "$E_{fan}$": self.E_fan,
-            "$X_{r,ext}$": -(1 - self.T0 / self.T_r_ext) * self.Q_r_ext,
-            "$X_{a,ext,in}$": c_a * rho_a * self.dV_a_ext * ((self.T_a_ext_in - self.T0) - self.T0 * math.log(self.T_a_ext_in / self.T0))
+            "E_fan": E_fan,
+            "X_r_ext": X_r_ext,
+            "X_a_ext_in": X_a_ext_in
             },
             "consumed": {
-            "$X_{c,ext}$": self.entropy_balance["external unit"]["generated"]["$s_{g,ext}$"] * self.T0
+            "X_c_ext": X_c_ext
             },
             "out": {
-            "$X_{a,ext,out}$": c_a * rho_a * self.dV_a_ext * ((self.T_a_ext_out - self.T0) - self.T0 * math.log(self.T_a_ext_out / self.T0))
+            "X_a_ext_out": X_a_ext_out
             }
         }
 
-        # Refrigerant Loop
         self.exergy_balance["refrigerant loop"] = {
             "in": {
-            "$E_{cmp}$": self.E_cmp
+            "E_cmp": E_cmp
             },
             "consumed": {
-            "$X_{c,r}$": self.entropy_balance["refrigerant loop"]["generated"]["$s_{g,r}$"] * self.T0
+            "X_c_r": X_c_r
             },
             "out": {
-            "$X_{r,tank}$": (1 - self.T0 / self.T_r_tank) * self.Q_r_tank,
-            "$X_{r,ext}$": -(1 - self.T0 / self.T_r_ext) * self.Q_r_ext
+            "X_r_tank": X_r_tank,
+            "X_r_ext": X_r_ext
             }
         }
 
-        # Hot Water Tank
         self.exergy_balance["hot water tank"] = {
             "in": {
-            "$X_{r,tank}$": (1 - self.T0 / self.T_r_tank) * self.Q_r_tank,
-            "$X_{w,sup,tank}$": c_w * rho_w * self.dV_w_sup_tank * ((self.T_w_sup - self.T0) - self.T0 * math.log(self.T_w_sup / self.T0))
+            "X_r_tank": X_r_tank,
+            "X_w_sup_tank": X_w_sup_tank
             },
             "consumed": {
-            "$X_{c,tank}$": self.entropy_balance["hot water tank"]["generated"]["$s_{g,tank}$"] * self.T0
+            "X_c_tank": X_c_tank
             },
             "out": {
-            "$X_{w,tank}$": c_w * rho_w * self.dV_w_sup_tank * ((self.T_w_tank - self.T0) - self.T0 * math.log(self.T_w_tank / self.T0)),
-            "$X_{l,tank}$": (1 - self.T0 / self.T_tank_is) * self.Q_l_tank
+            "X_w_tank": X_w_tank,
+            "X_l_tank": X_l_tank
             }
         }
 
-        # Mixing Valve
         self.exergy_balance["mixing valve"] = {
             "in": {
-            "$X_{w,tank}$": c_w * rho_w * self.dV_w_sup_tank * ((self.T_w_tank - self.T0) - self.T0 * math.log(self.T_w_tank / self.T0)),
-            "$X_{w,sup,serv}$": c_w * rho_w * self.dV_w_sup_mix * ((self.T_w_sup - self.T0) - self.T0 * math.log(self.T_w_sup / self.T0))
+            "X_w_tank": X_w_tank,
+            "X_w_sup_serv": X_w_sup_serv
             },
             "consumed": {
-            "$X_{c,mix}$": self.entropy_balance["mixing valve"]["generated"]["$s_{g,mix}$"] * self.T0
+            "X_c_mix": X_c_mix
             },
             "out": {
-            "$X_{w,serv}$": c_w * rho_w * self.dV_w_tap * ((self.T_w_tap - self.T0) - self.T0 * math.log(self.T_w_tap / self.T0))
+            "X_w_serv": X_w_serv
             }
         }
 
@@ -1226,3 +1316,5 @@ class GroundSourceHeatPump:
         self.Xin  = self.E_f_int + self.E_cmp + self.E_pmp
         self.Xout = self.X_a_int_out - self.X_a_int_in
         self.Xc   = self.Xin - self.Xout
+        
+ 
