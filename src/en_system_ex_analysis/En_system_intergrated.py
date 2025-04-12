@@ -303,18 +303,33 @@ class Pump:
         dm.simple_layout(fig, margins=(0.05, 0.05, 0.05, 0.05), bbox=(0, 1, 0, 1), verbose=False)
         dm.save_and_show(fig)
 
-def COP_by_PLR_cooling(T_a_int_out, T_a_ext_in, Q_r_int):
-    COP_ref = 4.0
-    PLR = Q_r_int / 24000
-    EIR_by_T = 0.38 + 0.02 * cu.K2C(T_a_int_out) + 0.01 * cu.K2C(T_a_ext_in)
-    EIR_by_PLR = 0.22 + 0.50 * PLR + 0.26 * PLR**2
-    COP = PLR * COP_ref / (EIR_by_T * EIR_by_PLR)
-    return COP
+@dataclass
+class COP_by_PLR_cooling:
+    def __post_init__(self):
+        self.COP_ref = 4.0
+        self.max_cooling_load = 25000
 
-def COP_by_PLR_heating(T_0, Q_r_int):
-    PLR = Q_r_int / 24000
-    COP = -7.46 * (PLR - 0.0047 * cu.K2C(T_0) - 0.477)**2 + 0.0941 * cu.K2C(T_0) + 4.34
-    return COP
+    def calculate_COP(self, T_a_int_out, T_a_ext_in, Q_r_int):
+        self.T_a_int_out = T_a_int_out
+        self.T_a_ext_in = T_a_ext_in
+        self.Q_r_int = Q_r_int
+        self.PLR = Q_r_int / self.max_cooling_load
+        EIR_by_T = 0.38 + 0.02 * cu.K2C(self.T_a_int_out) + 0.01 * cu.K2C(self.T_a_ext_in)
+        EIR_by_PLR = 0.22 + 0.50 * self.PLR + 0.26 * self.PLR**2
+        COP = self.PLR * self.COP_ref / (EIR_by_T * EIR_by_PLR)
+        return COP
+
+@dataclass
+class COP_by_PLR_heating:
+    def __post_init__(self):
+        self.max_heating_load = 27500
+
+    def calculate_COP(self, T_0, Q_r_int):
+        self.T_0 = T_0
+        self.Q_r_int = Q_r_int
+        self.PLR = Q_r_int / self.max_heating_load
+        COP = -7.46 * (self.PLR - 0.0047 * cu.K2C(self.T_0) - 0.477)**2 + 0.0941 * cu.K2C(self.T_0) + 4.34
+        return COP
 
 @dataclass
 class ElectricBoiler:
@@ -1042,7 +1057,9 @@ class AirSourceHeatPump_cooling:
         # fan
         self.fan_int = Fan().fan1
         self.fan_ext = Fan().fan2
-        
+
+        # COP
+        self.COP_model = COP_by_PLR_cooling()
 
         # temperature
         self.dT_a        = 10 # internal unit air temperature difference 
@@ -1065,7 +1082,7 @@ class AirSourceHeatPump_cooling:
         self.T_r_ext = self.T_a_ext_in + self.dT_r # external unit refrigerant temperature [K]
 
         # others
-        self.COP     = COP_by_PLR_cooling(self.T_a_int_out, self.T_a_ext_in, self.Q_r_int) # COP [-]
+        self.COP     = self.COP_model.calculate_COP(self.T_a_int_out, self.T_a_ext_in, self.Q_r_int) # COP [-]
         self.E_cmp   = self.Q_r_int / self.COP # compressor power input [W]
         self.Q_r_ext = self.Q_r_int + self.E_cmp # heat transfer from external unit to refrigerant [W]
 
@@ -1221,6 +1238,9 @@ class AirSourceHeatPump_heating:
         self.fan_int = Fan().fan1
         self.fan_ext = Fan().fan2
 
+        # COP
+        self.COP_model = COP_by_PLR_heating()
+
         # temperature
         self.dT_a        = 10 # internal unit air temperature difference 
         self.dT_r        = 15 # refrigerant temperature difference 
@@ -1242,7 +1262,7 @@ class AirSourceHeatPump_heating:
         self.T_r_ext = self.T_a_ext_in - self.dT_r # external unit refrigerant temperature [K]
 
         # others
-        self.COP     = COP_by_PLR_heating(self.T_0, self.Q_r_int) # COP [-]
+        self.COP     = self.COP_model.calculate_COP(self.T_0, self.Q_r_int) # COP [-]
         self.E_cmp   = self.Q_r_int / self.COP # compressor power input [W]
         self.Q_r_ext = self.Q_r_int - self.E_cmp # heat transfer from external unit to refrigerant [W]
 
