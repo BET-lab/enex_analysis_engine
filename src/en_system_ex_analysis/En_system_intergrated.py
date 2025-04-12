@@ -4,8 +4,6 @@ from . import calc_util as cu
 from dataclasses import dataclass
 import dartwork_mpl as dm
 import matplotlib.pyplot as plt
-import matplotlib as mpl
-from tqdm import tqdm
 from scipy.optimize import curve_fit
 
 
@@ -318,8 +316,7 @@ class ElectricBoiler:
         self.n                  = 3   # Height to diameter ratio [-] (height = n * diameter)
 
         # Heat Transfer Parameters
-        self.h_co    = 2    # Convective heat transfer coefficient [W/m²K]
-        self.h_ro    = 5    # Radiative heat transfer coefficient [W/m²K]
+        self.h_o = 15 # Overall heat transfer coefficient [W/m²K]
         self.x_shell = 0.01 # tank shell thickness [m]
         self.k_shell = 50   # tank shell thermal conductivity [W/mK]
         self.x_ins   = 0.10 # Insulation thickness [m]
@@ -342,7 +339,6 @@ class ElectricBoiler:
         self.h = self.n * (2 * self.r0)  # Tank height [m]
 
         # Thermal resistances
-        self.h_o = self.h_co + self.h_ro  # Overall heat transfer coefficient [W/m²K]
         self.A_side = 2 * math.pi * self.r2 * self.h           # 측면 면적 [m2]
         self.A_base = math.pi * self.r0**2              # 상하단 면적 [m2]
 
@@ -490,8 +486,7 @@ class GasBoiler:
         self.n = 3  # Height to diameter ratio [-] (height = n * diameter)
 
         # Heat Transfer Parameters
-        self.h_co = 2  # Convective heat transfer coefficient [W/m²K]
-        self.h_ro = 5  # Radiative heat transfer coefficient [W/m²K]
+        self.h_o = 15  # Overall heat transfer coefficient [W/m²K]
         self.x_shell = 0.01  # Tank shell thickness [m]
         self.k_shell = 50  # Tank shell thermal conductivity [W/mK]
         self.x_ins = 0.10  # Insulation thickness [m]
@@ -509,7 +504,6 @@ class GasBoiler:
         self.h = self.n * (2 * self.r0)  # Tank height [m]
 
         # Thermal resistances
-        self.h_o = self.h_co + self.h_ro  # Overall heat transfer coefficient [W/m²K]
         self.A_side = 2 * math.pi * self.r2 * self.h           # 측면 면적 [m2]
         self.A_base = math.pi * self.r0**2              # 상하단 면적 [m2]
 
@@ -698,8 +692,7 @@ class HeatPumpBoiler:
         self.n                  = 3   # Height to diameter ratio [-] (height = n * diameter)
 
         # Heat Transfer Parameters
-        self.h_co    = 2    # Convective heat transfer coefficient [W/m²K]
-        self.h_ro    = 5    # Radiative heat transfer coefficient [W/m²K]
+        self.h_o = 15 # Overall heat transfer coefficient [W/m²K]
         self.x_shell = 0.01 # tank shell thickness [m]
         self.k_shell = 50   # tank shell thermal conductivity [W/mK]
         self.x_ins   = 0.10 # Insulation thickness [m]
@@ -721,7 +714,6 @@ class HeatPumpBoiler:
         self.A_top_bottom = 2 * math.pi * self.r0 ** 2  # Total top and bottom area [m²]
 
         # Thermal resistances
-        self.h_o = self.h_co + self.h_ro  # Overall heat transfer coefficient [W/m²K]
         self.A_side = 2 * math.pi * self.r2 * self.h           # 측면 면적 [m2]
         self.A_base = math.pi * self.r0**2              # 상하단 면적 [m2]
 
@@ -959,8 +951,7 @@ class SolarHotWater:
     def __post_init__(self):
         
         # environment conditions
-        self.h_co = 2 # Convective heat transfer coefficient [W/m²K]
-        self.h_ro = 5 # Radiative heat transfer coefficient [W/m²K]
+        self.h_o = 15 # Overall heat transfer coefficient [W/m²K]
         self.T0 = cu.C2K(0) # Environment temperature [K]
         
         # solar thermal panel
@@ -1002,7 +993,7 @@ class SolarHotWater:
         self.A_top_bottom = 2 * math.pi * self.r0 ** 2  # Total top and bottom area [m²]
 
         # Thermal resistances
-        self.h_o = self.h_co + self.h_ro  # Overall heat transfer coefficient [W/m²K]
+       
         # Cylindrical coordinates ========================================
         self.R_side_shell = math.log((self.r1) / self.r0) / (2 * math.pi * self.k_shell) # Shell thermal resistance [mK/W]
         self.R_side_ins   = math.log((self.r2) / (self.r1)) / (2 * math.pi * self.k_ins) # Insulation thermal resistance [mK/W]
