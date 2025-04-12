@@ -1,6 +1,6 @@
 import numpy as np
 import math
-import calc_util as cu
+from . import calc_util as cu
 from dataclasses import dataclass
 import dartwork_mpl as dm
 import matplotlib.pyplot as plt
