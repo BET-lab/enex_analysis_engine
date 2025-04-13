@@ -302,32 +302,23 @@ class Pump:
         dm.save_and_show(fig)
 
 @dataclass
-class COP_by_PLR_cooling:
-    def __post_init__(self):
-        self.COP_ref = 4.0
-        self.max_cooling_load = 25000
-
-    def calculate_COP(self, T_a_int_out, T_a_ext_in, Q_r_int):
-        self.T_a_int_out = T_a_int_out
-        self.T_a_ext_in = T_a_ext_in
-        self.Q_r_int = Q_r_int
-        self.PLR = Q_r_int / self.max_cooling_load
-        EIR_by_T = 0.38 + 0.02 * cu.K2C(self.T_a_int_out) + 0.01 * cu.K2C(self.T_a_ext_in)
-        EIR_by_PLR = 0.22 + 0.50 * self.PLR + 0.26 * self.PLR**2
-        COP = self.PLR * self.COP_ref / (EIR_by_T * EIR_by_PLR)
-        return COP
+def calculate_ASHP_cooling_COP(self, T_a_int_out, T_a_ext_in, Q_r_int, Q_r_max, COP_ref):
+    self.T_a_int_out = T_a_int_out
+    self.T_a_ext_in = T_a_ext_in
+    self.Q_r_int = Q_r_int
+    self.PLR = Q_r_int / Q_r_max
+    EIR_by_T = 0.38 + 0.02 * cu.K2C(self.T_a_int_out) + 0.01 * cu.K2C(self.T_a_ext_in)
+    EIR_by_PLR = 0.22 + 0.50 * self.PLR + 0.26 * self.PLR**2
+    COP = self.PLR * COP_ref / (EIR_by_T * EIR_by_PLR)
+    return COP
 
 @dataclass
-class COP_by_PLR_heating:
-    def __post_init__(self):
-        self.max_heating_load = 27500
-
-    def calculate_COP(self, T_0, Q_r_int):
-        self.T_0 = T_0
-        self.Q_r_int = Q_r_int
-        self.PLR = Q_r_int / self.max_heating_load
-        COP = -7.46 * (self.PLR - 0.0047 * cu.K2C(self.T_0) - 0.477)**2 + 0.0941 * cu.K2C(self.T_0) + 4.34
-        return COP
+def calculate_ASHP_heating_COP(self, T_0, Q_r_int, Q_r_max):
+    self.T_0 = T_0
+    self.Q_r_int = Q_r_int
+    self.PLR = Q_r_int / Q_r_max
+    COP = -7.46 * (self.PLR - 0.0047 * cu.K2C(self.T_0) - 0.477)**2 + 0.0941 * cu.K2C(self.T_0) + 4.34
+    return COP
 
 @dataclass
 class ElectricBoiler:
@@ -1340,30 +1331,34 @@ class AirSourceHeatPump_heating:
         self.fan_ext = Fan().fan2
 
         # COP
-        self.COP_model = COP_by_PLR_heating()
+        self.Q_r_max = 10000 # maximum heating capacity [W]
 
         # temperature
-        self.dT_a        = 10 # internal unit air temperature difference 
-        self.dT_r        = 15 # refrigerant temperature difference 
         self.T_0         = cu.C2K(0) # environmental temperature [K]
-        self.T_a_int_in  = cu.C2K(20) # internal unit air inlet temperature [K]
+        self.T_a_room   = cu.C2K(20) # room air temperature [K]
+        
+        self.dT_a_int    = 10 # internal unit air temperature difference
+        self.dT_a_ext    = 10 # external unit air temperature difference
 
+        self.dT_r_int       = 15 # refrigerant temperature difference 
+        self.dT_r_ext       = 15 # refrigerant temperature difference
+        
         # load
         self.Q_r_int = 10000 # [W]
 
     def system_update(self):
-
         # temperature
-        self.T_a_int_out = self.T_a_int_in + self.dT_a # internal unit air outlet temperature [K]
+        self.T_a_int_in    = self.T_a_room 
+        self.T_a_int_out = self.T_a_int_in + self.dT_a_int # internal unit air outlet temperature [K]
 
         self.T_a_ext_in  = self.T_0 # external unit air inlet temperature [K]
-        self.T_a_ext_out = self.T_a_ext_in - self.dT_a # external unit outlet air temperature [K]
+        self.T_a_ext_out = self.T_a_ext_in - self.dT_a_ext # external unit outlet air temperature [K]
 
-        self.T_r_int = self.T_a_int_in + self.dT_r # internal unit refrigerant temperature [K]
-        self.T_r_ext = self.T_a_ext_in - self.dT_r # external unit refrigerant temperature [K]
+        self.T_r_int = self.T_a_int_in + self.dT_r_int # internal unit refrigerant temperature [K]
+        self.T_r_ext = self.T_a_ext_in - self.dT_r_ext # external unit refrigerant temperature [K]
 
         # others
-        self.COP     = self.COP_model.calculate_COP(self.T_0, self.Q_r_int) # COP [-]
+        self.COP     = calculate_ASHP_heating_COP(self.T_0, self.Q_r_int, self.Q_r_max) # COP [-]
         self.E_cmp   = self.Q_r_int / self.COP # compressor power input [W]
         self.Q_r_ext = self.Q_r_int - self.E_cmp # heat transfer from external unit to refrigerant [W]
 
