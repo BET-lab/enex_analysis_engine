@@ -144,6 +144,18 @@ def calculate_total_exergy_consumption(exergy_balance):
 
     return total_exergy_consumption
 
+def calculate_ASHP_cooling_COP(T_a_int_out, T_a_ext_in, Q_r_int, Q_r_max, COP_ref):
+    PLR = Q_r_int / Q_r_max
+    EIR_by_T = 0.38 + 0.02 * cu.K2C(T_a_int_out) + 0.01 * cu.K2C(T_a_ext_in)
+    EIR_by_PLR = 0.22 + 0.50 * PLR + 0.26 * PLR**2
+    COP = PLR * COP_ref / (EIR_by_T * EIR_by_PLR)
+    return COP
+
+def calculate_ASHP_heating_COP(T_0, Q_r_int, Q_r_max):
+    PLR = Q_r_int / Q_r_max
+    COP = -7.46 * (PLR - 0.0047 * cu.K2C(T_0) - 0.477)**2 + 0.0941 * cu.K2C(T_0) + 4.34
+    return COP
+
 @dataclass
 class Fan:
     def __post_init__(self): 
@@ -300,25 +312,6 @@ class Pump:
 
         dm.simple_layout(fig, margins=(0.05, 0.05, 0.05, 0.05), bbox=(0, 1, 0, 1), verbose=False)
         dm.save_and_show(fig)
-
-@dataclass
-def calculate_ASHP_cooling_COP(self, T_a_int_out, T_a_ext_in, Q_r_int, Q_r_max, COP_ref):
-    self.T_a_int_out = T_a_int_out
-    self.T_a_ext_in = T_a_ext_in
-    self.Q_r_int = Q_r_int
-    self.PLR = Q_r_int / Q_r_max
-    EIR_by_T = 0.38 + 0.02 * cu.K2C(self.T_a_int_out) + 0.01 * cu.K2C(self.T_a_ext_in)
-    EIR_by_PLR = 0.22 + 0.50 * self.PLR + 0.26 * self.PLR**2
-    COP = self.PLR * COP_ref / (EIR_by_T * EIR_by_PLR)
-    return COP
-
-@dataclass
-def calculate_ASHP_heating_COP(self, T_0, Q_r_int, Q_r_max):
-    self.T_0 = T_0
-    self.Q_r_int = Q_r_int
-    self.PLR = Q_r_int / Q_r_max
-    COP = -7.46 * (self.PLR - 0.0047 * cu.K2C(self.T_0) - 0.477)**2 + 0.0941 * cu.K2C(self.T_0) + 4.34
-    return COP
 
 @dataclass
 class ElectricBoiler:
@@ -814,8 +807,8 @@ class HeatPumpBoiler:
         self.U_tank = 1 / (2 * self.R_base_tot + self.R_side_tot)
 
         # Temperature
-        self.T_a_ext_in = self.T0  # External unit inlet air temperature [K]
-        self.T_a_ext_out = self.T_a_ext_in - self.dT_a_ext  # External unit outlet air temperature [K]
+        T_a_ext_in = self.T0  # External unit inlet air temperature [K]
+        self.T_a_ext_out = T_a_ext_in - self.dT_a_ext  # External unit outlet air temperature [K]
         self.T_r_ext     = self.T0 - self.dT_r_ext  # Refrigerant temperature at external unit [K]
         self.T_tank_is  = self.T_w_tank # inner surface temperature of the tank [K]
 
@@ -833,14 +826,14 @@ class HeatPumpBoiler:
 
         def fan_equation(V_a_ext): 
             term1 = self.dP * V_a_ext / self.eta_fan # E_fan [W]
-            term2 = c_a * rho_a * V_a_ext * (self.T_a_ext_in - self.T_a_ext_out) 
+            term2 = c_a * rho_a * V_a_ext * (T_a_ext_in - self.T_a_ext_out) 
             return term1 + term2 - self.Q_r_ext
         
         def fan_equation_detail(V_a_ext):
             term1 = (1/2 * rho_a * V_a_ext**3) / (self.eta_fan * self.A_ext**2) # Fan power input [W]
-            term2 = c_a * rho_a * V_a_ext * (self.T_a_ext_in - self.T0) # Air heat absorption [W] -> outlet air temperature decreases by this
+            term2 = c_a * rho_a * V_a_ext * (T_a_ext_in - self.T0) # Air heat absorption [W] -> outlet air temperature decreases by this
             term3 = (1 - self.eta_fan) * (1 - self.kappa_fan) * term1 # Fan heat absorption [W] -> outlet air temperature increases by this
-            term4 = c_a * rho_a * V_a_ext * ((self.T_a_ext_in - self.Q_r_ext / (c_a * rho_a * V_a_ext)) + ((1 - self.eta_fan) * self.kappa_fan * term1) / (c_a * rho_a * V_a_ext) - self.T0)
+            term4 = c_a * rho_a * V_a_ext * ((T_a_ext_in - self.Q_r_ext / (c_a * rho_a * V_a_ext)) + ((1 - self.eta_fan) * self.kappa_fan * term1) / (c_a * rho_a * V_a_ext) - self.T0)
             return term1 + term2 - term1 / self.A_ext**2 - term3 - term4 
         
         # External fan air flow rate
@@ -865,7 +858,7 @@ class HeatPumpBoiler:
         self.E_w_serv = c_w * rho_w * self.dV_w_tap * (self.T_w_tap - self.T0)
 
         self.s_fan = (1 / float('inf')) * self.E_fan
-        self.s_a_ext_in = c_a * rho_a * self.dV_a_ext * math.log(self.T_a_ext_in / self.T0)
+        self.s_a_ext_in = c_a * rho_a * self.dV_a_ext * math.log(T_a_ext_in / self.T0)
         self.s_a_ext_out = c_a * rho_a * self.dV_a_ext * math.log(self.T_a_ext_out / self.T0)
         self.s_r_ext = (1 / self.T_r_ext) * self.Q_r_ext
 
@@ -908,7 +901,7 @@ class HeatPumpBoiler:
             (self.T_w_tap - self.T0) - self.T0 * math.log(self.T_w_tap / self.T0))
         # External unit 에서의 대기엑서지
         self.X_a_ext_in = c_a * rho_a * self.dV_a_ext * (
-            (self.T_a_ext_in - self.T0) - self.T0 * math.log(self.T_a_ext_in / self.T0))
+            (T_a_ext_in - self.T0) - self.T0 * math.log(T_a_ext_in / self.T0))
         self.X_a_ext_out = c_a * rho_a * self.dV_a_ext * (
             (self.T_a_ext_out - self.T0) - self.T0 * math.log(self.T_a_ext_out / self.T0))
         
@@ -922,7 +915,7 @@ class HeatPumpBoiler:
         self.energy_balance["external unit"] = {
             "in": {
             "E_fan": self.E_fan,
-            "E_a_ext_in": c_a * rho_a * self.dV_a_ext * (self.T_a_ext_in - self.T0)
+            "E_a_ext_in": c_a * rho_a * self.dV_a_ext * (T_a_ext_in - self.T0)
             },
             "out": {
             "E_a_ext_out": c_a * rho_a * self.dV_a_ext * (self.T_a_ext_out - self.T0),
@@ -1151,36 +1144,39 @@ class AirSourceHeatPump_cooling:
         self.fan_ext = Fan().fan2
 
         # COP
-        self.COP_model = COP_by_PLR_cooling()
+        self.Q_r_max = 10000 # [W]
 
         # temperature
-        self.dT_a        = 10 # internal unit air temperature difference 
-        self.dT_r        = 15 # refrigerant temperature difference 
-        self.T_0         = cu.C2K(32) # environmental temperature [K]
-        self.T_a_int_in  = cu.C2K(22) # internal unit air inlet temperature [K]
-
+        self.T_0      = cu.C2K(30) # environmental temperature [K]
+        self.T_a_room = cu.C2K(20) # room air temperature [K]
+        
+        self.T_r_int     = cu.C2K(5) # internal unit refrigerant temperature [K]
+        self.T_a_int_out = cu.C2K(10) # internal unit air outlet temperature [K]
+        
+        self.T_a_ext_out = cu.C2K(40) # external unit air outlet temperature [K]
+        self.T_r_ext     = cu.C2K(45) # external unit refrigerant temperature [K]
+        
+        
         # load
-        self.Q_r_int = 25000 # [W]
+        self.Q_r_int = 10000 # [W]
+        
+        # 
+        self.COP_ref = 4
 
     def system_update(self):
 
         # temperature
-        self.T_a_int_out = self.T_a_int_in - self.dT_a # internal unit air outlet temperature [K]
-
+        self.T_a_int_in  = self.T_a_room # internal unit air inlet temperature [K]
         self.T_a_ext_in  = self.T_0 # external unit air inlet temperature [K]
-        self.T_a_ext_out = self.T_a_ext_in + self.dT_a # external unit outlet air temperature [K]
-
-        self.T_r_int = self.T_a_int_in - self.dT_r # internal unit refrigerant temperature [K]
-        self.T_r_ext = self.T_a_ext_in + self.dT_r # external unit refrigerant temperature [K]
 
         # others
-        self.COP     = self.COP_model.calculate_COP(self.T_a_int_out, self.T_a_ext_in, self.Q_r_int) # COP [-]
+        self.COP     = calculate_ASHP_cooling_COP(self.T_a_int_out, self.T_a_ext_in, self.Q_r_int, self.Q_r_max, self.COP_ref) # COP [-]
         self.E_cmp   = self.Q_r_int / self.COP # compressor power input [W]
         self.Q_r_ext = self.Q_r_int + self.E_cmp # heat transfer from external unit to refrigerant [W]
 
         # internal, external unit
-        self.dV_int = self.Q_r_int / (c_a * rho_a * self.dT_a) # volumetric flow rate of internal unit [m3/s]
-        self.dV_ext = self.Q_r_ext / (c_a * rho_a * self.dT_a) # volumetric flow rate of external unit [m3/s]
+        self.dV_int = self.Q_r_int / (c_a * rho_a * (abs(self.T_a_int_out - self.T_a_int_in))) # volumetric flow rate of internal unit [m3/s]
+        self.dV_ext = self.Q_r_ext / (c_a * rho_a * (abs(self.T_a_ext_out - self.T_a_ext_in))) # volumetric flow rate of external unit [m3/s]
 
         # fan power
         self.E_fan_int = Fan().get_power(self.fan_int, self.dV_int) # power input of internal unit fan [W]
@@ -1334,37 +1330,31 @@ class AirSourceHeatPump_heating:
         self.Q_r_max = 10000 # maximum heating capacity [W]
 
         # temperature
-        self.T_0         = cu.C2K(0) # environmental temperature [K]
-        self.T_a_room   = cu.C2K(20) # room air temperature [K]
+        self.T_0      = cu.C2K(0) # environmental temperature [K]
+        self.T_a_room = cu.C2K(20) # room air temperature [K]
         
-        self.dT_a_int    = 10 # internal unit air temperature difference
-        self.dT_a_ext    = 10 # external unit air temperature difference
-
-        self.dT_r_int       = 15 # refrigerant temperature difference 
-        self.dT_r_ext       = 15 # refrigerant temperature difference
+        self.T_r_int = cu.C2K(35) # internal unit refrigerant temperature [K]
+        self.T_a_int_out = cu.C2K(30) # internal unit air outlet temperature [K]
+        self.T_a_ext_out = cu.C2K(-10) # external unit air outlet temperature [K]
+        self.T_r_ext = cu.C2K(-15) # external unit refrigerant temperature [K]
+        
         
         # load
         self.Q_r_int = 10000 # [W]
 
     def system_update(self):
         # temperature
-        self.T_a_int_in    = self.T_a_room 
-        self.T_a_int_out = self.T_a_int_in + self.dT_a_int # internal unit air outlet temperature [K]
-
+        self.T_a_int_in  = self.T_a_room
         self.T_a_ext_in  = self.T_0 # external unit air inlet temperature [K]
-        self.T_a_ext_out = self.T_a_ext_in - self.dT_a_ext # external unit outlet air temperature [K]
-
-        self.T_r_int = self.T_a_int_in + self.dT_r_int # internal unit refrigerant temperature [K]
-        self.T_r_ext = self.T_a_ext_in - self.dT_r_ext # external unit refrigerant temperature [K]
 
         # others
-        self.COP     = calculate_ASHP_heating_COP(self.T_0, self.Q_r_int, self.Q_r_max) # COP [-]
+        self.COP     = calculate_ASHP_heating_COP(T_0 = self.T_0, Q_r_int = self.Q_r_int, Q_r_max = self.Q_r_max) # COP [-]
         self.E_cmp   = self.Q_r_int / self.COP # compressor power input [W]
         self.Q_r_ext = self.Q_r_int - self.E_cmp # heat transfer from external unit to refrigerant [W]
 
         # internal, external unit
-        self.dV_int = self.Q_r_int / (c_a * rho_a * self.dT_a) # volumetric flow rate of internal unit [m3/s]
-        self.dV_ext = self.Q_r_ext / (c_a * rho_a * self.dT_a) # volumetric flow rate of external unit [m3/s]
+        self.dV_int = self.Q_r_int / (c_a * rho_a * (self.T_a_int_out - self.T_a_int_in)) # volumetric flow rate of internal unit [m3/s]
+        self.dV_ext = self.Q_r_ext / (c_a * rho_a * (self.T_a_ext_out - self.T_a_ext_in)) # volumetric flow rate of external unit [m3/s]
 
         # fan power
         self.E_fan_int = Fan().get_power(self.fan_int, self.dV_int) # power input of internal unit fan [W]
@@ -1527,7 +1517,7 @@ class GroundSourceHeatPump:
         # Circulating water parameters
         self.X_a_int_in  = c_a * rho_a * self.dV_int * ((self.T_a_int_in - self.T_0) - self.T_0 * math.log(self.T_a_int_in / self.T_0))
         self.X_a_int_out = c_a * rho_a * self.dV_int * ((self.T_a_int_out - self.T_0) - self.T_0 * math.log(self.T_a_int_out / self.T_0))
-        self.X_a_ext_in  = c_a * rho_a * self.dV_ext * ((self.T_a_ext_in - self.T_0) - self.T_0 * math.log(self.T_a_ext_in / self.T_0))
+        self.X_a_ext_in  = c_a * rho_a * self.dV_ext * ((T_a_ext_in - self.T_0) - self.T_0 * math.log(T_a_ext_in / self.T_0))
         self.X_a_ext_out = c_a * rho_a * self.dV_ext * ((self.T_a_ext_out - self.T_0) - self.T_0 * math.log(self.T_a_ext_out / self.T_0))
 
         ## exergy results
