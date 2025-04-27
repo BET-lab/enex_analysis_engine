@@ -149,18 +149,18 @@ class Fan:
     def __post_init__(self): 
         # Parameters
         self.fan1 = {
+            'flow rate'  : [0.5, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.5], # [m3/s]
+            'pressure'   : [137, 138, 143, 168, 182, 191, 198, 200, 201, 170], # [Pa]
+            'efficiency' : [0.45, 0.49, 0.57, 0.62, 0.67, 0.69, 0.68, 0.67, 0.63, 0.40], # [-]           
+        }
+        self.fan2 = {
             'flow rate'  : [0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.5, 3.0], # [m3/s]
             'pressure'   : [140, 136, 137, 147, 163, 178, 182, 190, 198, 181], # [Pa]
             'efficiency' : [0.43, 0.48, 0.52, 0.55, 0.60, 0.65, 0.68, 0.66, 0.63, 0.52], # [-]
         }
-        self.fan2 = {
-            'flow rate'  : [0.5, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.5], # [m3/s]
-            'pressure'   : [137, 138, 143, 168, 182, 191, 198, 200, 201, 170], # [Pa]
-            'efficiency' : [0.45, 0.49, 0.57, 0.62, 0.67, 0.69, 0.68, 0.67, 0.63, 0.40], # [-]
-        }
         self.fan_list = [self.fan1, self.fan2]
 
-    def get_effieciency(self, fan, dV_fan):
+    def get_efficiency(self, fan, dV_fan):
         self.efficiency_coeffs, _ = curve_fit(cubic_function, fan['flow rate'], fan['efficiency'])
         eff = cubic_function(dV_fan, *self.efficiency_coeffs)
         return eff
@@ -171,7 +171,7 @@ class Fan:
         return pressure
     
     def get_power(self, fan, dV_fan):
-        eff = self.get_effieciency(fan, dV_fan)
+        eff = self.get_efficiency(fan, dV_fan)
         pressure = self.get_pressure(fan, dV_fan)
         power = pressure * dV_fan / eff
         return power
@@ -1452,7 +1452,7 @@ class GroundSourceHeatPump:
     def __post_init__(self):
 
         # subsystem
-        self.fan = Fan().fan1
+        self.fan_int = Fan().fan1
         self.pump = Pump().pump1
 
         # efficiency
@@ -1469,8 +1469,8 @@ class GroundSourceHeatPump:
         # Pipe parameters
         self.L_pipe       = 800 # length of pipe [m]
         self.K_pipe       = 0.2 # thermal conductance of pipe [W/m2K]
-        self.D_outer_pipe = cu.mm2m(32) # outer diameter of pipe [m]
-        self.pipe_thick   = cu.mm2m(2.9) # thickness of pipe [m]
+        self.D_outer_pipe = 32 * 1e-3 # outer diameter of pipe [m]
+        self.pipe_thick   = 2.9 * 1e-3 # thickness of pipe [m]
         self.epsilon_pipe = 0.003e-3 # m
 
         # plate heat exchanger
@@ -1486,8 +1486,10 @@ class GroundSourceHeatPump:
         self.Q_r_int = 10000 # [W]
 
     def system_update(self):
-
+        if not hasattr(self, "external_dV_pmp") or not self.external_dV_pmp:
+            self.dV_pmp  = self.Q_r_ext / (c_w * rho_w * self.dT_g)
         # temperature
+        self.T_a_int_out = self.T_a_int_in - self.dT_a # internal unit air outlet temperature [K]
         self.T_r_int = self.T_a_int_in - self.dT_r # internal unit refrigerant temperature [K]
         self.T_r_ext = self.T_g + self.dT_g # external unit refrigerant temperature [K]
         
@@ -1503,7 +1505,7 @@ class GroundSourceHeatPump:
         
         self.f = darcy_friction_factor(self.Re, self.e_d) # darcey friction factor [-]
         self.dP_pipe = self.f * (self.L_pipe) / self.D_inner_pipe * (rho_w * self.v_pipe ** 2) / 2 # pipe pressure drop [Pa]
-        self.dP_minor = self.K_pipe * (self.v_pipe ** 2) * (rho_w / 2) # minor loss pressure drop [Pa]
+        self.dP_minor = self.K_pipe * (self.v_pipe ** 2) / (2 * 9.81)# minor loss pressure drop [Pa]
 
         # plate heatexchanger (이거 너무 복잡한데 따로 빼서 쓸수는 없나) -> 변수명도 수정
         self.N_ch   = int((self.N_tot - 1) / (2 * self.N_pass))
@@ -1514,26 +1516,25 @@ class GroundSourceHeatPump:
         self.Re_ex  = self.G_c * self.D_ex / mu_w # 
         self.f_ex   = 0.8 * self.phi ** (1.25) * self.Re_ex ** (-0.25) * (self.beta/30) ** 3.6 # friction factor [-]
         self.dP_ex  = 2 * self.f_ex * (self.L_ex / self.D_ex) * (self.G_c ** 2) / rho_w # Pa
-        self.dP_pmp = self.dP_pipe + self.dP_minor + self.dP_ex # pressure difference of pump [Pa]
-
-        # heat rate
-        self.Q_r_ext = self.Q_r_int + self.E_cmp # heat transfer from external unit to refrigerant [W]
-        self.Q_g = self.Q_r_ext + self.E_pmp # heat transfer from GHE to ground [W]
+        self.dP_pmp = self.dP_pipe + self.dP_minor + self.dP_ex # pressure difference of pump [Pa]       
         
         # pump, compressor
         self.E_cmp = self.Q_r_int / self.COP # compressor power input [W]
+        self.Q_r_ext = self.Q_r_int + self.E_cmp # heat transfer from external unit to refrigerant [W]
         self.dV_pmp  = self.Q_r_ext / (c_w * rho_w * self.dT_g) # volumetric flow rate of pump [m3/s]
-        self.E_pmp   = Pump().get_power(pump, dV_pmp, dP_pmp) # pump power input [W]
+        self.E_pmp   = Pump().get_power(self.pump, self.dV_pmp, self.dP_pmp) # pump power input [W]
+        self.Q_g = self.Q_r_ext + self.E_pmp # heat transfer from GHE to ground [W]
 
         # internal, external unit
         self.dV_int = self.Q_r_int / (c_a * rho_a * self.dT_a) # volumetric flow rate of internal unit [m3/s]
         self.dV_ext = self.Q_r_ext / (c_a * rho_a * self.dT_a) # volumetric flow rate of external unit [m3/s]
 
+        # Fan power
+        self.E_fan_int = Fan().get_power(self.fan_int, self.dV_int)
+        
         # Circulating water parameters
         self.X_a_int_in  = c_a * rho_a * self.dV_int * ((self.T_a_int_in - self.T_0) - self.T_0 * math.log(self.T_a_int_in / self.T_0))
-        self.X_a_int_out = c_a * rho_a * self.dV_int * ((self.T_a_int_out - self.T_0) - self.T_0 * math.log(self.T_a_int_out / self.T_0))
-        self.X_a_ext_in  = c_a * rho_a * self.dV_ext * ((self.T_a_ext_in - self.T_0) - self.T_0 * math.log(self.T_a_ext_in / self.T_0))
-        self.X_a_ext_out = c_a * rho_a * self.dV_ext * ((self.T_a_ext_out - self.T_0) - self.T_0 * math.log(self.T_a_ext_out / self.T_0))
+        self.X_a_int_out = c_a * rho_a * self.dV_int * ((self.T_a_int_out - self.T_0) - self.T_0 * math.log(self.T_a_int_out / self.T_0))    
 
         ## exergy results
         self.X_r_int = - self.Q_r_int * (1 - self.T_0 / self.T_r_int)
@@ -1559,5 +1560,10 @@ class GroundSourceHeatPump:
         self.Xin  = self.E_fan_int + self.E_cmp + self.E_pmp
         self.Xout = self.X_a_int_out - self.X_a_int_in
         self.Xc   = self.Xin - self.Xout
-        
- 
+    
+    def get_dP_pmp(self, dV_pmp):
+        self.dV_pmp = dV_pmp
+        self.external_dV_pmp = True  # 외부 입력 플래그 ON
+        self.system_update()
+        self.external_dV_pmp = False  # 다시 해제
+        return self.dP_pmp

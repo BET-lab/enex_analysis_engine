@@ -7,6 +7,9 @@ def K2C(K):
 def C2K(C):
     return C + 273.15
 
+def mm2m(x):
+    return x * 1e-3
+
 ### Constants
 ## Time conversion
 # Day
