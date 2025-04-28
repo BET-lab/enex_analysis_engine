@@ -116,14 +116,14 @@ def print_balance(balance, decimal=2):
             for symbol, value in terms.items():
                 print(f"{symbol}: {round(value, decimal)} {unit}")
 
-def calculatQ_aSHP_cooling_COP(T_a_int_out, T_a_ext_in, Q_r_int, Q_r_max, COP_ref):
+def calculate_ASHP_cooling_COP(T_a_int_out, T_a_ext_in, Q_r_int, Q_r_max, COP_ref):
     PLR = Q_r_int / Q_r_max
     EIR_by_T = 0.38 + 0.02 * cu.K2C(T_a_int_out) + 0.01 * cu.K2C(T_a_ext_in)
     EIR_by_PLR = 0.22 + 0.50 * PLR + 0.26 * PLR**2
     COP = PLR * COP_ref / (EIR_by_T * EIR_by_PLR)
     return COP
 
-def calculatQ_aSHP_heating_COP(T_0, Q_r_int, Q_r_max):
+def calculate_ASHP_heating_COP(T_0, Q_r_int, Q_r_max):
     PLR = Q_r_int / Q_r_max
     COP = -7.46 * (PLR - 0.0047 * cu.K2C(T_0) - 0.477)**2 + 0.0941 * cu.K2C(T_0) + 4.34
     return COP
@@ -1156,7 +1156,7 @@ class AirSourceHeatPump_cooling:
         self.T_a_ext_in  = self.T0 # external unit air inlet temperature [K]
 
         # others
-        self.COP     = calculatQ_aSHP_cooling_COP(self.T_a_int_out, self.T_a_ext_in, self.Q_r_int, self.Q_r_max, self.COP_ref) # COP [-]
+        self.COP     = calculate_ASHP_cooling_COP(self.T_a_int_out, self.T_a_ext_in, self.Q_r_int, self.Q_r_max, self.COP_ref) # COP [-]
         self.E_cmp   = self.Q_r_int / self.COP # compressor power input [W]
         self.Q_r_ext = self.Q_r_int + self.E_cmp # heat transfer from external unit to refrigerant [W]
 
@@ -1334,7 +1334,7 @@ class AirSourceHeatPump_heating:
         self.T_a_ext_in  = self.T0 # external unit air inlet temperature [K]
 
         # others
-        self.COP     = calculatQ_aSHP_heating_COP(T_0 = self.T0, Q_r_int = self.Q_r_int, Q_r_max = self.Q_r_max) # COP [-]
+        self.COP     = calculate_ASHP_heating_COP(T_0 = self.T0, Q_r_int = self.Q_r_int, Q_r_max = self.Q_r_max) # COP [-]
         self.E_cmp   = self.Q_r_int / self.COP # compressor power input [W]
         self.Q_r_ext = self.Q_r_int - self.E_cmp # heat transfer from external unit to refrigerant [W]
 
