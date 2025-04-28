@@ -290,10 +290,10 @@ class ElectricBoiler:
     def __post_init__(self):
         
         # Temperature [K]
-        self.T_w_tank = cu.C2K(60)
-        self.T_w_sup  = cu.C2K(10)
-        self.T_w_tap  = cu.C2K(45)
-        self.T0       = cu.C2K(0) 
+        self.T_w_tank = 60
+        self.T_w_sup  = 10
+        self.T_w_tap  = 45
+        self.T0       = 0 
 
         # Tank water use [m3/s]
         self.dV_w_tap  = 0.0002
@@ -314,6 +314,12 @@ class ElectricBoiler:
         self.h_o = 15 
         
     def system_update(self):
+        
+        # Celcius to Kelvin
+        self.T_w_tank = cu.C2K(self.T_w_tank) # tank water temperature [K]
+        self.T_w_sup  = cu.C2K(self.T_w_sup)  # supply water temperature [K]
+        self.T_w_tap  = cu.C2K(self.T_w_tap)  # tap water temperature [K]
+        self.T0       = cu.C2K(self.T0)       # reference temperature [K]
         
         # Temperature [K]
         self.T_tank_is = self.T_w_tank # inner surface temperature of tank [K]
@@ -487,11 +493,11 @@ class GasBoiler:
         self.eta_NG   = 0.93
 
         # Temperature [K]
-        self.T_w_tank = cu.C2K(60) 
-        self.T_w_sup  = cu.C2K(10)
-        self.T_w_tap  = cu.C2K(45) 
-        self.T0       = cu.C2K(0)
-        self.T_exh    = cu.C2K(70) 
+        self.T_w_tank = 60 
+        self.T_w_sup  = 10
+        self.T_w_tap  = 45 
+        self.T0       = 0
+        self.T_exh    = 70 
 
         # Tank water use [m3/s]
         self.dV_w_tap  = 0.0002
@@ -512,6 +518,13 @@ class GasBoiler:
         self.h_o = 15 
         
     def system_update(self):
+        
+        # Celcius to Kelvin
+        self.T_w_tank = cu.C2K(self.T_w_tank) # tank water temperature [K]
+        self.T_w_sup  = cu.C2K(self.T_w_sup)  # supply water temperature [K]
+        self.T_w_tap  = cu.C2K(self.T_w_tap)  # tap water temperature [K]
+        self.T0       = cu.C2K(self.T0)       # reference temperature [K]
+        self.T_exh    = cu.C2K(self.T_exh)    # exhaust gas temperature [K]
         
         # Temperature [K]
         self.T_tank_is = self.T_w_tank # inner surface temperature of tank [K]
@@ -563,7 +576,6 @@ class GasBoiler:
         self.T_w_comb = self.T_w_tank + self.Q_l_tank / (c_w * rho_w * self.dV_w_sup_comb)
         self.T_NG = self.T0 / (1 - self.eta_NG) # eta_NG = 1 - T0/T_NG => T_NG = T0/(1-eta_NG) [K]
         
-
         # Pre-define variables for balance dictionaries
         self.Q_w_sup      = c_w * rho_w * self.dV_w_sup_comb * (self.T_w_sup - self.T0)
         self.Q_exh        = (1 - self.eta_comb) * self.E_NG  # Heat loss from exhaust gases
@@ -606,9 +618,7 @@ class GasBoiler:
         self.X_c_tot = self.X_c_comb + self.X_c_tank + self.X_c_mix
         self.X_eff = self.X_w_serv / self.X_NG
 
-
         self.energy_balance = {}
-        
         self.energy_balance["combustion chamber"] = {
             "in": {
             "E_NG": self.E_NG,
@@ -643,15 +653,15 @@ class GasBoiler:
         self.entropy_balance = {}
         self.entropy_balance["combustion chamber"] = {
             "in": {
-                "S_NG": self.S_NG,
-                "S_w_sup": self.S_w_sup
+            "S_NG": self.S_NG,
+            "S_w_sup": self.S_w_sup
             },
             "out": {
-                "S_w_comb_out": self.S_w_comb_out,
-                "S_exh": self.S_exh
+            "S_w_comb_out": self.S_w_comb_out,
+            "S_exh": self.S_exh
             },
             "gen": {
-                "S_g_comb": self.S_g_comb
+            "S_g_comb": self.S_g_comb
             }
         }
 
@@ -737,13 +747,13 @@ class HeatPumpBoiler:
         self.dP = 200 
 
         # Temperature [K]
-        self.T0          = cu.C2K(0)
-        self.T_a_ext_out = cu.C2K(-5)
-        self.T_r_ext     = cu.C2K(-10)
-        self.T_r_tank    = cu.C2K(65)
-        self.T_w_tank    = cu.C2K(60)
-        self.T_w_tap     = cu.C2K(45)
-        self.T_w_sup     = cu.C2K(10)
+        self.T0          = 0
+        self.T_a_ext_out = -5
+        self.T_r_ext     = -10
+        self.T_r_tank    = 65
+        self.T_w_tank    = 60
+        self.T_w_tap     = 45
+        self.T_w_sup     = 10
 
         # Tank water use [m3/s]
         self.dV_w_tap  = 0.0002
@@ -764,6 +774,15 @@ class HeatPumpBoiler:
         self.h_o = 15 
         
     def system_update(self):
+        
+        # Celcius to Kelvin
+        self.T0          = cu.C2K(self.T0)
+        self.T_a_ext_out = cu.C2K(self.T_a_ext_out)
+        self.T_r_ext     = cu.C2K(self.T_r_ext)
+        self.T_r_tank    = cu.C2K(self.T_r_tank)
+        self.T_w_tank    = cu.C2K(self.T_w_tank)
+        self.T_w_tap     = cu.C2K(self.T_w_tap)
+        self.T_w_sup     = cu.C2K(self.T_w_sup)
         
         # Temperature [K]
         self.T_tank_is = self.T_w_tank 
@@ -807,7 +826,6 @@ class HeatPumpBoiler:
         # U-value [W/K]
         self.U_tank = 1 / (2 * self.R_base_tot + self.R_side_tot)
 
-
         # Fan and Compressor Parameters
         self.A_ext = math.pi * self.r_ext**2  # External unit area [m²] 20 cm x 20 cm assumption
 
@@ -842,45 +860,31 @@ class HeatPumpBoiler:
         self.E_fan   = self.dP * self.dV_a_ext/self.eta_fan  # Power input to external fan [W] (\Delta P = 0.5 * rho * V^2)
         self.v_a_ext = self.dV_a_ext / self.A_ext  # Air velocity [m/s]
 
-        # 미리 계산된 변수들 (변수명은 키에서 $$, {} 제거하고 ','는 '_'로 변경)
-        self.E_fan        = self.E_fan
-        self.E_cmp        = self.E_cmp
-        self.Q_r_ext      = self.Q_r_ext
-        self.Q_r_tank     = self.Q_r_tank
         self.Q_w_sup_tank = c_w * rho_w * self.dV_w_sup_tank * (self.T_w_sup - self.T0)
         self.Q_w_tank     = c_w * rho_w * self.dV_w_sup_tank * (self.T_w_tank - self.T0)
         self.Q_w_sup_serv = c_w * rho_w * self.dV_w_sup_mix * (self.T_w_sup - self.T0)
         self.Q_w_serv     = c_w * rho_w * self.dV_w_tap * (self.T_w_tap - self.T0)
+        self.Q_a_ext_in   = c_a * rho_a * self.dV_a_ext * (T_a_ext_in - self.T0)
+        self.Q_a_ext_out  = c_a * rho_a * self.dV_a_ext * (self.T_a_ext_out - self.T0)
 
         self.S_fan       = (1 / float('inf')) * self.E_fan
         self.S_a_ext_in  = c_a * rho_a * self.dV_a_ext * math.log(T_a_ext_in / self.T0)
         self.S_a_ext_out = c_a * rho_a * self.dV_a_ext * math.log(self.T_a_ext_out / self.T0)
         self.S_r_ext     = (1 / self.T_r_ext) * self.Q_r_ext
-
         self.S_cmp       = (1 / float('inf')) * self.E_cmp
         self.S_r_ext_cmp = (1 / self.T_r_ext) * self.Q_r_ext
         self.S_r_tank    = (1 / self.T_r_tank) * self.Q_r_tank
-
         self.S_w_sup_tank = c_w * rho_w * self.dV_w_sup_tank * math.log(self.T_w_sup / self.T0)
         self.S_w_tank     = c_w * rho_w * self.dV_w_sup_tank * math.log(self.T_w_tank / self.T0)
         self.S_l_tank     = (1 / self.T_tank_is) * self.Q_l_tank
-
         self.S_w_sup_serv = c_w * rho_w * self.dV_w_sup_mix * math.log(self.T_w_sup / self.T0)
         self.S_w_tap      = c_w * rho_w * self.dV_w_tap * math.log(self.T_w_tap / self.T0)
 
-        # 엔트로피 생성(term): generated = out - in
         self.S_g_ext = self.S_a_ext_out + self.S_r_ext - (self.S_fan + self.S_a_ext_in)
         self.S_g_r = self.S_r_tank - (self.S_cmp + self.S_r_ext_cmp)
         self.S_g_tank = (self.S_w_tank + self.S_l_tank) - (self.S_r_tank + self.S_w_sup_tank)
         self.S_g_mix = self.S_w_tap - (self.S_w_tank + self.S_w_sup_serv)
 
-        # 엑서지 소비(term): consumed = generated * T0
-        self.X_c_ext = self.S_g_ext * self.T0
-        self.X_c_r = self.S_g_r * self.T0
-        self.X_c_tank = self.S_g_tank * self.T0
-        self.X_c_mix = self.S_g_mix * self.T0
-
-        # 미리 계산된 엑서지 관련 식
         self.X_fan = self.E_fan - self.S_fan * self.T0
         self.X_cmp = self.E_cmp - self.S_cmp * self.T0
         self.X_r_ext = -(1 - self.T0 / self.T_r_ext) * self.Q_r_ext
@@ -893,6 +897,11 @@ class HeatPumpBoiler:
         self.X_a_ext_in = c_a * rho_a * self.dV_a_ext * ((T_a_ext_in - self.T0) - self.T0 * math.log(T_a_ext_in / self.T0))
         self.X_a_ext_out = c_a * rho_a * self.dV_a_ext * ((self.T_a_ext_out - self.T0) - self.T0 * math.log(self.T_a_ext_out / self.T0))
         
+        self.X_c_ext = self.S_g_ext * self.T0
+        self.X_c_r = self.S_g_r * self.T0
+        self.X_c_tank = self.S_g_tank * self.T0
+        self.X_c_mix = self.S_g_mix * self.T0
+        
         # total
         self.X_c_tot = self.X_c_ext + self.X_c_r + self.X_c_tank + self.X_c_mix
         self.X_eff = self.X_w_serv / (self.X_fan + self.X_cmp)
@@ -901,11 +910,11 @@ class HeatPumpBoiler:
         self.energy_balance["external unit"] = {
             "in": {
             "E_fan": self.E_fan,
-            "Q_a_ext_in": c_a * rho_a * self.dV_a_ext * (T_a_ext_in - self.T0)
+            "Q_a_ext_in": self.Q_a_ext_in,
             },
             "out": {
-            "Q_a_ext_out": c_a * rho_a * self.dV_a_ext * (self.T_a_ext_out - self.T0),
-            "Q_r_ext": self.Q_r_ext
+            "Q_a_ext_out": self.Q_a_ext_out,
+            "Q_r_ext": self.Q_r_ext,
             }
         }
 
