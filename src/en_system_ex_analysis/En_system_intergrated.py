@@ -116,34 +116,6 @@ def print_balance(balance, decimal=2):
             for symbol, value in terms.items():
                 print(f"{symbol}: {round(value, decimal)} {unit}")
 
-def calculate_total_exergy_consumption(exergy_balance):
-    """
-    📌 Function: calculate_total_exergy_consumption
-
-    모든 서브시스템의 엑서지 소비값(consumed exergy)의 전체 합을 계산하는 함수입니다.
-
-    🔹 Parameters:
-        - exergy_balance (dict): 각 서브시스템의 엑서지 밸런스 딕셔너리
-
-    🔹 Returns:
-        - total_exergy_consumption (float): 전체 엑서지 소비량 [W]
-
-    🔹 Example:
-        ```python
-        total_exergy = calculate_total_exergy_consumption(exergy_balance)
-        print(f"Total Exergy Consumption: {total_exergy} W")
-        ```
-    """
-    total_exergy_consumption = 0
-
-    for subsystem, category_dict in exergy_balance.items():
-        # subsystem: hot water tank, mixing valve...
-        # category_dict: {in: {a,b}, out: {a,b}...}
-        # terms: {a,b}
-        total_exergy_consumption += sum(value for symbol, value in category_dict["con"].items())
-
-    return total_exergy_consumption
-
 def calculatQ_aSHP_cooling_COP(T_a_int_out, T_a_ext_in, Q_r_int, Q_r_max, COP_ref):
     PLR = Q_r_int / Q_r_max
     EIR_by_T = 0.38 + 0.02 * cu.K2C(T_a_int_out) + 0.01 * cu.K2C(T_a_ext_in)
