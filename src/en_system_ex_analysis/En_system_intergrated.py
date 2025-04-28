@@ -371,7 +371,7 @@ class ElectricBoiler:
         # Pre-calculate Energy values
         self.Q_w_sup_tank = c_w * rho_w * self.dV_w_sup_tank * (self.T_w_sup - self.T0)
         self.Q_w_tank     = c_w * rho_w * self.dV_w_sup_tank * (self.T_w_tank - self.T0)
-        self.Q_w_sup_serv = c_w * rho_w * self.dV_w_sup_mix * (self.T_w_sup - self.T0)
+        self.Q_w_sup_mix = c_w * rho_w * self.dV_w_sup_mix * (self.T_w_sup - self.T0)
         self.Q_w_serv     = c_w * rho_w * self.dV_w_tap * (self.T_w_tap - self.T0)
 
         # Pre-calculate Entropy values
@@ -379,10 +379,10 @@ class ElectricBoiler:
         self.S_w_sup_tank = c_w * rho_w * self.dV_w_sup_tank * math.log(self.T_w_sup / self.T0)
         self.S_w_tank = c_w * rho_w * self.dV_w_sup_tank * math.log(self.T_w_tank / self.T0)
         self.S_l_tank = (1 / self.T_tank_is) * self.Q_l_tank
-        self.S_w_sup_serv = c_w * rho_w * self.dV_w_sup_mix * math.log(self.T_w_sup / self.T0)
+        self.S_w_sup_mix = c_w * rho_w * self.dV_w_sup_mix * math.log(self.T_w_sup / self.T0)
         self.S_w_serv = c_w * rho_w * self.dV_w_tap * math.log(self.T_w_tap / self.T0)
         self.S_g_tank = (self.S_w_tank + self.S_l_tank) - (self.S_heater + self.S_w_sup_tank)
-        self.S_g_mix = self.S_w_serv - (self.S_w_tank + self.S_w_sup_serv)
+        self.S_g_mix = self.S_w_serv - (self.S_w_tank + self.S_w_sup_mix)
 
         # Pre-calculate Exergy values for hot water tank
         self.X_heater = self.E_heater - self.S_heater * self.T0
@@ -392,7 +392,7 @@ class ElectricBoiler:
         self.X_c_tank = self.S_g_tank * self.T0
 
         # Pre-calculate Exergy values for mixing valve
-        self.X_w_sup_serv = c_w * rho_w * self.dV_w_sup_mix * ((self.T_w_sup - self.T0) - self.T0 * math.log(self.T_w_sup / self.T0))
+        self.X_w_sup_mix = c_w * rho_w * self.dV_w_sup_mix * ((self.T_w_sup - self.T0) - self.T0 * math.log(self.T_w_sup / self.T0))
         self.X_w_serv = c_w * rho_w * self.dV_w_tap * ((self.T_w_tap - self.T0) - self.T0 * math.log(self.T_w_tap / self.T0))
         self.X_c_mix = self.S_g_mix * self.T0
         
@@ -418,7 +418,7 @@ class ElectricBoiler:
         self.energy_balance["mixing valve"] = {
             "in": {
             "Q_w_tank": self.Q_w_tank,
-            "Q_w_sup_serv": self.Q_w_sup_serv
+            "Q_w_sup_mix": self.Q_w_sup_mix
             },
             "out": {
             "Q_w_serv": self.Q_w_serv
@@ -443,7 +443,7 @@ class ElectricBoiler:
             "mixing valve": {
             "in": {
                 "S_w_tank": self.S_w_tank,
-                "S_w_sup_serv": self.S_w_sup_serv
+                "S_w_sup_mix": self.S_w_sup_mix
             },
             "out": {
                 "S_w_serv": self.S_w_serv
@@ -474,7 +474,7 @@ class ElectricBoiler:
         self.exergy_balance["mixing valve"] = {
             "in": {
             "X_w_tank": self.X_w_tank,
-            "X_w_sup_serv": self.X_w_sup_serv
+            "X_w_sup_mix": self.X_w_sup_mix
             },
             "out": {
             "X_w_serv": self.X_w_serv
@@ -566,22 +566,19 @@ class GasBoiler:
 
         # U-value [W/K]
         self.U_tank = 1 / (2 * self.R_base_tot + self.R_side_tot)
-        
-        
-        # Energy balance for boiler
         self.Q_l_tank = self.U_tank * (self.T_tank_is - self.T0)  # Heat loss from tank
-        self.E_NG     = c_w * rho_w * self.dV_w_sup_comb * (self.T_w_comb - self.T_w_sup) / self.eta_comb
 
         # Temperature [K]
         self.T_w_comb = self.T_w_tank + self.Q_l_tank / (c_w * rho_w * self.dV_w_sup_comb)
         self.T_NG = self.T0 / (1 - self.eta_NG) # eta_NG = 1 - T0/T_NG => T_NG = T0/(1-eta_NG) [K]
         
         # Pre-define variables for balance dictionaries
+        self.E_NG     = c_w * rho_w * self.dV_w_sup_comb * (self.T_w_comb - self.T_w_sup) / self.eta_comb
         self.Q_w_sup      = c_w * rho_w * self.dV_w_sup_comb * (self.T_w_sup - self.T0)
         self.Q_exh        = (1 - self.eta_comb) * self.E_NG  # Heat loss from exhaust gases
         self.Q_w_comb_out = c_w * rho_w * self.dV_w_sup_comb * (self.T_w_comb - self.T0)
         self.Q_w_tank     = c_w * rho_w * self.dV_w_sup_comb * (self.T_w_tank - self.T0)
-        self.Q_w_sup_serv = c_w * rho_w * self.dV_w_sup_mix * (self.T_w_sup - self.T0)
+        self.Q_w_sup_mix = c_w * rho_w * self.dV_w_sup_mix * (self.T_w_sup - self.T0)
         self.Q_w_serv     = c_w * rho_w * self.dV_w_tap * (self.T_w_tap - self.T0)
 
         # Pre-calculate Entropy values for boiler
@@ -595,9 +592,9 @@ class GasBoiler:
         self.S_l_tank = (1 / self.T_tank_is) * self.Q_l_tank
         self.S_g_tank = (self.S_w_tank + self.S_l_tank) - self.S_w_comb_out
 
-        self.S_w_sup_serv = c_w * rho_w * self.dV_w_sup_mix * math.log(self.T_w_sup / self.T0)
+        self.S_w_sup_mix = c_w * rho_w * self.dV_w_sup_mix * math.log(self.T_w_sup / self.T0)
         self.S_w_serv = c_w * rho_w * self.dV_w_tap * math.log(self.T_w_tap / self.T0)
-        self.S_g_mix = self.S_w_serv - (self.S_w_tank + self.S_w_sup_serv)
+        self.S_g_mix = self.S_w_serv - (self.S_w_tank + self.S_w_sup_mix)
 
         # Pre-calculate Exergy values for boiler
         self.X_NG = self.eta_NG * self.E_NG
@@ -610,7 +607,7 @@ class GasBoiler:
         self.X_l_tank = (1 - self.T0 / self.T_tank_is) * self.Q_l_tank
         self.X_c_tank = self.S_g_tank * self.T0
 
-        self.X_w_sup_serv = c_w * rho_w * self.dV_w_sup_mix * ((self.T_w_sup - self.T0) - self.T0 * math.log(self.T_w_sup / self.T0))
+        self.X_w_sup_mix = c_w * rho_w * self.dV_w_sup_mix * ((self.T_w_sup - self.T0) - self.T0 * math.log(self.T_w_sup / self.T0))
         self.X_w_serv = c_w * rho_w * self.dV_w_tap * ((self.T_w_tap - self.T0) - self.T0 * math.log(self.T_w_tap / self.T0))
         self.X_c_mix = self.S_g_mix * self.T0
         
@@ -643,7 +640,7 @@ class GasBoiler:
         self.energy_balance["mixing valve"] = {
             "in": {
             "Q_w_tank": self.Q_w_tank,
-            "Q_w_sup_serv": self.Q_w_sup_serv
+            "Q_w_sup_mix": self.Q_w_sup_mix
             },
             "out": {
             "Q_w_serv": self.Q_w_serv
@@ -681,7 +678,7 @@ class GasBoiler:
         self.entropy_balance["mixing valve"] = {
             "in": {
             "S_w_tank": self.S_w_tank,
-            "S_w_sup_serv": self.S_w_sup_serv
+            "S_w_sup_mix": self.S_w_sup_mix
             },
             "out": {
             "S_w_serv": self.S_w_serv
@@ -722,7 +719,7 @@ class GasBoiler:
         self.exergy_balance["mixing valve"] = {
             "in": {
             "X_w_tank": self.X_w_tank,
-            "X_w_sup_serv": self.X_w_sup_serv
+            "X_w_sup_mix": self.X_w_sup_mix
             },
             "out": {
             "X_w_serv": self.X_w_serv
@@ -862,13 +859,13 @@ class HeatPumpBoiler:
 
         self.Q_w_sup_tank = c_w * rho_w * self.dV_w_sup_tank * (self.T_w_sup - self.T0)
         self.Q_w_tank     = c_w * rho_w * self.dV_w_sup_tank * (self.T_w_tank - self.T0)
-        self.Q_w_sup_serv = c_w * rho_w * self.dV_w_sup_mix * (self.T_w_sup - self.T0)
+        self.Q_w_sup_mix = c_w * rho_w * self.dV_w_sup_mix * (self.T_w_sup - self.T0)
         self.Q_w_serv     = c_w * rho_w * self.dV_w_tap * (self.T_w_tap - self.T0)
-        self.Q_a_ext_in   = c_a * rho_a * self.dV_a_ext * (T_a_ext_in - self.T0)
+        self.Q_a_ext_in   = c_a * rho_a * self.dV_a_ext * (self.T_a_ext_in - self.T0)
         self.Q_a_ext_out  = c_a * rho_a * self.dV_a_ext * (self.T_a_ext_out - self.T0)
 
         self.S_fan       = (1 / float('inf')) * self.E_fan
-        self.S_a_ext_in  = c_a * rho_a * self.dV_a_ext * math.log(T_a_ext_in / self.T0)
+        self.S_a_ext_in  = c_a * rho_a * self.dV_a_ext * math.log(self.T_a_ext_in / self.T0)
         self.S_a_ext_out = c_a * rho_a * self.dV_a_ext * math.log(self.T_a_ext_out / self.T0)
         self.S_r_ext     = (1 / self.T_r_ext) * self.Q_r_ext
         self.S_cmp       = (1 / float('inf')) * self.E_cmp
@@ -877,13 +874,13 @@ class HeatPumpBoiler:
         self.S_w_sup_tank = c_w * rho_w * self.dV_w_sup_tank * math.log(self.T_w_sup / self.T0)
         self.S_w_tank     = c_w * rho_w * self.dV_w_sup_tank * math.log(self.T_w_tank / self.T0)
         self.S_l_tank     = (1 / self.T_tank_is) * self.Q_l_tank
-        self.S_w_sup_serv = c_w * rho_w * self.dV_w_sup_mix * math.log(self.T_w_sup / self.T0)
+        self.S_w_sup_mix = c_w * rho_w * self.dV_w_sup_mix * math.log(self.T_w_sup / self.T0)
         self.S_w_tap      = c_w * rho_w * self.dV_w_tap * math.log(self.T_w_tap / self.T0)
 
         self.S_g_ext = self.S_a_ext_out + self.S_r_ext - (self.S_fan + self.S_a_ext_in)
         self.S_g_r = self.S_r_tank - (self.S_cmp + self.S_r_ext_cmp)
         self.S_g_tank = (self.S_w_tank + self.S_l_tank) - (self.S_r_tank + self.S_w_sup_tank)
-        self.S_g_mix = self.S_w_tap - (self.S_w_tank + self.S_w_sup_serv)
+        self.S_g_mix = self.S_w_tap - (self.S_w_tank + self.S_w_sup_mix)
 
         self.X_fan = self.E_fan - self.S_fan * self.T0
         self.X_cmp = self.E_cmp - self.S_cmp * self.T0
@@ -892,9 +889,9 @@ class HeatPumpBoiler:
         self.X_w_sup_tank = c_w * rho_w * self.dV_w_sup_tank * ((self.T_w_sup - self.T0) - self.T0 * math.log(self.T_w_sup / self.T0))
         self.X_w_tank = c_w * rho_w * self.dV_w_sup_tank * ((self.T_w_tank - self.T0) - self.T0 * math.log(self.T_w_tank / self.T0))
         self.X_l_tank = (1 - self.T0 / self.T_tank_is) * self.Q_l_tank
-        self.X_w_sup_serv = c_w * rho_w * self.dV_w_sup_mix * ((self.T_w_sup - self.T0) - self.T0 * math.log(self.T_w_sup / self.T0))
+        self.X_w_sup_mix = c_w * rho_w * self.dV_w_sup_mix * ((self.T_w_sup - self.T0) - self.T0 * math.log(self.T_w_sup / self.T0))
         self.X_w_serv = c_w * rho_w * self.dV_w_tap * ((self.T_w_tap - self.T0) - self.T0 * math.log(self.T_w_tap / self.T0))
-        self.X_a_ext_in = c_a * rho_a * self.dV_a_ext * ((T_a_ext_in - self.T0) - self.T0 * math.log(T_a_ext_in / self.T0))
+        self.X_a_ext_in = c_a * rho_a * self.dV_a_ext * ((self.T_a_ext_in - self.T0) - self.T0 * math.log(self.T_a_ext_in / self.T0))
         self.X_a_ext_out = c_a * rho_a * self.dV_a_ext * ((self.T_a_ext_out - self.T0) - self.T0 * math.log(self.T_a_ext_out / self.T0))
         
         self.X_c_ext = self.S_g_ext * self.T0
@@ -942,7 +939,7 @@ class HeatPumpBoiler:
         self.energy_balance["mixing valve"] = {
             "in": {
             "Q_w_tank": self.Q_w_tank,
-            "Q_w_sup_serv": self.Q_w_sup_serv
+            "Q_w_sup_mix": self.Q_w_sup_mix
             },
             "out": {
             "Q_w_serv": self.Q_w_serv
@@ -996,7 +993,7 @@ class HeatPumpBoiler:
         self.entropy_balance["mixing valve"] = {
             "in": {
             "S_w_tank": self.S_w_tank,
-            "S_w_sup_serv": self.S_w_sup_serv
+            "S_w_sup_mix": self.S_w_sup_mix
             },
             "out": {
             "S_w_serv": self.S_w_tap
@@ -1053,7 +1050,7 @@ class HeatPumpBoiler:
         self.exergy_balance["mixing valve"] = {
             "in": {
             "X_w_tank": self.X_w_tank,
-            "X_w_sup_serv": self.X_w_sup_serv
+            "X_w_sup_mix": self.X_w_sup_mix
             },
             "con": {
             "X_c_mix": self.X_c_mix
