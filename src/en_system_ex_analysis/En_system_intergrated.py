@@ -545,7 +545,7 @@ class GasBoiler:
         self.alp = print("alp is negative") if self.alp < 0 else self.alp
         
         # Volumetric flow rates [m³/s]
-        self.dV_w_sup_tank = self.alp * self.dV_w_tap
+        self.dV_w_sup_comb = self.alp * self.dV_w_tap
         self.dV_w_sup_mix  = (1-self.alp)*self.dV_w_tap
 
         # Thermal resistances per unit area/legnth
@@ -847,7 +847,7 @@ class HeatPumpBoiler:
             term1 = (1/2 * rho_a * V_a_ext**3) / (self.eta_fan * self.A_ext**2) # Fan power input [W]
             term2 = c_a * rho_a * V_a_ext * (self.T_a_ext_in - self.T0) # Air heat absorption [W] -> outlet air temperature decreases by this
             term3 = (1 - self.eta_fan) * (1 - self.kappa_fan) * term1 # Fan heat absorption [W] -> outlet air temperature increases by this
-            term4 = c_a * rho_a * V_a_ext * ((T_a_ext_in - self.Q_r_ext / (c_a * rho_a * V_a_ext)) + ((1 - self.eta_fan) * self.kappa_fan * term1) / (c_a * rho_a * V_a_ext) - self.T0)
+            term4 = c_a * rho_a * V_a_ext * ((self.T_a_ext_in - self.Q_r_ext / (c_a * rho_a * V_a_ext)) + ((1 - self.eta_fan) * self.kappa_fan * term1) / (c_a * rho_a * V_a_ext) - self.T0)
             return term1 + term2 - term1 / self.A_ext**2 - term3 - term4 
         
         # External fan air flow rate
