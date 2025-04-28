@@ -1353,8 +1353,8 @@ class AirSourceHeatPump_heating:
         self.Q_r_ext = self.Q_r_int - self.E_cmp # heat transfer from external unit to refrigerant [W]
 
         # internal, external unit
-        self.dV_int = self.Q_r_int / (c_a * rho_a * (self.T_a_int_out - self.T_a_int_in)) # volumetric flow rate of internal unit [m3/s]
-        self.dV_ext = self.Q_r_ext / (c_a * rho_a * (self.T_a_ext_out - self.T_a_ext_in)) # volumetric flow rate of external unit [m3/s]
+        self.dV_int = self.Q_r_int / (c_a * rho_a * abs(self.T_a_int_out - self.T_a_int_in)) # volumetric flow rate of internal unit [m3/s]
+        self.dV_ext = self.Q_r_ext / (c_a * rho_a * abs(self.T_a_ext_out - self.T_a_ext_in)) # volumetric flow rate of external unit [m3/s]
 
         # fan power
         self.E_fan_int = Fan().get_power(self.fan_int, self.dV_int) # power input of internal unit fan [W]
