@@ -198,9 +198,9 @@ class Fan:
             ax.set_title(title, fontsize=dm.fs(0.5))
             ax.legend()
 
-        plt.subplotS_adjust(wspace=0.3)
-        dm.simplQ_layout(fig, margins=(0.05, 0.05, 0.05, 0.05), bbox=(0, 1, 0, 1), verbose=False)
-        dm.savQ_and_show(fig)
+        plt.subplots_adjust(wspace=0.3)
+        dm.simple_layout(fig, margins=(0.05, 0.05, 0.05, 0.05), bbox=(0, 1, 0, 1), verbose=False)
+        dm.save_and_show(fig)
 
 @dataclass
 class Pump:
@@ -282,8 +282,8 @@ class Pump:
         ax.set_ylabel('Efficiency [-]', fontsize=dm.fs(0.5))
         ax.legend()
 
-        dm.simplQ_layout(fig, margins=(0.05, 0.05, 0.05, 0.05), bbox=(0, 1, 0, 1), verbose=False)
-        dm.savQ_and_show(fig)
+        dm.simple_layout(fig, margins=(0.05, 0.05, 0.05, 0.05), bbox=(0, 1, 0, 1), verbose=False)
+        dm.save_and_show(fig)
 
 @dataclass
 class ElectricBoiler:
