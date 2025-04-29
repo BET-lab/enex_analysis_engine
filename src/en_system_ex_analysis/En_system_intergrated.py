@@ -1154,10 +1154,11 @@ class SolarHotWater:
 @dataclass
 class AirSourceHeatPump_cooling:
     def __post_init__(self):
-
+        
         # fan
-        self.fan_int = Fan().fan1
-        self.fan_ext = Fan().fan2
+        self.fan = Fan()
+        self.fan_int = self.fan.fan1
+        self.fan_ext = self.fan.fan2
 
         # COP
         self.COP_model = COP_by_PLR_cooling()
@@ -1336,8 +1337,9 @@ class AirSourceHeatPump_heating:
     def __post_init__(self):
 
         # fan
-        self.fan_int = Fan().fan1
-        self.fan_ext = Fan().fan2
+        self.fan = Fan()
+        self.fan_int = self.fan.fan1
+        self.fan_ext = self.fan.fan2
 
         # COP
         self.COP_model = COP_by_PLR_heating()
