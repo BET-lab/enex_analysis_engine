@@ -360,7 +360,7 @@ class ElectricBoiler:
         self.R_side_tot = self.R_side + self.R_side_ext
 
         # U-value [W/K]
-        self.U_tank = 1 / (2 * self.R_base_tot + self.R_side_tot)
+        self.U_tank = 2/self.R_base_tot + 1/self.R_side_tot
 
         # Heat Transfer Rates
         self.Q_w_tank = c_w * rho_w * self.dV_w_sup_tank * (self.T_w_tank - self.T0)
@@ -565,7 +565,7 @@ class GasBoiler:
         self.R_side_tot = self.R_side + self.R_side_ext
 
         # U-value [W/K]
-        self.U_tank = 1 / (2 * self.R_base_tot + self.R_side_tot)
+        self.U_tank = 2/self.R_base_tot + 1/self.R_side_tot
         self.Q_l_tank = self.U_tank * (self.T_tank_is - self.T0)  # Heat loss from tank
 
         # Temperature [K]
@@ -821,7 +821,7 @@ class HeatPumpBoiler:
         self.R_side_tot = self.R_side + self.R_side_ext
 
         # U-value [W/K]
-        self.U_tank = 1 / (2 * self.R_base_tot + self.R_side_tot)
+        self.U_tank = 2/self.R_base_tot + 1/self.R_side_tot
 
         # Fan and Compressor Parameters
         self.A_ext = math.pi * self.r_ext**2  # External unit area [m²] 20 cm x 20 cm assumption
@@ -875,12 +875,12 @@ class HeatPumpBoiler:
         self.S_w_tank     = c_w * rho_w * self.dV_w_sup_tank * math.log(self.T_w_tank / self.T0)
         self.S_l_tank     = (1 / self.T_tank_is) * self.Q_l_tank
         self.S_w_sup_mix = c_w * rho_w * self.dV_w_sup_mix * math.log(self.T_w_sup / self.T0)
-        self.S_w_tap      = c_w * rho_w * self.dV_w_tap * math.log(self.T_w_tap / self.T0)
+        self.S_w_serv      = c_w * rho_w * self.dV_w_tap * math.log(self.T_w_tap / self.T0)
 
         self.S_g_ext = self.S_a_ext_out + self.S_r_ext - (self.S_fan + self.S_a_ext_in)
         self.S_g_r = self.S_r_tank - (self.S_cmp + self.S_r_ext_cmp)
         self.S_g_tank = (self.S_w_tank + self.S_l_tank) - (self.S_r_tank + self.S_w_sup_tank)
-        self.S_g_mix = self.S_w_tap - (self.S_w_tank + self.S_w_sup_mix)
+        self.S_g_mix = self.S_w_serv - (self.S_w_tank + self.S_w_sup_mix)
 
         self.X_fan = self.E_fan - self.S_fan * self.T0
         self.X_cmp = self.E_cmp - self.S_cmp * self.T0
@@ -996,7 +996,7 @@ class HeatPumpBoiler:
             "S_w_sup_mix": self.S_w_sup_mix
             },
             "out": {
-            "S_w_serv": self.S_w_tap
+            "S_w_serv": self.S_w_serv
             },
             "gen": {
             "S_g_mix": self.S_g_mix
