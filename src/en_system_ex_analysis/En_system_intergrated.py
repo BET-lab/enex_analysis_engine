@@ -6,7 +6,7 @@ import dartwork_mpl as dm
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 
-
+#%%
 # constant
 c_a = 1005 # Specific heat capacity of air [J/kgK]
 rho_a = 1.225 # Density of air [kg/m³]
@@ -15,6 +15,7 @@ c_w   = 4186 # Water specific heat [J/kgK]
 rho_w = 1000
 mu_w = 0.001 # Water dynamic viscosity [Pa.s]
 
+#%%
 # function
 def darcy_friction_factor(Re, e_d):
     '''
@@ -128,6 +129,8 @@ def calculate_ASHP_heating_COP(T_0, Q_r_int, Q_r_max):
     COP = -7.46 * (PLR - 0.0047 * cu.K2C(T_0) - 0.477)**2 + 0.0941 * cu.K2C(T_0) + 4.34
     return COP
 
+#%%
+# class - Fan & Pump
 @dataclass
 class Fan:
     def __post_init__(self): 
@@ -285,6 +288,8 @@ class Pump:
         dm.simple_layout(fig, margins=(0.05, 0.05, 0.05, 0.05), bbox=(0, 1, 0, 1), verbose=False)
         dm.save_and_show(fig)
 
+#%%
+# class - Domestic Hot Water System
 @dataclass
 class ElectricBoiler:
     def __post_init__(self):
@@ -1127,6 +1132,8 @@ class SolarHotWater:
         # Temperature
         self.T_tank_is  = self.T_w_tank # inner surface temperature of the tank [K]
 
+#%%
+# class - AirSourceHeatPump
 @dataclass
 class AirSourceHeatPump_cooling:
     def __post_init__(self):
@@ -1424,6 +1431,8 @@ class AirSourceHeatPump_heating:
             }
         }
 
+#%%
+# class - GroundSourceHeatPump
 @dataclass
 class GroundSourceHeatPump:
     def __post_init__(self):
@@ -1536,5 +1545,4 @@ class GroundSourceHeatPump:
         self.Xin  = self.E_fan_int + self.E_cmp + self.E_pmp
         self.Xout = self.X_a_int_out - self.X_a_int_in
         self.Xc   = self.Xin - self.Xout
-        
  
