@@ -1500,7 +1500,7 @@ class GroundSourceHeatPump:
         # pump, compressor
         self.E_cmp = self.Q_r_int / self.COP # compressor power input [W]
         self.dV_pmp  = self.Q_r_ext / (c_w * rho_w * self.dT_g) # volumetric flow rate of pump [m3/s]
-        self.E_pmp   = Pump().get_power(pump, dV_pmp, dP_pmp) # pump power input [W]
+        self.E_pmp   = Pump().get_power(self.pump, self.dV_pmp, self.dP_pmp) # pump power input [W]
 
         # internal, external unit
         self.dV_int = self.Q_r_int / (c_a * rho_a * self.dT_a) # volumetric flow rate of internal unit [m3/s]
@@ -1509,7 +1509,7 @@ class GroundSourceHeatPump:
         # Circulating water parameters
         self.X_a_int_in  = c_a * rho_a * self.dV_int * ((self.T_a_int_in - self.T0) - self.T0 * math.log(self.T_a_int_in / self.T0))
         self.X_a_int_out = c_a * rho_a * self.dV_int * ((self.T_a_int_out - self.T0) - self.T0 * math.log(self.T_a_int_out / self.T0))
-        self.X_a_ext_in  = c_a * rho_a * self.dV_ext * ((T_a_ext_in - self.T0) - self.T0 * math.log(T_a_ext_in / self.T0))
+        self.X_a_ext_in  = c_a * rho_a * self.dV_ext * ((self.T_a_ext_in - self.T0) - self.T0 * math.log(self.T_a_ext_in / self.T0))
         self.X_a_ext_out = c_a * rho_a * self.dV_ext * ((self.T_a_ext_out - self.T0) - self.T0 * math.log(self.T_a_ext_out / self.T0))
 
         ## exergy results
