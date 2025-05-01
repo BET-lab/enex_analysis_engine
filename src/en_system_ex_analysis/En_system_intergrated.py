@@ -15,6 +15,8 @@ c_w   = 4186 # Water specific heat [J/kgK]
 rho_w = 1000
 mu_w = 0.001 # Water dynamic viscosity [Pa.s]
 
+sigma = 5.67*10**-8 # Stefan-Boltzmann constant [W/m²K⁴]
+
 #%%
 # function
 def darcy_friction_factor(Re, e_d):
@@ -497,7 +499,7 @@ class GasBoiler:
         self.eta_comb = 0.9
         self.eta_NG   = 0.93
 
-        # Temperature [K]
+        # Temperature [°C]
         self.T_w_tank = 60 
         self.T_w_sup  = 10
         self.T_w_tap  = 45 
@@ -1546,3 +1548,164 @@ class GroundSourceHeatPump:
         self.Xout = self.X_a_int_out - self.X_a_int_in
         self.Xc   = self.Xin - self.Xout
  
+ #%% 
+# class - Electric heater
+@dataclass
+class ElectricHeater:
+    def __post_init__(self): 
+        # Panel properties (냉간압연 탄소강판 SPCC)
+        self.c_p   = 500 # [J/kgK]
+        self.rho_p = 7800 # [kg/m3]
+        self.k_p   = 50 # [W/mK]
+        
+        # Panel geometry [m]
+        self.D_p = 0.02 
+        self.H_p = 0.5 
+        self.W_p = 0.5 
+        
+        # Electricity input to the heater [W]
+        self.E_heater = 2000
+        
+        # Temperature [°C]
+        self.T0   = 20
+        self.T_mr = 20
+        self.T_p_init = 20 # Initial temperature of the panel [°C]
+        self.T_ia = 20 # Inlet air temperature [°C]
+        
+        # Heat transfer coefficient [W/m²K]
+        self.h_cp = 10 #?
+        self.h_r = 5 #?
+        
+        # Emissivity [-]
+        self.epsilon_p = 1
+        self.epsilon_r = 1
+        
+        # Time step [s]
+        self.dt = 10
+    
+    def system_update(self):
+        # Temperature [K]
+        self.T0   = cu.C2K(self.T0) # 두번 선언되면 안됨
+        self.T_mr = cu.C2K(self.T_mr)
+        self.T_ia = cu.C2K(self.T_ia)
+        self.T_p_init = cu.C2K(self.T_p_init)
+        self.T_p  = self.T_p_init.copy()
+        self.T_ps = self.T_p_init.copy()
+        
+        # Panel properties
+        self.C_p = self.c_p * self.rho_p
+        self.A_p = self.H_p * self.W_p
+        self.V_p = self.A_p * self.D_p
+        
+        # Conductance [W/m²K]
+        self.K_cond = self.k_p / (self.D_p / 2)
+        
+        # Iterative calculation
+        self.T_p_list = []
+        self.T_ps_list = []
+        
+        self.Q_cond_list = []
+        self.Q_conv_ps_list = []
+        self.Q_rad_ps_list = []
+        self.Q_rad_mr_list = []
+        
+        self.S_stored_list = []
+        self.S_heater_list = []
+        self.S_cond_list = []
+        self.S_conv_ps_list = []
+        self.S_rad_mr_list = []
+        self.S_rad_ps_list = []
+        self.S_g_body_list = []
+        self.S_g_surf_list = []
+        
+        self.X_stored_list = [] 
+        self.X_heater_list = []
+        self.X_cond_list = []
+        self.X_conv_ps_list = []
+        self.X_rad_mr_list = []
+        self.X_rad_ps_list = []
+        self.X_heater_list = []
+        self.X_c_body_list = []
+        self.X_c_surf_list = []
+        
+        index = 0
+        self.dT_p = 1.0  # Initialize dT_p with a default value
+        while self.dT_p > 0.01:
+            print(f"Iteration: {index}")
+            
+            # T_ps update (Energy balance: Q_cond + Q_rad_mr = Q_conv_ps + Q_rad_ps)
+            self.T_ps = (
+                self.K_cond * self.T_p
+                + self.epsilon_p * self.epsilon_r * sigma * (self.T_mr ** 4)
+                - self.epsilon_p * self.epsilon_r * sigma * (self.T_p ** 4)
+                - self.h_cp * self.T_ia
+            ) / (self.K_cond + self.h_cp)
+            self.T_ps_list.append(self.T_ps)
+            
+            # Conduction [W]
+            self.Q_stored = 0 if index == 0 else self.C_p * self.V_p * self.dT_p / self.dt
+            self.Q_cond = self.A_p * self.K_cond * (self.T_p - self.T_ps)
+            self.Q_conv_ps = self.A_p * self.h_cp * (self.T_ps - self.T_ia) # h_cp 추후 변하게
+            self.Q_rad_mr = self.A_p * self.epsilon_p * self.epsilon_r * sigma * (self.T_mr ** 4 - self.T0 ** 4)
+            self.Q_rad_ps = self.A_p * self.epsilon_p * self.epsilon_r * sigma * (self.T_p ** 4 - self.T0 ** 4)
+            
+            self.Q_cond_list.append(self.Q_cond)
+            self.Q_conv_ps_list.append(self.Q_conv_ps)
+            self.Q_rad_ps_list.append(self.Q_rad_ps)
+            self.Q_rad_mr_list.append(self.Q_rad_mr)
+            
+            # Entropy balance
+            self.S_stored = (1/self.T_p) * (self.Q_stored)
+            self.S_heater = (1/float('inf')) * (self.E_heater)
+            self.S_cond = (1/self.T_p) * (self.Q_cond)
+            self.S_conv_ps = (1/self.T_ps) * (self.Q_conv_ps)
+            self.S_rad_mr  = 4/3 * self.A_p * self.epsilon_p * self.epsilon_r * sigma * (self.T_mr ** 3 - self.T0 ** 3)
+            self.S_rad_ps  = 4/3 * self.A_p * self.epsilon_p * self.epsilon_r * sigma * (self.T_p ** 3 - self.T0 ** 3)
+            self.S_g_body = self.S_stored + self.S_conv_ps - self.S_heater     
+            self.S_g_surf = self.S_rad_ps + self.S_conv_ps - self.S_cond - self.S_rad_mr
+
+            self.S_stored_list.append(self.S_stored)
+            self.S_heater_list.append(self.S_heater)
+            self.S_cond_list.append(self.S_cond)
+            self.S_conv_ps_list.append(self.S_conv_ps)
+            self.S_rad_mr_list.append(self.S_rad_mr)
+            self.S_rad_ps_list.append(self.S_rad_ps)
+            self.S_g_body_list.append(self.S_g_body)
+            self.S_g_surf_list.append(self.S_g_surf)
+            
+            # Exergy balance
+            self.X_stored = (1 - self.T0 / self.T_p) * (self.Q_stored)
+            self.X_heater = (1 - self.T0 / float('inf')) * (self.E_heater)
+            self.X_cond = (1 - self.T0 / self.T_p) * (self.Q_cond)
+            self.X_conv_ps = (1 - self.T0 / self.T_ps) * (self.Q_conv_ps)
+            self.X_rad_mr = self.Q_rad_mr - self.T0 * self.S_rad_mr
+            self.X_rad_ps = self.Q_rad_ps - self.T0 * self.S_rad_ps
+            self.X_c_body = self.X_stored + self.X_conv_ps - self.X_heater
+            self.X_c_surf = self.X_rad_ps + self.X_conv_ps - self.X_cond - self.X_rad_mr
+            
+            self.X_stored_list.append(self.X_stored)
+            self.X_heater_list.append(self.X_heater)
+            self.X_cond_list.append(self.X_cond)
+            self.X_conv_ps_list.append(self.X_conv_ps)
+            self.X_rad_mr_list.append(self.X_rad_mr)
+            self.X_rad_ps_list.append(self.X_rad_ps)
+            self.X_c_body_list.append(self.X_c_body)
+            self.X_c_surf_list.append(self.X_c_surf)
+            
+            # Update T_p
+            self.dT_p = (self.E_heater - self.Q_cond) * self.dt / (self.C_p * self.V_p)
+            print(f"Temperature difference: {(self.dT_p):.2f}")
+            
+            self.T_p += self.dT_p
+            self.T_p_list.append(self.T_p)
+            
+            index += 1
+            if index > 1000:
+                print("Maximum iterations reached.")
+                break
+        print(f"Updated temperature: {self.T_p:.2f}")
+        
+        
+# %%
+Elec_heater = ElectricHeater()
+Elec_heater.system_update()
