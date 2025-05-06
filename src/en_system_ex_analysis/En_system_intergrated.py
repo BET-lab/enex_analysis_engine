@@ -38,6 +38,42 @@ def darcy_friction_factor(Re, e_d):
     else:
         return 0.25 / (math.log10(e_d / 3.7 + 5.74 / Re ** 0.9)) ** 2
 
+def compute_natural_convection_h_cp(T_s, T_inf, L):
+    '''
+    📌 Function: compute_natural_convection_h_cp
+    이 함수는 자연 대류에 의한 열전달 계수를 계산합니다.
+    🔹 Parameters
+        - T_s (float): 표면 온도 [K]
+        - T_inf (float): 유체 온도 [K]
+        - L (float): 특성 길이 [m]
+    🔹 Return
+        - h_cp (float): 열전달 계수 [W/m²K]
+    🔹 Example
+        ```
+        h_cp = compute_natural_convection_h_cp(T_s, T_inf, L)
+        ```
+    🔹 Note
+        - 이 함수는 자연 대류에 의한 열전달 계수를 계산하는 데 사용됩니다.
+        - L은 특성 길이로, 일반적으로 물체의 길이나 직경을 사용합니다.
+        - 이 함수는 Churchill & Chu 식을 사용하여 열전달 계수를 계산합니다.
+    '''
+    # 공기 물성치 @ 40°C
+    nu = 1.6e-5        # m²/s
+    k_air = 0.027      # W/m·K
+    Pr = 0.7
+    beta = 1 / ((T_s + T_inf)/2)  # 1/K
+    g = 9.81           # m/s²
+
+    # Rayleigh 수 계산
+    delta_T = T_s - T_inf
+    Ra_L = g * beta * delta_T * L**3 / (nu**2) * Pr
+
+    # Churchill & Chu 식
+    Nu_L = (0.825 + (0.387 * Ra_L**(1/6)) / (1 + (0.492/Pr)**(9/16))**(8/27))**2
+    h_cp = Nu_L * k_air / L  # [W/m²K]
+    
+    return h_cp
+
 def linear_function(x, a, b):
     return a * x + b
 
@@ -1573,8 +1609,6 @@ class ElectricHeater:
         self.T_p_init = 20 # Initial temperature of the panel [°C]
         self.T_ia = 20 # Inlet air temperature [°C]
         
-        # Heat transfer coefficient [W/m²K]
-        self.h_cp = 10 #?
         
         # Emissivity [-]
         self.epsilon_p = 1
@@ -1584,6 +1618,7 @@ class ElectricHeater:
         self.dt = 10
     
     def system_update(self):
+        
         # Temperature [K]
         self.T0   = cu.C2K(self.T0) # 두번 system update를 할 경우 절대온도 변환 중첩됨
         self.T_mr = cu.C2K(self.T_mr)
@@ -1605,6 +1640,7 @@ class ElectricHeater:
         self.T_p_list = []
         self.T_ps_list = []
         
+        self.E_heater_list = []
         self.Q_stored_list = []
         self.Q_cond_list = []
         self.Q_conv_ps_list = []
@@ -1633,16 +1669,44 @@ class ElectricHeater:
         index = 0
         self.dT_p = 1.0  # Initialize dT_p with a default value
         while self.dT_p > 0.01:
-            print(f"Iteration: {index}")
             self.time.append(index * self.dt)
-            # T_ps update (Energy balance: Q_cond + Q_rad_mr = Q_conv_ps + Q_rad_ps)
+            
+            # Heat transfer coefficient [W/m²K]
+            self.h_cp = compute_natural_convection_h_cp(self.T_ps, self.T0, self.H_p) 
+            
+            def residual_Tp(Tp_new):
+                # 축열 항
+                Q_stored = self.rho_p * self.c_p * self.V_p * (Tp_new - self.T_p) / self.dt
+
+                # Tps 계산 (표면에너지 평형으로부터)
+                Tps = (
+                    self.K_cond * Tp_new
+                    + self.h_cp * self.T_ia
+                    + self.epsilon_p * self.epsilon_r * sigma * (self.T_mr**4 - self.T0**4)
+                    - self.epsilon_p * self.epsilon_r * sigma * (Tp_new**4 - self.T0**4)
+                ) / (self.K_cond + self.h_cp)
+
+                # 전도열
+                Q_cond = self.A_p * self.K_cond * (Tp_new - Tps)
+
+                return Q_stored + Q_cond - self.E_heater
+            
+            self.Tp_guess = self.T_p # 초기 추정값
+            
+            from scipy.optimize import fsolve
+            self.Tp_next = fsolve(residual_Tp, self.Tp_guess)[0]
+            
+            # Temperature update
+            self.dT_p = abs(self.Tp_next - self.T_p)
+            self.T_p = self.Tp_next
+            
+            # T_ps update (Energy balance surface: Q_cond + Q_rad_mr = Q_conv_ps + Q_rad_ps)
             self.T_ps = (
                 self.K_cond * self.T_p
+                + self.h_cp * self.T_ia
                 + self.epsilon_p * self.epsilon_r * sigma * (self.T_mr ** 4 - self.T0 ** 4)
                 - self.epsilon_p * self.epsilon_r * sigma * (self.T_p ** 4 - self.T0 ** 4)
-                - self.h_cp * self.T_ia
             ) / (self.K_cond + self.h_cp)
-            self.T_ps_list.append(self.T_ps)
             
             # Conduction [W]
             self.Q_stored = 0 if index == 0 else self.C_p * self.V_p * self.dT_p / self.dt
@@ -1651,6 +1715,7 @@ class ElectricHeater:
             self.Q_rad_mr = self.A_p * self.epsilon_p * self.epsilon_r * sigma * (self.T_mr ** 4 - self.T0 ** 4)
             self.Q_rad_ps = self.A_p * self.epsilon_p * self.epsilon_r * sigma * (self.T_p ** 4 - self.T0 ** 4)
             
+            self.E_heater_list.append(self.E_heater)
             self.Q_stored_list.append(self.Q_stored)
             self.Q_cond_list.append(self.Q_cond)
             self.Q_conv_ps_list.append(self.Q_conv_ps)
@@ -1683,8 +1748,8 @@ class ElectricHeater:
             self.X_conv_ps = (1 - self.T0 / self.T_ps) * (self.Q_conv_ps)
             self.X_rad_mr = self.Q_rad_mr - self.T0 * self.S_rad_mr
             self.X_rad_ps = self.Q_rad_ps - self.T0 * self.S_rad_ps
-            self.X_c_body = self.X_stored + self.X_conv_ps - self.X_heater
-            self.X_c_surf = self.X_rad_ps + self.X_conv_ps - self.X_cond - self.X_rad_mr
+            self.X_c_body = -(self.X_stored + self.X_cond - self.X_heater)
+            self.X_c_surf = -(self.X_rad_ps + self.X_conv_ps - self.X_cond - self.X_rad_mr)
             
             self.X_stored_list.append(self.X_stored)
             self.X_heater_list.append(self.X_heater)
@@ -1695,34 +1760,94 @@ class ElectricHeater:
             self.X_c_body_list.append(self.X_c_body)
             self.X_c_surf_list.append(self.X_c_surf)
             
-            # Update T_p
-            self.dT_p = (self.E_heater - self.Q_cond) * self.dt / (self.C_p * self.V_p)
-            print(f"Temperature difference: {(self.dT_p):.2f}")
-            
-            self.T_p += self.dT_p
-            self.T_p_list.append(self.T_p)
-            
             index += 1
             if index > 100000:
-                print("Maximum iterations reached.")
                 break
-        print(f"Updated temperature: {self.T_p:.2f}")
         
         
 # %%
 EH = ElectricHeater()
-EH.D_p = 0.02 # 0.02 -> 0.01 
+EH.T0 = 0
+EH.D_p = 0.005 # 0.02 -> 0.01 
+EH.E_heater = 3000 # [W]
 EH.dt = 1
 EH.system_update()
 
 time = np.array(EH.time) / 3600 # convert to hours
 
-plt.plot(time, cu.K2C(np.array(EH.T_p_list)), label="Panel Temperature (T_p)")
-plt.plot(time, cu.K2C(np.array(EH.T_ps_list)), label="Surface Temperature (T_ps)")
-plt.xlabel("Time (hours)")
-plt.ylabel("Temperature (°C)")
+#%%
+# Energy balance check
+EnergyBalance1 = np.array(EH.Q_cond_list) + np.array(EH.Q_rad_mr_list) - np.array(EH.Q_rad_ps_list) - np.array(EH.Q_conv_ps_list)
+EnergyBalance2 = np.array(EH.E_heater_list) - np.array(EH.Q_stored_list) - np.array(EH.Q_cond_list)
+
+plt.plot(time, EnergyBalance1, label="Energy balance 1", color = "tw.amber:500")
+plt.plot(time, EnergyBalance2, label="Energy balance 2", color = "tw.blue:600")
 plt.legend()
-plt.show()
+#%% 
+# plotting
+fig, ax = plt.subplots(1, 1, figsize=(dm.cm2in(10), dm.cm2in(4)), sharex=True)
+# Exergy balance (surface)
+ax.plot(time, np.array(EH.Q_cond_list), label="Conduction to surface", color = "tw.lime:600", linestyle = "-.")
+ax.plot(time, np.array(EH.Q_rad_mr_list), label="Radiation from envelope", color = "tw.amber:500", linestyle = "-.")
+ax.plot(time, np.array(EH.Q_rad_ps_list), label="Radiation from surface", color = "tw.blue:600", linestyle = "-.")
+ax.plot(time, np.array(EH.Q_conv_ps_list), label="Convection from surface", color = "tw.purple:600", linestyle = "-.") 
+ax.set_ylim(0, 3000)
+
+ax.set_xlabel("Time [hours]", fontsize=dm.fs(0))
+ax.set_ylabel("Energy [W]", fontsize=dm.fs(0))
+
+ax.tick_params(axis='both', which='major', labelsize=dm.fs(-1))
+ax.tick_params(axis='both', which='minor', labelsize=dm.fs(-1))
+
+handles, labels = ax.get_legend_handles_labels()
+ax.legend(handles, labels, loc='upper left', fontsize=dm.fs(-2), frameon=False, ncol=2, handlelength=1.5)
+
+dm.simple_layout(fig=fig, bbox =(0, 1, 0, 1), margins=(0.1, 0.1, 0.1, 0.1), verbose = False)
+dm.save_and_show(fig)
+
+#%% 
+
+# plotting
+fig, ax = plt.subplots(1, 1, figsize=(dm.cm2in(10), dm.cm2in(4)), sharex=True)
+# Exergy balance (body)
+ax.plot(time, np.array(EH.E_heater_list), label="Input to heater", color = "tw.amber:500",)
+ax.plot(time, np.array(EH.Q_cond_list), label="Conduction to surface", color = "tw.lime:600")
+ax.plot(time, np.array(EH.Q_stored_list), label="Stored in body", color = "tw.purple:600") 
+ax.set_ylim(0, 3000+500)
+ax.set_xlabel("Time [hours]", fontsize=dm.fs(0))
+ax.set_ylabel("Energy [W]", fontsize=dm.fs(0))
+
+ax.tick_params(axis='both', which='major', labelsize=dm.fs(-1))
+ax.tick_params(axis='both', which='minor', labelsize=dm.fs(-1))
+
+handles, labels = ax.get_legend_handles_labels()
+ax.legend(handles, labels, loc='upper right', fontsize=dm.fs(-2), frameon=False, ncol=3)
+
+dm.simple_layout(fig=fig, bbox =(0, 1, 0, 1), margins=(0.1, 0.1, 0.1, 0.1), verbose = False)
+dm.save_and_show(fig)
+
+# %% 
+# plotting
+fig, ax = plt.subplots(1, 1, figsize=(dm.cm2in(10), dm.cm2in(4)), sharex=True)
+# Exergy balance (body)
+ax.plot(time, np.array(EH.X_heater_list), label="Input to heater", color = "tw.amber:500")
+ax.plot(time, np.array(EH.X_cond_list), label="Conduction to surface", color = "tw.lime:600")
+ax.plot(time, np.array(EH.X_stored_list), label="Stored in body", color = "tw.purple:600") 
+ax.plot(time, np.array(EH.X_c_body_list), label="Consumption in body", color = "tw.blue:600")
+ax.set_ylim(0, 3000+500)
+ax.set_xlabel("Time [hours]", fontsize=dm.fs(0))
+ax.set_ylabel("Exergy [W]", fontsize=dm.fs(0))
+
+ax.tick_params(axis='both', which='major', labelsize=dm.fs(-1))
+ax.tick_params(axis='both', which='minor', labelsize=dm.fs(-1))
+
+handles, labels = ax.get_legend_handles_labels()
+ax.legend(handles, labels, loc='upper right', fontsize=dm.fs(-2), frameon=False, ncol=4,)
+
+dm.simple_layout(fig=fig, bbox =(0, 1, 0, 1), verbose = False)
+dm.save_and_show(fig)
+#%% 
+# plt.plot(time, cu.K2C(np.array(EH.X_c_surf_list)), label="Exergy consumption on surface [W]", color = "dm.lime6")
 
 # plt.plot(time, EH.Q_cond_list)
 # plt.plot(time, EH.Q_conv_ps_list)
