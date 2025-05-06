@@ -1,6 +1,7 @@
 import numpy as np
 import math
-from . import calc_util as cu
+# from . import calc_util as cu
+import calc_util as cu
 from dataclasses import dataclass
 import dartwork_mpl as dm
 import matplotlib.pyplot as plt
@@ -1574,7 +1575,6 @@ class ElectricHeater:
         
         # Heat transfer coefficient [W/m²K]
         self.h_cp = 10 #?
-        self.h_r = 5 #?
         
         # Emissivity [-]
         self.epsilon_p = 1
@@ -1585,12 +1585,12 @@ class ElectricHeater:
     
     def system_update(self):
         # Temperature [K]
-        self.T0   = cu.C2K(self.T0) # 두번 선언되면 안됨
+        self.T0   = cu.C2K(self.T0) # 두번 system update를 할 경우 절대온도 변환 중첩됨
         self.T_mr = cu.C2K(self.T_mr)
         self.T_ia = cu.C2K(self.T_ia)
         self.T_p_init = cu.C2K(self.T_p_init)
-        self.T_p  = self.T_p_init.copy()
-        self.T_ps = self.T_p_init.copy()
+        self.T_p  = self.T_p_init
+        self.T_ps = self.T_p_init
         
         # Panel properties
         self.C_p = self.c_p * self.rho_p
@@ -1601,9 +1601,11 @@ class ElectricHeater:
         self.K_cond = self.k_p / (self.D_p / 2)
         
         # Iterative calculation
+        self.time = []
         self.T_p_list = []
         self.T_ps_list = []
         
+        self.Q_stored_list = []
         self.Q_cond_list = []
         self.Q_conv_ps_list = []
         self.Q_rad_ps_list = []
@@ -1632,12 +1634,12 @@ class ElectricHeater:
         self.dT_p = 1.0  # Initialize dT_p with a default value
         while self.dT_p > 0.01:
             print(f"Iteration: {index}")
-            
+            self.time.append(index * self.dt)
             # T_ps update (Energy balance: Q_cond + Q_rad_mr = Q_conv_ps + Q_rad_ps)
             self.T_ps = (
                 self.K_cond * self.T_p
-                + self.epsilon_p * self.epsilon_r * sigma * (self.T_mr ** 4)
-                - self.epsilon_p * self.epsilon_r * sigma * (self.T_p ** 4)
+                + self.epsilon_p * self.epsilon_r * sigma * (self.T_mr ** 4 - self.T0 ** 4)
+                - self.epsilon_p * self.epsilon_r * sigma * (self.T_p ** 4 - self.T0 ** 4)
                 - self.h_cp * self.T_ia
             ) / (self.K_cond + self.h_cp)
             self.T_ps_list.append(self.T_ps)
@@ -1649,6 +1651,7 @@ class ElectricHeater:
             self.Q_rad_mr = self.A_p * self.epsilon_p * self.epsilon_r * sigma * (self.T_mr ** 4 - self.T0 ** 4)
             self.Q_rad_ps = self.A_p * self.epsilon_p * self.epsilon_r * sigma * (self.T_p ** 4 - self.T0 ** 4)
             
+            self.Q_stored_list.append(self.Q_stored)
             self.Q_cond_list.append(self.Q_cond)
             self.Q_conv_ps_list.append(self.Q_conv_ps)
             self.Q_rad_ps_list.append(self.Q_rad_ps)
@@ -1700,12 +1703,28 @@ class ElectricHeater:
             self.T_p_list.append(self.T_p)
             
             index += 1
-            if index > 1000:
+            if index > 100000:
                 print("Maximum iterations reached.")
                 break
         print(f"Updated temperature: {self.T_p:.2f}")
         
         
 # %%
-Elec_heater = ElectricHeater()
-Elec_heater.system_update()
+EH = ElectricHeater()
+EH.D_p = 0.02 # 0.02 -> 0.01 
+EH.dt = 1
+EH.system_update()
+
+time = np.array(EH.time) / 3600 # convert to hours
+
+plt.plot(time, cu.K2C(np.array(EH.T_p_list)), label="Panel Temperature (T_p)")
+plt.plot(time, cu.K2C(np.array(EH.T_ps_list)), label="Surface Temperature (T_ps)")
+plt.xlabel("Time (hours)")
+plt.ylabel("Temperature (°C)")
+plt.legend()
+plt.show()
+
+# plt.plot(time, EH.Q_cond_list)
+# plt.plot(time, EH.Q_conv_ps_list)
+# plt.plot(time, EH.Q_stored_list)
+# %%
