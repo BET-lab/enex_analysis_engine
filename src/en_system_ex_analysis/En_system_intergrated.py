@@ -1,7 +1,7 @@
 import numpy as np
 import math
-# from . import calc_util as cu
-import calc_util as cu
+from . import calc_util as cu
+# import calc_util as cu
 from dataclasses import dataclass
 import dartwork_mpl as dm
 import matplotlib.pyplot as plt
@@ -58,11 +58,11 @@ def compute_natural_convection_h_cp(T_s, T_inf, L):
         - 이 함수는 Churchill & Chu 식을 사용하여 열전달 계수를 계산합니다.
     '''
     # 공기 물성치 @ 40°C
-    nu = 1.6e-5        # m²/s
-    k_air = 0.027      # W/m·K
+    nu = 1.6e-5  # 0.000016 m²/s
+    k_air = 0.027 # W/m·K
     Pr = 0.7
-    beta = 1 / ((T_s + T_inf)/2)  # 1/K
-    g = 9.81           # m/s²
+    beta = 1 / ((T_s + T_inf)/2) # 1/K
+    g = 9.81 # m/s²
 
     # Rayleigh 수 계산
     delta_T = T_s - T_inf
@@ -1614,6 +1614,9 @@ class ElectricHeater:
         self.epsilon_p = 1
         self.epsilon_r = 1
         
+        # Constant
+        self.A_eff = 2 
+        
         # Time step [s]
         self.dt = 10
     
@@ -1629,8 +1632,8 @@ class ElectricHeater:
         
         # Panel properties
         self.C_p = self.c_p * self.rho_p
-        self.A_p = self.H_p * self.W_p
-        self.V_p = self.A_p * self.D_p
+        self.A_p = self.H_p * self.W_p # -> 6면 전체를 방사한다고 가정해야할 듯
+        self.V_p = self.H_p * self.W_p * self.D_p
         
         # Conductance [W/m²K]
         self.K_cond = self.k_p / (self.D_p / 2)
@@ -1708,6 +1711,10 @@ class ElectricHeater:
                 - self.epsilon_p * self.epsilon_r * sigma * (self.T_p ** 4 - self.T0 ** 4)
             ) / (self.K_cond + self.h_cp)
             
+            # Temperature [K]
+            self.T_p_list.append(self.T_p)
+            self.T_ps_list.append(self.T_ps)
+            
             # Conduction [W]
             self.Q_stored = 0 if index == 0 else self.C_p * self.V_p * self.dT_p / self.dt
             self.Q_cond = self.A_p * self.K_cond * (self.T_p - self.T_ps)
@@ -1765,91 +1772,3 @@ class ElectricHeater:
                 break
         
         
-# %%
-EH = ElectricHeater()
-EH.T0 = 0
-EH.D_p = 0.005 # 0.02 -> 0.01 
-EH.E_heater = 3000 # [W]
-EH.dt = 1
-EH.system_update()
-
-time = np.array(EH.time) / 3600 # convert to hours
-
-#%%
-# Energy balance check
-EnergyBalance1 = np.array(EH.Q_cond_list) + np.array(EH.Q_rad_mr_list) - np.array(EH.Q_rad_ps_list) - np.array(EH.Q_conv_ps_list)
-EnergyBalance2 = np.array(EH.E_heater_list) - np.array(EH.Q_stored_list) - np.array(EH.Q_cond_list)
-
-plt.plot(time, EnergyBalance1, label="Energy balance 1", color = "tw.amber:500")
-plt.plot(time, EnergyBalance2, label="Energy balance 2", color = "tw.blue:600")
-plt.legend()
-#%% 
-# plotting
-fig, ax = plt.subplots(1, 1, figsize=(dm.cm2in(10), dm.cm2in(4)), sharex=True)
-# Exergy balance (surface)
-ax.plot(time, np.array(EH.Q_cond_list), label="Conduction to surface", color = "tw.lime:600", linestyle = "-.")
-ax.plot(time, np.array(EH.Q_rad_mr_list), label="Radiation from envelope", color = "tw.amber:500", linestyle = "-.")
-ax.plot(time, np.array(EH.Q_rad_ps_list), label="Radiation from surface", color = "tw.blue:600", linestyle = "-.")
-ax.plot(time, np.array(EH.Q_conv_ps_list), label="Convection from surface", color = "tw.purple:600", linestyle = "-.") 
-ax.set_ylim(0, 3000)
-
-ax.set_xlabel("Time [hours]", fontsize=dm.fs(0))
-ax.set_ylabel("Energy [W]", fontsize=dm.fs(0))
-
-ax.tick_params(axis='both', which='major', labelsize=dm.fs(-1))
-ax.tick_params(axis='both', which='minor', labelsize=dm.fs(-1))
-
-handles, labels = ax.get_legend_handles_labels()
-ax.legend(handles, labels, loc='upper left', fontsize=dm.fs(-2), frameon=False, ncol=2, handlelength=1.5)
-
-dm.simple_layout(fig=fig, bbox =(0, 1, 0, 1), margins=(0.1, 0.1, 0.1, 0.1), verbose = False)
-dm.save_and_show(fig)
-
-#%% 
-
-# plotting
-fig, ax = plt.subplots(1, 1, figsize=(dm.cm2in(10), dm.cm2in(4)), sharex=True)
-# Exergy balance (body)
-ax.plot(time, np.array(EH.E_heater_list), label="Input to heater", color = "tw.amber:500",)
-ax.plot(time, np.array(EH.Q_cond_list), label="Conduction to surface", color = "tw.lime:600")
-ax.plot(time, np.array(EH.Q_stored_list), label="Stored in body", color = "tw.purple:600") 
-ax.set_ylim(0, 3000+500)
-ax.set_xlabel("Time [hours]", fontsize=dm.fs(0))
-ax.set_ylabel("Energy [W]", fontsize=dm.fs(0))
-
-ax.tick_params(axis='both', which='major', labelsize=dm.fs(-1))
-ax.tick_params(axis='both', which='minor', labelsize=dm.fs(-1))
-
-handles, labels = ax.get_legend_handles_labels()
-ax.legend(handles, labels, loc='upper right', fontsize=dm.fs(-2), frameon=False, ncol=3)
-
-dm.simple_layout(fig=fig, bbox =(0, 1, 0, 1), margins=(0.1, 0.1, 0.1, 0.1), verbose = False)
-dm.save_and_show(fig)
-
-# %% 
-# plotting
-fig, ax = plt.subplots(1, 1, figsize=(dm.cm2in(10), dm.cm2in(4)), sharex=True)
-# Exergy balance (body)
-ax.plot(time, np.array(EH.X_heater_list), label="Input to heater", color = "tw.amber:500")
-ax.plot(time, np.array(EH.X_cond_list), label="Conduction to surface", color = "tw.lime:600")
-ax.plot(time, np.array(EH.X_stored_list), label="Stored in body", color = "tw.purple:600") 
-ax.plot(time, np.array(EH.X_c_body_list), label="Consumption in body", color = "tw.blue:600")
-ax.set_ylim(0, 3000+500)
-ax.set_xlabel("Time [hours]", fontsize=dm.fs(0))
-ax.set_ylabel("Exergy [W]", fontsize=dm.fs(0))
-
-ax.tick_params(axis='both', which='major', labelsize=dm.fs(-1))
-ax.tick_params(axis='both', which='minor', labelsize=dm.fs(-1))
-
-handles, labels = ax.get_legend_handles_labels()
-ax.legend(handles, labels, loc='upper right', fontsize=dm.fs(-2), frameon=False, ncol=4,)
-
-dm.simple_layout(fig=fig, bbox =(0, 1, 0, 1), verbose = False)
-dm.save_and_show(fig)
-#%% 
-# plt.plot(time, cu.K2C(np.array(EH.X_c_surf_list)), label="Exergy consumption on surface [W]", color = "dm.lime6")
-
-# plt.plot(time, EH.Q_cond_list)
-# plt.plot(time, EH.Q_conv_ps_list)
-# plt.plot(time, EH.Q_stored_list)
-# %%
