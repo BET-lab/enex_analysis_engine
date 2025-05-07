@@ -18,6 +18,9 @@ mu_w = 0.001 # Water dynamic viscosity [Pa.s]
 
 sigma = 5.67*10**-8 # Stefan-Boltzmann constant [W/m²K⁴]
 
+# https://www.notion.so/betlab/Scattering-of-photon-particles-coming-from-the-sun-and-their-energy-entropy-exergy-b781821ae9a24227bbf1a943ba9df51a?pvs=4#1ea6947d125d80ddb0a5caec50031ae3
+k_D = 0.000462
+k_d = 0.0014
 #%%
 # function
 def darcy_friction_factor(Re, e_d):
@@ -542,6 +545,7 @@ class GasBoiler:
         self.T_w_tap  = 45 
         self.T0       = 0
         self.T_exh    = 70 
+        self.T_NG     = 1400
 
         # Tank water use [m3/s]
         self.dV_w_tap  = 0.0002
@@ -569,6 +573,7 @@ class GasBoiler:
         self.T_w_tap  = cu.C2K(self.T_w_tap)  # tap water temperature [K]
         self.T0       = cu.C2K(self.T0)       # reference temperature [K]
         self.T_exh    = cu.C2K(self.T_exh)    # exhaust gas temperature [K]
+        self.T_NG     = cu.C2K(self.T_NG)     # natural gas temperature [K]
         
         # Temperature [K]
         self.T_tank_is = self.T_w_tank # inner surface temperature of tank [K]
@@ -1108,68 +1113,238 @@ class HeatPumpBoiler:
 class SolarHotWater:
     def __post_init__(self):
         
-        # environment conditions
-        self.h_o = 15 # Overall heat transfer coefficient [W/m²K]
-        self.T0 = cu.C2K(0) # Environment temperature [K]
+        # Constants [-]
+        self.alpha    = 0.9 # Absorptivity of collector
+        self.eta_comb = 0.9 # Efficiency of combustion chamber
+        self.eta_NG   = 0.93 # Efficiency of natural gas
+
+        # Solar radiation [W/m²]  
+        self.I_DN = 800
+        self.I_dH = 200
         
         # solar thermal panel
-        self.eta_stp = 0.8 # Solar to thermal panel efficiency [-]
-        self.Q_sol = 900 # Solar radiation [W/m²]
         self.A_stp = 2 # Solar thermal panel area [m²]
         
-        # pump
-        self.pmp = Pump().pump1
+        # Temperature [°C]
+        self.T0       = 0
+        self.T_w_comb = 60
+        self.T_w_tap  = 45
+        self.T_w_sup  = 10
+        self.T_NG     = 1400
+        self.T_exh    = 70
         
-        # hot water tank
-        self.T_w_tank = cu.C2K(60)
-        self.T_w_sup = cu.C2K(10)
-        self.T_w_tap = cu.C2K(45)
-        self.water_use_in_a_day = 0.2 # Usable volume [m³/day]
-        self.V_tank = 0.1 # Total tank volume [m³]
-        self.n = 3
-        self.x_shell = 0.01 # tank shell thickness [m]
-        self.k_shell = 50 # tank shell thermal conductivity [W/mK]
-        self.x_ins = 0.10 # Insulation thickness [m]
+        # Tank water use [m3/s]
+        self.dV_w_tap = 0.0002
+        
+        # Overall heat transfer coefficient [W/m²K]
+        self.h_o = 15
+        
+        # Thermal conductivity [W/mK]
+        self.k_air = 0.025 # Air thermal conductivity [W/mK]
         self.k_ins = 0.03 # Insulation thermal conductivity [W/mK]
-    
-    def system_update(self):
         
-        self.T_stp_in = cu.C2K(20) # Solar thermal panel inlet temperature [K]
-        self.T_stp_out = cu.C2K(40) # Solar thermal panel outlet temperature [K]
+        # Thickness [m]
+        self.x_air = 0.01 # Air layer thickness [m]
+        self.x_ins = 0.05 # insulation layer thickness [m]
+        
+    def system_update(self): 
+        # Iradiance [W/m²]
+        self.I_sol = self.I_DN + self.I_dH
+        
+        # Resistance [m2K/W] (conduction)
+        self.R_air = self.x_air / self.k_air # [m2K/W]
+        self.R_ins = self.x_ins / self.k_ins # [m2K/W]
 
-        # Water flow rates
-        self.dV_w_tap      = self.water_use_in_a_day / (3 * cu.h2s)  # Average tap water flow rate [m³/s]
-        self.alpha         = (self.T_w_tap - self.T_w_sup) / (self.T_w_tank - self.T_w_sup)  # Mixing ratio
-        self.dV_w_sup_tank = self.alpha * self.dV_w_tap  # Supply flow rate to tank [m³/s]
-        self.dV_w_sup_mix  = (1 - self.alpha) * self.dV_w_tap  # Supply flow rate to mixing [m³/s]
+        # U-value [W/m²K]
+        self.U1 = 1 / (self.R_air + 1/self.h_o)
+        self.U2 = 1 / (self.R_ins + 1/self.h_o)
+        self.U  = self.U1 + self.U2 # 병렬
+        
+        # Celcius to Kelvin
+        self.T0          = cu.C2K(self.T0)
+        self.T_w_comb    = cu.C2K(self.T_w_comb)
+        self.T_w_tap     = cu.C2K(self.T_w_tap)
+        self.T_w_sup     = cu.C2K(self.T_w_sup)
+        self.T_NG        = cu.C2K(self.T_NG)
+        self.T_exh       = cu.C2K(self.T_exh)
+        self.T_sp        = self.T_0 + (self.alpha * self.A_stp * self.I_stp)/(self.A_stp * self.U)
+        self.T_w_stp_out = self.T_w_sup + (self.alpha * self.A_stp * self.I_sol)/(c_w * rho_w * self.dV_w_sup)
+        
+        # Volumetric flow rate ratio [-]
+        self.alp = (self.T_w_tap - self.T_w_sup)/(self.T_w_comb - self.T_w_sup)
+        self.alp = print("alp is negative") if self.alp < 0 else self.alp
+        
+        # Volumetric flow rates [m³/s]
+        self.dV_w_sup     = self.alp * self.dV_w_tap
+        self.dV_w_sup_mix = (1-self.alp)*self.dV_w_tap
+        
+        # Energy balance
+        self.Q_w_sup     = c_w * rho_w * self.dV_w_sup * (self.T_w_sup - self.T0)
+        self.Q_sol       = self.I_sol * self.A_stp * self.alpha
+        self.Q_w_stp_out = c_w * rho_w * self.dV_w_sup * (self.T_w_stp_out - self.T0)
+        self.Q_l         = self.A_stp * self.U * (self.T_sp - self.T0)
+        
+        self.E_NG     = c_w * rho_w * self.dV_w_sup * (self.T_w_comb - self.T_w_stp_out) / self.eta_comb
+        self.Q_exh    = (1 - self.eta_comb) * self.E_NG  # Heat loss from exhaust gases
+        self.Q_w_comb = c_w * rho_w * self.dV_w_sup * (self.T_w_comb - self.T0)
+        
+        self.Q_w_sup_mix = c_w * rho_w * self.dV_w_sup_mix * (self.T_w_sup - self.T0)
+        self.Q_w_serv     = c_w * rho_w * self.dV_w_tap * (self.T_w_tap - self.T0)
+        
+        # Entropy balance
+        self.S_w_sup = c_w * rho_w * self.dV_w_sup * math.log(self.T_w_sup / self.T0)
+        self.S_DN = k_D * self.I_DN**(0.9)
+        self.S_dH = k_d * self.I_dH**(0.9)
+        self.S_sol = self.S_DN + self.S_dH
+        self.S_w_stp_out = c_w * rho_w * self.dV_w_sup * math.log(self.T_w_stp_out / self.T0)       
+        self.S_l = (1 / self.T_sp) * self.A_stp * self.U * (self.T_sp - self.T0)
+        self.S_g_stp = self.S_w_stp_out + self.S_l - (self.S_sol + self.S_w_sup)
+        
+        self.S_NG = (1 / self.T_NG) * self.E_NG
+        self.S_exh = (1 / self.T_exh) * self.Q_exh
+        self.S_w_comb = c_w * rho_w * self.dV_w_sup * math.log(self.T_w_comb / self.T0)
+        self.S_g_comb = (self.S_w_comb + self.S_exh) - (self.S_NG + self.S_w_stp_out)
+        
+        self.S_w_sup_mix = c_w * rho_w * self.dV_w_sup_mix * math.log(self.T_w_sup / self.T0)
+        self.S_w_serv = c_w * rho_w * self.dV_w_tap * math.log(self.T_w_tap / self.T0)
+        
+        # Exergy balance
+        self.X_w_sup = self.Q_w_sup - self.S_w_sup * self.T0
+        self.X_sol = self.I_sol - self.S_sol * self.T0
+        self.X_w_stp_out = self.Q_w_stp_out - self.S_w_stp_out * self.T0
+        self.X_l = self.Q_l - self.S_l * self.T0
+        self.X_c_stp = self.S_g_stp * self.T0
 
-        # Surface areas
-        self.r0 = (self.V_tank / (2 * math.pi * self.n)) ** (1 / 3)  # Tank inner radius [m]
-        self.r1 = self.r0 + self.x_shell  # Tank outer radius [m]
-        self.r2 = self.r1 + self.x_ins  # Insulation outer radius [m]
-        self.h = self.n * (2 * self.r0)  # Tank height [m]
-        self.A_top_bottom = 2 * math.pi * self.r0 ** 2  # Total top and bottom area [m²]
+        self.X_NG = self.eta_NG * self.E_NG
+        self.X_exh = (1 - self.T0 / self.T_exh) * self.Q_exh
+        self.X_w_comb = self.Q_w_comb - self.S_w_comb * self.T0
+        self.X_c_comb = self.S_g_comb * self.T0
 
-        # Thermal resistances
-       
-        # Cylindrical coordinates ========================================
-        self.R_side_shell = math.log((self.r1) / self.r0) / (2 * math.pi * self.k_shell) # Shell thermal resistance [mK/W]
-        self.R_side_ins   = math.log((self.r2) / (self.r1)) / (2 * math.pi * self.k_ins) # Insulation thermal resistance [mK/W]
-        self.R_side_ext   = 1 / (2 * math.pi * self.r2 * self.h_o)  # External thermal resistance [mK/W]
-        self.R_side_tot   = self.R_side_shell + self.R_side_ins + self.R_side_ext # Total side thermal resistance [mK/W]
-        self.U_side       = 1 / self.R_side_tot # Overall heat transfer coefficient [W/mK]
-        # Cartesian coordinates ==========================================
-        self.R_top_bottom_shell = (self.x_shell) / (self.k_shell) # Insulation thermal resistance [m2K/W]
-        self.R_top_bottom_ins   = (self.x_ins) / (self.k_ins) # Insulation thermal resistance [m2K/W]
-        self.R_top_bottom_ext   = 1/self.h_o  # Combined external thermal resistance [m2K/W]
-        self.R_top_bottom_tot   = self.R_top_bottom_shell + self.R_top_bottom_ins + self.R_top_bottom_ext # Total top and bottom thermal resistance [m2K/W]
-        self.U_top_bottom       = 1 / self.R_top_bottom_tot # Overall heat transfer coefficient [W/m2K]
+        self.X_w_sup_mix = self.Q_w_sup_mix - self.S_w_sup_mix * self.T0
+        self.X_w_serv = self.Q_w_serv - self.S_w_serv * self.T0
 
-        # Total heat transfer coefficient
-        self.U_tank = self.U_side*self.h + self.U_top_bottom*self.A_top_bottom # Overall heat transfer coefficient [W/K]
+        self.energy_balance = {}
+        self.energy_balance["solar thermal panel"] = {
+            "in": {
+            "Q_sol": self.Q_sol,
+            "Q_w_sup": self.Q_w_sup
+            },
+            "out": {
+            "Q_w_stp_out": self.Q_w_stp_out,
+            "Q_l": self.Q_l
+            }
+        }
 
-        # Temperature
-        self.T_tank_is  = self.T_w_tank # inner surface temperature of the tank [K]
+        self.energy_balance["combustion chamber"] = {
+            "in": {
+            "Q_w_stp_out": self.Q_w_stp_out,
+            "E_NG": self.E_NG,
+            },
+            "out": {
+            "Q_exh": self.Q_exh,
+            "Q_w_comb": self.Q_w_comb
+            }
+        }
+
+        self.energy_balance["mixing valve"] = {
+            "in": {
+            "Q_w_comb": self.Q_w_comb,
+            "Q_w_sup_mix": self.Q_w_sup_mix
+            },
+            "out": {
+            "Q_w_serv": self.Q_w_serv
+            }
+        }
+
+        ## Entropy Balance ========================================
+        self.entropy_balance = {}
+
+        self.entropy_balance["solar thermal panel"] = {
+            "in": {
+            "S_sol": self.S_sol,
+            "S_w_sup": self.S_w_sup
+            },
+            "gen": {
+            "S_g_stp": self.S_g_stp
+            },
+            "out": {
+            "S_w_stp_out": self.S_w_stp_out,
+            "S_l": self.S_l
+            }
+        }
+
+        self.entropy_balance["combustion chamber"] = {
+            "in": {
+            "S_w_stp_out": self.S_w_stp_out,
+            "S_NG": self.S_NG,
+            },
+            "gen": {
+            "S_g_comb": self.S_g_comb
+            },
+            "out": {
+            "S_exh": self.S_exh,
+            "S_w_comb": self.S_w_comb
+            }
+        }
+
+        self.entropy_balance["mixing valve"] = {
+            "in": {
+            "S_w_comb": self.S_w_comb,
+            "S_w_sup_mix": self.S_w_sup_mix
+            },
+            "gen": {
+            "S_g_mix": self.S_g_mix
+            },
+            "out": {
+            "S_w_serv": self.S_w_serv
+            }
+        }
+
+
+        ## Exergy Balance ========================================
+        self.exergy_balance = {}
+
+        self.exergy_balance["solar thermal panel"] = {
+            "in": {
+            "X_sol": self.X_sol,
+            "X_w_sup": self.X_w_sup
+            },
+            "con": {
+            "X_c_stp": self.X_c_stp
+            },
+            "out": {
+            "X_w_stp_out": self.X_w_stp_out,
+            "X_l": self.X_l
+            }
+        }
+
+        self.exergy_balance["combustion chamber"] = {
+            "in": {
+            "X_w_stp_out": self.X_w_stp_out,
+            "X_NG": self.X_NG,
+            },
+            "con": {
+            "X_c_comb": self.X_c_comb
+            },
+            "out": {
+            "X_exh": self.X_exh,
+            "X_w_comb": self.X_w_comb
+            }
+        }
+
+        self.exergy_balance["mixing valve"] = {
+            "in": {
+            "X_w_comb": self.X_w_comb,
+            "X_w_sup_mix": self.X_w_sup_mix
+            },
+            "con": {
+            "X_c_mix": self.X_c_mix
+            },
+            "out": {
+            "X_w_serv": self.X_w_serv
+            }
+        }
+              
 
 #%%
 # class - AirSourceHeatPump
