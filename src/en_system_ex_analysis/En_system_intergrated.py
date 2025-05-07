@@ -166,9 +166,9 @@ def calculate_ASHP_cooling_COP(T_a_int_out, T_a_ext_in, Q_r_int, Q_r_max, COP_re
     COP = PLR * COP_ref / (EIR_by_T * EIR_by_PLR)
     return COP
 
-def calculate_ASHP_heating_COP(T_0, Q_r_int, Q_r_max):
+def calculate_ASHP_heating_COP(T0, Q_r_int, Q_r_max):
     PLR = Q_r_int / Q_r_max
-    COP = -7.46 * (PLR - 0.0047 * cu.K2C(T_0) - 0.477)**2 + 0.0941 * cu.K2C(T_0) + 4.34
+    COP = -7.46 * (PLR - 0.0047 * cu.K2C(T0) - 0.477)**2 + 0.0941 * cu.K2C(T0) + 4.34
     return COP
 
 #%%
@@ -1132,6 +1132,7 @@ class SolarHotWater:
         self.T_w_sup  = 10
         self.T_NG     = 1400
         self.T_exh    = 70
+        self.T_sp     = 50
         
         # Tank water use [m3/s]
         self.dV_w_tap = 0.0002
@@ -1167,8 +1168,7 @@ class SolarHotWater:
         self.T_w_sup     = cu.C2K(self.T_w_sup)
         self.T_NG        = cu.C2K(self.T_NG)
         self.T_exh       = cu.C2K(self.T_exh)
-        self.T_sp        = self.T_0 + (self.alpha * self.A_stp * self.I_stp)/(self.A_stp * self.U)
-        self.T_w_stp_out = self.T_w_sup + (self.alpha * self.A_stp * self.I_sol)/(c_w * rho_w * self.dV_w_sup)
+        self.T_sp        = cu.C2K(self.T_sp)
         
         # Volumetric flow rate ratio [-]
         self.alp = (self.T_w_tap - self.T_w_sup)/(self.T_w_comb - self.T_w_sup)
@@ -1177,6 +1177,7 @@ class SolarHotWater:
         # Volumetric flow rates [m³/s]
         self.dV_w_sup     = self.alp * self.dV_w_tap
         self.dV_w_sup_mix = (1-self.alp)*self.dV_w_tap
+        self.T_w_stp_out = self.T0 + (self.alpha * self.A_stp * self.I_sol + c_w * rho_w * self.dV_w_sup * (self.T_w_sup - self.T0) - self.A_stp * self.U * (self.T_sp - self.T0))/(c_w * rho_w * self.dV_w_sup)
         
         # Energy balance
         self.Q_w_sup     = c_w * rho_w * self.dV_w_sup * (self.T_w_sup - self.T0)
@@ -1207,10 +1208,11 @@ class SolarHotWater:
         
         self.S_w_sup_mix = c_w * rho_w * self.dV_w_sup_mix * math.log(self.T_w_sup / self.T0)
         self.S_w_serv = c_w * rho_w * self.dV_w_tap * math.log(self.T_w_tap / self.T0)
+        self.S_g_mix = self.S_w_serv - (self.S_w_sup + self.S_w_sup_mix)
         
         # Exergy balance
         self.X_w_sup = self.Q_w_sup - self.S_w_sup * self.T0
-        self.X_sol = self.I_sol - self.S_sol * self.T0
+        self.X_sol = self.Q_sol - self.S_sol * self.T0
         self.X_w_stp_out = self.Q_w_stp_out - self.S_w_stp_out * self.T0
         self.X_l = self.Q_l - self.S_l * self.T0
         self.X_c_stp = self.S_g_stp * self.T0
@@ -1222,6 +1224,7 @@ class SolarHotWater:
 
         self.X_w_sup_mix = self.Q_w_sup_mix - self.S_w_sup_mix * self.T0
         self.X_w_serv = self.Q_w_serv - self.S_w_serv * self.T0
+        self.X_c_mix = self.S_g_mix * self.T0
 
         self.energy_balance = {}
         self.energy_balance["solar thermal panel"] = {
@@ -1561,7 +1564,7 @@ class AirSourceHeatPump_heating:
         self.T_a_ext_in  = self.T0 # external unit air inlet temperature [K]
 
         # others
-        self.COP     = calculate_ASHP_heating_COP(T_0 = self.T0, Q_r_int = self.Q_r_int, Q_r_max = self.Q_r_max) # COP [-]
+        self.COP     = calculate_ASHP_heating_COP(T0 = self.T0, Q_r_int = self.Q_r_int, Q_r_max = self.Q_r_max) # COP [-]
         self.E_cmp   = self.Q_r_int / self.COP # compressor power input [W]
         self.Q_r_ext = self.Q_r_int - self.E_cmp # heat transfer from external unit to refrigerant [W]
 
