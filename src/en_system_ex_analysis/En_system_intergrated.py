@@ -41,7 +41,7 @@ def darcy_friction_factor(Re, e_d):
     else:
         return 0.25 / (math.log10(e_d / 3.7 + 5.74 / Re ** 0.9)) ** 2
 
-def compute_natural_convection_h_cp(T_s, T_inf, L):
+def calc_h_vertical_plate(T_s, T_inf, L):
     '''
     📌 Function: compute_natural_convection_h_cp
     이 함수는 자연 대류에 의한 열전달 계수를 계산합니다.
@@ -71,7 +71,7 @@ def compute_natural_convection_h_cp(T_s, T_inf, L):
     delta_T = T_s - T_inf
     Ra_L = g * beta * delta_T * L**3 / (nu**2) * Pr
 
-    # Churchill & Chu 식
+    # Churchill & Chu 식 https://doi.org/10.1016/0017-9310(75)90243-4
     Nu_L = (0.825 + (0.387 * Ra_L**(1/6)) / (1 + (0.492/Pr)**(9/16))**(8/27))**2
     h_cp = Nu_L * k_air / L  # [W/m²K]
     
@@ -1223,7 +1223,7 @@ class SolarHotWater:
         self.X_c_comb = self.S_g_comb * self.T0
 
         self.X_w_sup_mix = self.Q_w_sup_mix - self.S_w_sup_mix * self.T0
-        self.X_w_serv = self.Q_w_serv - self.S_w_serv * self.T0
+        self.X_w_serv = self.Q_w_serv - self.S_w_serv * self.T0 
         self.X_c_mix = self.S_g_mix * self.T0
 
         self.energy_balance = {}
@@ -1774,12 +1774,12 @@ class ElectricHeater:
         self.k_p   = 50 # [W/mK]
         
         # Panel geometry [m]
-        self.D_p = 0.02 
+        self.D_p = 0.005 
         self.H_p = 0.5 
         self.W_p = 0.5 
         
         # Electricity input to the heater [W]
-        self.E_heater = 2000
+        self.E_heater = 1000
         
         # Temperature [°C]
         self.T0   = 20
@@ -1810,7 +1810,7 @@ class ElectricHeater:
         
         # Panel properties
         self.C_p = self.c_p * self.rho_p
-        self.A_p = self.H_p * self.W_p # -> 6면 전체를 방사한다고 가정해야할 듯
+        self.A_p = self.H_p * self.W_p * 2 # double side 
         self.V_p = self.H_p * self.W_p * self.D_p
         
         # Conductance [W/m²K]
@@ -1848,12 +1848,12 @@ class ElectricHeater:
         self.X_c_surf_list = []
         
         index = 0
-        self.dT_p = 1.0  # Initialize dT_p with a default value
-        while self.dT_p > 0.01:
+        tolerance = 1e-4
+        while True:
             self.time.append(index * self.dt)
             
             # Heat transfer coefficient [W/m²K]
-            self.h_cp = compute_natural_convection_h_cp(self.T_ps, self.T0, self.H_p) 
+            self.h_cp = calc_h_vertical_plate(self.T_ps, self.T0, self.H_p) 
             
             def residual_Tp(Tp_new):
                 # 축열 항
@@ -1876,9 +1876,9 @@ class ElectricHeater:
             
             from scipy.optimize import fsolve
             self.Tp_next = fsolve(residual_Tp, self.Tp_guess)[0]
+            T_p_rel_change = abs(self.Tp_next - self.T_p) / max(abs(self.Tp_next), 1e-6)
             
             # Temperature update
-            self.dT_p = abs(self.Tp_next - self.T_p)
             self.T_p = self.Tp_next
             
             # T_ps update (Energy balance surface: Q_cond + Q_rad_mr = Q_conv_ps + Q_rad_ps)
@@ -1894,7 +1894,7 @@ class ElectricHeater:
             self.T_ps_list.append(self.T_ps)
             
             # Conduction [W]
-            self.Q_stored = 0 if index == 0 else self.C_p * self.V_p * self.dT_p / self.dt
+            self.Q_stored = 0 if index == 0 else self.C_p * self.V_p * (self.Tp_next - self.T_p) / self.dt
             self.Q_cond = self.A_p * self.K_cond * (self.T_p - self.T_ps)
             self.Q_conv_ps = self.A_p * self.h_cp * (self.T_ps - self.T_ia) # h_cp 추후 변하게
             self.Q_rad_mr = self.A_p * self.epsilon_p * self.epsilon_r * sigma * (self.T_mr ** 4 - self.T0 ** 4)
@@ -1946,7 +1946,12 @@ class ElectricHeater:
             self.X_c_surf_list.append(self.X_c_surf)
             
             index += 1
-            if index > 100000:
+            if T_p_rel_change < tolerance:
                 break
+            
+            if index > 10000:
+                print("time step is too short")
+                break
+            
         
         
