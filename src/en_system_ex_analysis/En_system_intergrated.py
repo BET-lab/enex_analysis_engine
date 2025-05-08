@@ -1872,14 +1872,14 @@ class ElectricHeater:
 
                 return Q_stored + Q_cond - self.E_heater
             
-            self.Tp_guess = self.T_p # 초기 추정값
+            self.T_p_guess = self.T_p # 초기 추정값
             
             from scipy.optimize import fsolve
-            self.Tp_next = fsolve(residual_Tp, self.Tp_guess)[0]
-            T_p_rel_change = abs(self.Tp_next - self.T_p) / max(abs(self.Tp_next), 1e-6)
+            self.T_p_next = fsolve(residual_Tp, self.T_p_guess)[0]
+            self.T_p_old = self.T_p
             
             # Temperature update
-            self.T_p = self.Tp_next
+            self.T_p = self.T_p_next
             
             # T_ps update (Energy balance surface: Q_cond + Q_rad_mr = Q_conv_ps + Q_rad_ps)
             self.T_ps = (
@@ -1894,7 +1894,7 @@ class ElectricHeater:
             self.T_ps_list.append(self.T_ps)
             
             # Conduction [W]
-            self.Q_stored = 0 if index == 0 else self.C_p * self.V_p * (self.Tp_next - self.T_p) / self.dt
+            self.Q_stored = self.C_p * self.V_p * (self.T_p_next - self.T_p_old) / self.dt
             self.Q_cond = self.A_p * self.K_cond * (self.T_p - self.T_ps)
             self.Q_conv_ps = self.A_p * self.h_cp * (self.T_ps - self.T_ia) # h_cp 추후 변하게
             self.Q_rad_mr = self.A_p * self.epsilon_p * self.epsilon_r * sigma * (self.T_mr ** 4 - self.T0 ** 4)
@@ -1946,6 +1946,7 @@ class ElectricHeater:
             self.X_c_surf_list.append(self.X_c_surf)
             
             index += 1
+            T_p_rel_change = abs(self.T_p_next - self.T_p_old) / max(abs(self.T_p_next), 1e-6)
             if T_p_rel_change < tolerance:
                 break
             
