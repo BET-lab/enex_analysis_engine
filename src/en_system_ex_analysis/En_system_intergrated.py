@@ -343,7 +343,7 @@ class ElectricBoiler:
         self.T0       = 0 
 
         # Tank water use [m3/s]
-        self.dV_w_tap  = 0.0002
+        self.dV_w_serv  = 0.0002
 
         # Tank size [m]
         self.r0 = 0.2
@@ -387,8 +387,8 @@ class ElectricBoiler:
         self.alp = print("alp is negative") if self.alp < 0 else self.alp
         
         # Volumetric flow rates [m³/s]
-        self.dV_w_sup_tank = self.alp * self.dV_w_tap
-        self.dV_w_sup_mix  = (1-self.alp)*self.dV_w_tap
+        self.dV_w_sup_tank = self.alp * self.dV_w_serv
+        self.dV_w_sup_mix  = (1-self.alp)*self.dV_w_serv
 
         # Thermal resistances per unit area/legnth
         self.R_base_unit = self.x_shell / self.k_shell + self.x_ins / self.k_ins # [m2K/W]
@@ -419,7 +419,7 @@ class ElectricBoiler:
         self.Q_w_sup_tank = c_w * rho_w * self.dV_w_sup_tank * (self.T_w_sup - self.T0)
         self.Q_w_tank     = c_w * rho_w * self.dV_w_sup_tank * (self.T_w_tank - self.T0)
         self.Q_w_sup_mix = c_w * rho_w * self.dV_w_sup_mix * (self.T_w_sup - self.T0)
-        self.Q_w_serv     = c_w * rho_w * self.dV_w_tap * (self.T_w_tap - self.T0)
+        self.Q_w_serv     = c_w * rho_w * self.dV_w_serv * (self.T_w_tap - self.T0)
 
         # Pre-calculate Entropy values
         self.S_heater = (1 / float('inf')) * self.E_heater
@@ -427,7 +427,7 @@ class ElectricBoiler:
         self.S_w_tank = c_w * rho_w * self.dV_w_sup_tank * math.log(self.T_w_tank / self.T0)
         self.S_l_tank = (1 / self.T_tank_is) * self.Q_l_tank
         self.S_w_sup_mix = c_w * rho_w * self.dV_w_sup_mix * math.log(self.T_w_sup / self.T0)
-        self.S_w_serv = c_w * rho_w * self.dV_w_tap * math.log(self.T_w_tap / self.T0)
+        self.S_w_serv = c_w * rho_w * self.dV_w_serv * math.log(self.T_w_tap / self.T0)
         self.S_g_tank = (self.S_w_tank + self.S_l_tank) - (self.S_heater + self.S_w_sup_tank)
         self.S_g_mix = self.S_w_serv - (self.S_w_tank + self.S_w_sup_mix)
 
@@ -440,7 +440,7 @@ class ElectricBoiler:
 
         # Pre-calculate Exergy values for mixing valve
         self.X_w_sup_mix = c_w * rho_w * self.dV_w_sup_mix * ((self.T_w_sup - self.T0) - self.T0 * math.log(self.T_w_sup / self.T0))
-        self.X_w_serv = c_w * rho_w * self.dV_w_tap * ((self.T_w_tap - self.T0) - self.T0 * math.log(self.T_w_tap / self.T0))
+        self.X_w_serv = c_w * rho_w * self.dV_w_serv * ((self.T_w_tap - self.T0) - self.T0 * math.log(self.T_w_tap / self.T0))
         self.X_c_mix = self.S_g_mix * self.T0
         
         # total
@@ -548,7 +548,7 @@ class GasBoiler:
         self.T_NG     = 1400
 
         # Tank water use [m3/s]
-        self.dV_w_tap  = 0.0002
+        self.dV_w_serv  = 0.0002
 
         # Tank size [m]
         self.r0 = 0.2
@@ -594,8 +594,8 @@ class GasBoiler:
         self.alp = print("alp is negative") if self.alp < 0 else self.alp
         
         # Volumetric flow rates [m³/s]
-        self.dV_w_sup_comb = self.alp * self.dV_w_tap
-        self.dV_w_sup_mix  = (1-self.alp)*self.dV_w_tap
+        self.dV_w_sup_comb = self.alp * self.dV_w_serv
+        self.dV_w_sup_mix  = (1-self.alp)*self.dV_w_serv
 
         # Thermal resistances per unit area/legnth
         self.R_base_unit = self.x_shell / self.k_shell + self.x_ins / self.k_ins # [m2K/W]
@@ -628,7 +628,7 @@ class GasBoiler:
         self.Q_w_comb_out = c_w * rho_w * self.dV_w_sup_comb * (self.T_w_comb - self.T0)
         self.Q_w_tank     = c_w * rho_w * self.dV_w_sup_comb * (self.T_w_tank - self.T0)
         self.Q_w_sup_mix = c_w * rho_w * self.dV_w_sup_mix * (self.T_w_sup - self.T0)
-        self.Q_w_serv     = c_w * rho_w * self.dV_w_tap * (self.T_w_tap - self.T0)
+        self.Q_w_serv     = c_w * rho_w * self.dV_w_serv * (self.T_w_tap - self.T0)
 
         # Pre-calculate Entropy values for boiler
         self.S_NG         = (1 / self.T_NG) * self.E_NG
@@ -642,7 +642,7 @@ class GasBoiler:
         self.S_g_tank = (self.S_w_tank + self.S_l_tank) - self.S_w_comb_out
 
         self.S_w_sup_mix = c_w * rho_w * self.dV_w_sup_mix * math.log(self.T_w_sup / self.T0)
-        self.S_w_serv = c_w * rho_w * self.dV_w_tap * math.log(self.T_w_tap / self.T0)
+        self.S_w_serv = c_w * rho_w * self.dV_w_serv * math.log(self.T_w_tap / self.T0)
         self.S_g_mix = self.S_w_serv - (self.S_w_tank + self.S_w_sup_mix)
 
         # Pre-calculate Exergy values for boiler
@@ -657,7 +657,7 @@ class GasBoiler:
         self.X_c_tank = self.S_g_tank * self.T0
 
         self.X_w_sup_mix = c_w * rho_w * self.dV_w_sup_mix * ((self.T_w_sup - self.T0) - self.T0 * math.log(self.T_w_sup / self.T0))
-        self.X_w_serv = c_w * rho_w * self.dV_w_tap * ((self.T_w_tap - self.T0) - self.T0 * math.log(self.T_w_tap / self.T0))
+        self.X_w_serv = c_w * rho_w * self.dV_w_serv * ((self.T_w_tap - self.T0) - self.T0 * math.log(self.T_w_tap / self.T0))
         self.X_c_mix = self.S_g_mix * self.T0
         
         # total
@@ -802,7 +802,7 @@ class HeatPumpBoiler:
         self.T_w_sup     = 10
 
         # Tank water use [m3/s]
-        self.dV_w_tap  = 0.0002
+        self.dV_w_serv  = 0.0002
 
         # Tank size [m]
         self.r0 = 0.2
@@ -850,8 +850,8 @@ class HeatPumpBoiler:
         self.alp = print("alp is negative") if self.alp < 0 else self.alp
         
         # Volumetric flow rates [m³/s]
-        self.dV_w_sup_tank = self.alp * self.dV_w_tap
-        self.dV_w_sup_mix  = (1-self.alp)*self.dV_w_tap
+        self.dV_w_sup_tank = self.alp * self.dV_w_serv
+        self.dV_w_sup_mix  = (1-self.alp)*self.dV_w_serv
 
         # Thermal resistances per unit area/legnth
         self.R_base_unit = self.x_shell / self.k_shell + self.x_ins / self.k_ins # [m2K/W]
@@ -909,7 +909,7 @@ class HeatPumpBoiler:
         self.Q_w_sup_tank = c_w * rho_w * self.dV_w_sup_tank * (self.T_w_sup - self.T0)
         self.Q_w_tank     = c_w * rho_w * self.dV_w_sup_tank * (self.T_w_tank - self.T0)
         self.Q_w_sup_mix = c_w * rho_w * self.dV_w_sup_mix * (self.T_w_sup - self.T0)
-        self.Q_w_serv     = c_w * rho_w * self.dV_w_tap * (self.T_w_tap - self.T0)
+        self.Q_w_serv     = c_w * rho_w * self.dV_w_serv * (self.T_w_tap - self.T0)
         self.Q_a_ext_in   = c_a * rho_a * self.dV_a_ext * (self.T_a_ext_in - self.T0)
         self.Q_a_ext_out  = c_a * rho_a * self.dV_a_ext * (self.T_a_ext_out - self.T0)
 
@@ -924,7 +924,7 @@ class HeatPumpBoiler:
         self.S_w_tank     = c_w * rho_w * self.dV_w_sup_tank * math.log(self.T_w_tank / self.T0)
         self.S_l_tank     = (1 / self.T_tank_is) * self.Q_l_tank
         self.S_w_sup_mix = c_w * rho_w * self.dV_w_sup_mix * math.log(self.T_w_sup / self.T0)
-        self.S_w_serv      = c_w * rho_w * self.dV_w_tap * math.log(self.T_w_tap / self.T0)
+        self.S_w_serv      = c_w * rho_w * self.dV_w_serv * math.log(self.T_w_tap / self.T0)
 
         self.S_g_ext = self.S_a_ext_out + self.S_r_ext - (self.S_fan + self.S_a_ext_in)
         self.S_g_r = self.S_r_tank - (self.S_cmp + self.S_r_ext_cmp)
@@ -939,7 +939,7 @@ class HeatPumpBoiler:
         self.X_w_tank = c_w * rho_w * self.dV_w_sup_tank * ((self.T_w_tank - self.T0) - self.T0 * math.log(self.T_w_tank / self.T0))
         self.X_l_tank = (1 - self.T0 / self.T_tank_is) * self.Q_l_tank
         self.X_w_sup_mix = c_w * rho_w * self.dV_w_sup_mix * ((self.T_w_sup - self.T0) - self.T0 * math.log(self.T_w_sup / self.T0))
-        self.X_w_serv = c_w * rho_w * self.dV_w_tap * ((self.T_w_tap - self.T0) - self.T0 * math.log(self.T_w_tap / self.T0))
+        self.X_w_serv = c_w * rho_w * self.dV_w_serv * ((self.T_w_tap - self.T0) - self.T0 * math.log(self.T_w_tap / self.T0))
         self.X_a_ext_in = c_a * rho_a * self.dV_a_ext * ((self.T_a_ext_in - self.T0) - self.T0 * math.log(self.T_a_ext_in / self.T0))
         self.X_a_ext_out = c_a * rho_a * self.dV_a_ext * ((self.T_a_ext_out - self.T0) - self.T0 * math.log(self.T_a_ext_out / self.T0))
         
@@ -1112,9 +1112,8 @@ class HeatPumpBoiler:
 @dataclass
 class SolarHotWater:
     def __post_init__(self):
-        
         # Constants [-]
-        self.alpha    = 0.9 # Absorptivity of collector
+        self.alpha    = 0.95 # Absorptivity of collector
         self.eta_comb = 0.9 # Efficiency of combustion chamber
         self.eta_NG   = 0.93 # Efficiency of natural gas
 
@@ -1130,15 +1129,14 @@ class SolarHotWater:
         self.T_w_comb = 60
         self.T_w_tap  = 45
         self.T_w_sup  = 10
-        self.T_NG     = 1400
         self.T_exh    = 70
-        self.T_sp     = 50
         
         # Tank water use [m3/s]
-        self.dV_w_tap = 0.0002
+        self.dV_w_serv = 0.0002
         
         # Overall heat transfer coefficient [W/m²K]
         self.h_o = 15
+        self.h_r = 2 # radiative heat transfer coefficient in air layer [W/m²K]
         
         # Thermal conductivity [W/mK]
         self.k_air = 0.025 # Air thermal conductivity [W/mK]
@@ -1155,33 +1153,53 @@ class SolarHotWater:
         # Resistance [m2K/W] (conduction)
         self.R_air = self.x_air / self.k_air # [m2K/W]
         self.R_ins = self.x_ins / self.k_ins # [m2K/W]
-
+        self.R_o   = 1/self.h_o
+        self.R_r   = 1/self.h_r
+        
+        self.R1 = (self.R_r * self.R_air)/(self.R_r + self.R_air)
+        self.R2 = self.R_ins
+        
         # U-value [W/m²K]
-        self.U1 = 1 / (self.R_air + 1/self.h_o)
-        self.U2 = 1 / (self.R_ins + 1/self.h_o)
+        self.U1 = 1 / self.R1
+        self.U2 = 1 / self.R2
         self.U  = self.U1 + self.U2 # 병렬
         
+        # Demensionless numbers
+        self.ksi_sp = np.exp(-self.A_stp * self.U/(c_w * rho_w * self.dV_w_sup))
+        
         # Celcius to Kelvin
-        self.T0          = cu.C2K(self.T0)
-        self.T_w_comb    = cu.C2K(self.T_w_comb)
-        self.T_w_tap     = cu.C2K(self.T_w_tap)
-        self.T_w_sup     = cu.C2K(self.T_w_sup)
-        self.T_NG        = cu.C2K(self.T_NG)
-        self.T_exh       = cu.C2K(self.T_exh)
-        self.T_sp        = cu.C2K(self.T_sp)
+        self.T0       = cu.C2K(self.T0)
+        self.T_w_comb = cu.C2K(self.T_w_comb)
+        self.T_w_tap  = cu.C2K(self.T_w_tap)
+        self.T_w_sup  = cu.C2K(self.T_w_sup)
+        self.T_NG     = cu.C2K(self.T_NG)
+        self.T_exh    = cu.C2K(self.T_exh)
+        self.T_sp     = cu.C2K(self.T_sp)
+        self.T_NG     = self.T0 / (1 - self.eta_NG)
         
         # Volumetric flow rate ratio [-]
         self.alp = (self.T_w_tap - self.T_w_sup)/(self.T_w_comb - self.T_w_sup)
         self.alp = print("alp is negative") if self.alp < 0 else self.alp
         
         # Volumetric flow rates [m³/s]
-        self.dV_w_sup     = self.alp * self.dV_w_tap
-        self.dV_w_sup_mix = (1-self.alp)*self.dV_w_tap
-        self.T_w_stp_out = self.T0 + (self.alpha * self.A_stp * self.I_sol + c_w * rho_w * self.dV_w_sup * (self.T_w_sup - self.T0) - self.A_stp * self.U * (self.T_sp - self.T0))/(c_w * rho_w * self.dV_w_sup)
+        self.dV_w_sup     = self.alp * self.dV_w_serv
+        self.dV_w_sup_mix = (1-self.alp)*self.dV_w_serv
         
         # Energy balance
         self.Q_w_sup     = c_w * rho_w * self.dV_w_sup * (self.T_w_sup - self.T0)
         self.Q_sol       = self.I_sol * self.A_stp * self.alpha
+        
+        T_w_stp_out_numerator = self.T0 + (
+        self.Q_sol + self.Q_w_sup
+        + self.A_stp * self.U * (self.ksi_sp * self.T_w_sup / (1 - self.ksi_sp))
+        + self.A_stp * self.U * self.T0
+        ) / (c_w * rho_w * self.dV_w_sup)
+
+        T_w_stp_out_denominator = 1 + (self.A_stp * self.U) / ((1 - self.ksi_sp) * c_w * rho_w * self.dV_w_sup)
+
+        self.T_w_stp_out = T_w_stp_out_numerator / T_w_stp_out_denominator
+        self.T_sp = 1/(1-self.ksi_sp)*self.T_w_stp_out - self.ksi_sp/(1-self.ksi_sp)*self.T_w_sup
+
         self.Q_w_stp_out = c_w * rho_w * self.dV_w_sup * (self.T_w_stp_out - self.T0)
         self.Q_l         = self.A_stp * self.U * (self.T_sp - self.T0)
         
@@ -1190,7 +1208,7 @@ class SolarHotWater:
         self.Q_w_comb = c_w * rho_w * self.dV_w_sup * (self.T_w_comb - self.T0)
         
         self.Q_w_sup_mix = c_w * rho_w * self.dV_w_sup_mix * (self.T_w_sup - self.T0)
-        self.Q_w_serv     = c_w * rho_w * self.dV_w_tap * (self.T_w_tap - self.T0)
+        self.Q_w_serv     = c_w * rho_w * self.dV_w_serv * (self.T_w_tap - self.T0)
         
         # Entropy balance
         self.S_w_sup = c_w * rho_w * self.dV_w_sup * math.log(self.T_w_sup / self.T0)
@@ -1207,7 +1225,7 @@ class SolarHotWater:
         self.S_g_comb = (self.S_w_comb + self.S_exh) - (self.S_NG + self.S_w_stp_out)
         
         self.S_w_sup_mix = c_w * rho_w * self.dV_w_sup_mix * math.log(self.T_w_sup / self.T0)
-        self.S_w_serv = c_w * rho_w * self.dV_w_tap * math.log(self.T_w_tap / self.T0)
+        self.S_w_serv = c_w * rho_w * self.dV_w_serv * math.log(self.T_w_tap / self.T0)
         self.S_g_mix = self.S_w_serv - (self.S_w_sup + self.S_w_sup_mix)
         
         # Exergy balance
