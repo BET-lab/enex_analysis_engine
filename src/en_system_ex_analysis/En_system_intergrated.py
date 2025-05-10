@@ -1156,25 +1156,21 @@ class SolarHotWater:
         self.R_o   = 1/self.h_o
         self.R_r   = 1/self.h_r
         
-        self.R1 = (self.R_r * self.R_air)/(self.R_r + self.R_air)
-        self.R2 = self.R_ins
+        self.R1 = (self.R_r * self.R_air)/(self.R_r + self.R_air) + self.R_o
+        self.R2 = self.R_ins + self.R_o
         
         # U-value [W/m²K]
         self.U1 = 1 / self.R1
         self.U2 = 1 / self.R2
         self.U  = self.U1 + self.U2 # 병렬
         
-        # Demensionless numbers
-        self.ksi_sp = np.exp(-self.A_stp * self.U/(c_w * rho_w * self.dV_w_sup))
         
         # Celcius to Kelvin
         self.T0       = cu.C2K(self.T0)
         self.T_w_comb = cu.C2K(self.T_w_comb)
         self.T_w_tap  = cu.C2K(self.T_w_tap)
         self.T_w_sup  = cu.C2K(self.T_w_sup)
-        self.T_NG     = cu.C2K(self.T_NG)
         self.T_exh    = cu.C2K(self.T_exh)
-        self.T_sp     = cu.C2K(self.T_sp)
         self.T_NG     = self.T0 / (1 - self.eta_NG)
         
         # Volumetric flow rate ratio [-]
@@ -1184,6 +1180,9 @@ class SolarHotWater:
         # Volumetric flow rates [m³/s]
         self.dV_w_sup     = self.alp * self.dV_w_serv
         self.dV_w_sup_mix = (1-self.alp)*self.dV_w_serv
+        
+        # Demensionless numbers
+        self.ksi_sp = np.exp(-self.A_stp * self.U/(c_w * rho_w * self.dV_w_sup))
         
         # Energy balance
         self.Q_w_sup     = c_w * rho_w * self.dV_w_sup * (self.T_w_sup - self.T0)
@@ -1226,7 +1225,7 @@ class SolarHotWater:
         
         self.S_w_sup_mix = c_w * rho_w * self.dV_w_sup_mix * math.log(self.T_w_sup / self.T0)
         self.S_w_serv = c_w * rho_w * self.dV_w_serv * math.log(self.T_w_tap / self.T0)
-        self.S_g_mix = self.S_w_serv - (self.S_w_sup + self.S_w_sup_mix)
+        self.S_g_mix = self.S_w_serv - (self.S_w_comb + self.S_w_sup_mix)
         
         # Exergy balance
         self.X_w_sup = self.Q_w_sup - self.S_w_sup * self.T0
