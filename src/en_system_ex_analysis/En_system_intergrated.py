@@ -19,8 +19,8 @@ mu_w = 0.001 # Water dynamic viscosity [Pa.s]
 sigma = 5.67*10**-8 # Stefan-Boltzmann constant [W/m²K⁴]
 
 # https://www.notion.so/betlab/Scattering-of-photon-particles-coming-from-the-sun-and-their-energy-entropy-exergy-b781821ae9a24227bbf1a943ba9df51a?pvs=4#1ea6947d125d80ddb0a5caec50031ae3
-k_D = 0.000462
-k_d = 0.0014
+k_D = 0.000462 # direct solar entropy coefficient [-]
+k_d = 0.0014 # diffuse solar entropy coefficient [-]
 #%%
 # function
 def darcy_friction_factor(Re, e_d):
@@ -1811,7 +1811,7 @@ class ElectricHeater:
         
         # Emissivity [-]
         self.epsilon_hs = 1 # hs: heater surface
-        self.epsilon_rss = 1 # rs: room surface
+        self.epsilon_rs = 1 # rs: room surface
         
         # Time step [s]
         self.dt = 10
@@ -1849,7 +1849,7 @@ class ElectricHeater:
         self.S_st_list = []
         self.S_heater_list = []
         self.S_cond_list = []
-        self.S_conv_hs_list = []
+        self.S_conv_list = []
         self.S_rad_rs_list = []
         self.S_rad_hs_list = []
         self.S_g_hb_list = []
@@ -1858,7 +1858,7 @@ class ElectricHeater:
         self.X_st_list = [] 
         self.X_heater_list = []
         self.X_cond_list = []
-        self.X_conv_hs_list = []
+        self.X_conv_list = []
         self.X_rad_rs_list = []
         self.X_rad_hs_list = []
         self.X_c_hb_list = []
@@ -1870,11 +1870,11 @@ class ElectricHeater:
             self.time.append(index * self.dt)
             
             # Heat transfer coefficient [W/m²K]
-            self.h_cp = calc_h_vertical_plate(self.T_hs, self.T0, self.H_p) 
+            self.h_cp = calc_h_vertical_plate(self.T_hs, self.T0, self.H) 
             
             def residual_Tp(Tp_new):
                 # 축열 항
-                Q_st = self.rho_p * self.c_p * self.V_p * (Tp_new - self.T_hb) / self.dt
+                Q_st = self.rho * self.c * self.V * (Tp_new - self.T_hb) / self.dt
 
                 # Tps 계산 (표면에너지 평형으로부터)
                 Tps = (
@@ -1885,7 +1885,7 @@ class ElectricHeater:
                 ) / (self.K_cond + self.h_cp)
 
                 # 전도열
-                Q_cond = self.A_p * self.K_cond * (Tp_new - Tps)
+                Q_cond = self.A * self.K_cond * (Tp_new - Tps)
 
                 return Q_st + Q_cond - self.E_heater
             
@@ -1911,11 +1911,11 @@ class ElectricHeater:
             self.T_hs_list.append(self.T_hs)
             
             # Conduction [W]
-            self.Q_st = self.C_p * self.V_p * (self.T_hb_next - self.T_hb_old) / self.dt
-            self.Q_cond = self.A_p * self.K_cond * (self.T_hb - self.T_hs)
-            self.Q_conv = self.A_p * self.h_cp * (self.T_hs - self.T_ia) # h_cp 추후 변하게
-            self.Q_rad_rs = self.A_p * self.epsilon_hs * self.epsilon_rs * sigma * (self.T_mr ** 4 - self.T0 ** 4)
-            self.Q_rad_hs = self.A_p * self.epsilon_hs * self.epsilon_rs * sigma * (self.T_hb ** 4 - self.T0 ** 4)
+            self.Q_st = self.C * self.V * (self.T_hb_next - self.T_hb_old) / self.dt
+            self.Q_cond = self.A * self.K_cond * (self.T_hb - self.T_hs)
+            self.Q_conv = self.A * self.h_cp * (self.T_hs - self.T_ia) # h_cp 추후 변하게
+            self.Q_rad_rs = self.A * self.epsilon_hs * self.epsilon_rs * sigma * (self.T_mr ** 4 - self.T0 ** 4)
+            self.Q_rad_hs = self.A * self.epsilon_hs * self.epsilon_rs * sigma * (self.T_hb ** 4 - self.T0 ** 4)
             
             self.E_heater_list.append(self.E_heater)
             self.Q_st_list.append(self.Q_st)
@@ -1928,16 +1928,16 @@ class ElectricHeater:
             self.S_st = (1/self.T_hb) * (self.Q_st)
             self.S_heater = (1/float('inf')) * (self.E_heater)
             self.S_cond = (1/self.T_hb) * (self.Q_cond)
-            self.S_conv_hs = (1/self.T_hs) * (self.Q_conv)
-            self.S_rad_rs  = 4/3 * self.A_p * self.epsilon_hs * self.epsilon_rs * sigma * (self.T_mr ** 3 - self.T0 ** 3)
-            self.S_rad_hs  = 4/3 * self.A_p * self.epsilon_hs * self.epsilon_rs * sigma * (self.T_hb ** 3 - self.T0 ** 3)
-            self.S_g_hb = self.S_st + self.S_conv_hs - self.S_heater     
-            self.S_g_hs = self.S_rad_hs + self.S_conv_hs - self.S_cond - self.S_rad_rs
+            self.S_conv = (1/self.T_hs) * (self.Q_conv)
+            self.S_rad_rs  = 4/3 * self.A * self.epsilon_hs * self.epsilon_rs * sigma * (self.T_mr ** 3 - self.T0 ** 3)
+            self.S_rad_hs  = 4/3 * self.A * self.epsilon_hs * self.epsilon_rs * sigma * (self.T_hb ** 3 - self.T0 ** 3)
+            self.S_g_hb = self.S_st + self.S_conv - self.S_heater     
+            self.S_g_hs = self.S_rad_hs + self.S_conv - self.S_cond - self.S_rad_rs
 
             self.S_st_list.append(self.S_st)
             self.S_heater_list.append(self.S_heater)
             self.S_cond_list.append(self.S_cond)
-            self.S_conv_hs_list.append(self.S_conv_hs)
+            self.S_conv_list.append(self.S_conv)
             self.S_rad_rs_list.append(self.S_rad_rs)
             self.S_rad_hs_list.append(self.S_rad_hs)
             self.S_g_hb_list.append(self.S_g_hb)
@@ -1947,16 +1947,16 @@ class ElectricHeater:
             self.X_st = (1 - self.T0 / self.T_hb) * (self.Q_st)
             self.X_heater = (1 - self.T0 / float('inf')) * (self.E_heater)
             self.X_cond = (1 - self.T0 / self.T_hb) * (self.Q_cond)
-            self.X_conv_hs = (1 - self.T0 / self.T_hs) * (self.Q_conv)
+            self.X_conv = (1 - self.T0 / self.T_hs) * (self.Q_conv)
             self.X_rad_rs = self.Q_rad_rs - self.T0 * self.S_rad_rs
             self.X_rad_hs = self.Q_rad_hs - self.T0 * self.S_rad_hs
             self.X_c_hb = -(self.X_st + self.X_cond - self.X_heater)
-            self.X_c_hs = -(self.X_rad_hs + self.X_conv_hs - self.X_cond - self.X_rad_rs)
+            self.X_c_hs = -(self.X_rad_hs + self.X_conv - self.X_cond - self.X_rad_rs)
             
             self.X_st_list.append(self.X_st)
             self.X_heater_list.append(self.X_heater)
             self.X_cond_list.append(self.X_cond)
-            self.X_conv_hs_list.append(self.X_conv_hs)
+            self.X_conv_list.append(self.X_conv)
             self.X_rad_rs_list.append(self.X_rad_rs)
             self.X_rad_hs_list.append(self.X_rad_hs)
             self.X_c_hb_list.append(self.X_c_hb)
@@ -2028,7 +2028,7 @@ class ElectricHeater:
                 "X_heater": self.X_heater,
             },
             "con": {
-                "X_g_hb": self.X_g_hb,
+                "X_c_hb": self.X_c_hb,
             },
             "out": {
                 "X_st": self.X_st,
@@ -2036,13 +2036,13 @@ class ElectricHeater:
             }
         }
 
-        self.entropy_balance["heater surface"] = {
+        self.exergy_balance["heater surface"] = {
             "in": {
                 "X_cond":   self.X_cond,
                 "X_rad_rs": self.X_rad_rs,
             },
             "con": {
-                "X_g_hs": self.X_g_hs,
+                "X_c_hs": self.X_c_hs,
             },
             "out": {
                 "X_conv":   self.X_conv,
