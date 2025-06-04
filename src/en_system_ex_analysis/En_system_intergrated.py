@@ -1380,23 +1380,30 @@ class AirSourceHeatPump_cooling:
         self.Q_r_max = 10000 # [W]
 
         # temperature
-        self.T0      = cu.C2K(30) # environmental temperature [K]
-        self.T_a_room = cu.C2K(20) # room air temperature [K]
+        self.T0      = 30 # environmental temperature [°C]
+        self.T_a_room = 20 # room air temperature [°C]
         
-        self.T_r_int     = cu.C2K(5) # internal unit refrigerant temperature [K]
-        self.T_a_int_out = cu.C2K(10) # internal unit air outlet temperature [K]
+        self.T_r_int     = 5 # internal unit refrigerant temperature [°C]
+        self.T_a_int_out = 10 # internal unit air outlet temperature [°C]
         
-        self.T_a_ext_out = cu.C2K(40) # external unit air outlet temperature [K]
-        self.T_r_ext     = cu.C2K(45) # external unit refrigerant temperature [K]
+        self.T_a_ext_out = 40 # external unit air outlet temperature [°C]
+        self.T_r_ext     = 45 # external unit refrigerant temperature [°C]
         
         
         # load
         self.Q_r_int = 10000 # [W]
         
-        # 
+        # COP의 reference로 삼을 수 있는 값
         self.COP_ref = 4
 
     def system_update(self):
+        # Celcius to Kelvin
+        self.T0 = cu.C2K(self.T0)
+        self.T_a_room = cu.C2K(self.T_a_room)
+        self.T_a_int_out = cu.C2K(self.T_a_int_out)
+        self.T_a_ext_out = cu.C2K(self.T_a_ext_out)
+        self.T_r_int = cu.C2K(self.T_r_int)
+        self.T_r_ext = cu.C2K(self.T_r_ext)
 
         # temperature
         self.T_a_int_in  = self.T_a_room # internal unit air inlet temperature [K]
@@ -1563,19 +1570,27 @@ class AirSourceHeatPump_heating:
         self.Q_r_max = 10000 # maximum heating capacity [W]
 
         # temperature
-        self.T0      = cu.C2K(0) # environmental temperature [K]
-        self.T_a_room = cu.C2K(20) # room air temperature [K]
+        self.T0      = 0 # environmental temperature [°C]
+        self.T_a_room = 20 # room air temperature [°C]
         
-        self.T_r_int = cu.C2K(35) # internal unit refrigerant temperature [K]
-        self.T_a_int_out = cu.C2K(30) # internal unit air outlet temperature [K]
-        self.T_a_ext_out = cu.C2K(-10) # external unit air outlet temperature [K]
-        self.T_r_ext = cu.C2K(-15) # external unit refrigerant temperature [K]
-        
+        self.T_r_int = 35 # internal unit refrigerant temperature [°C]
+        self.T_a_int_out = 30 # internal unit air outlet temperature [°C]
+        self.T_a_ext_out = -10 # external unit air outlet temperature [°C]
+        self.T_r_ext = -15 # external unit refrigerant temperature [°C]
         
         # load
         self.Q_r_int = 10000 # [W]
 
     def system_update(self):
+        
+        # Celcius to Kelvin
+        self.T0 = cu.C2K(self.T0)
+        self.T_a_room = cu.C2K(self.T_a_room)
+        self.T_a_int_out = cu.C2K(self.T_a_int_out)
+        self.T_a_ext_out = cu.C2K(self.T_a_ext_out)
+        self.T_r_int = cu.C2K(self.T_r_int)
+        self.T_r_ext = cu.C2K(self.T_r_ext)
+        
         # temperature
         self.T_a_int_in  = self.T_a_room
         self.T_a_ext_in  = self.T0 # external unit air inlet temperature [K]
