@@ -9,7 +9,6 @@ authors = [
 requires-python = ">=3.10"
 dependencies = [
     "dartwork-mpl",
-    "heatmap-generator",
     "ipykernel>=6.29.5",
     "matplotlib>=3.10.0",
     "notebook>=7.3.2",
@@ -27,4 +26,3 @@ build-backend = "hatchling.build"
 
 [tool.uv.sources]
 dartwork-mpl = { git = "https://github.com/dartwork-repo/dartwork-mpl" }
-heatmap-generator = { git = "https://github.com/BET-lab/Heatmap-generator.git" }
