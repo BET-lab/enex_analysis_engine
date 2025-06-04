@@ -23,23 +23,14 @@ uv sync
 
 ### 모듈 임포트하기
 ```python
-import numpy as np
-import math
-import constant as c
-from En_system_intergrated import ElectricBoiler, GasBoiler, HeatPumpBoiler
+import en_system_ex_analysis as enex
 ```
 
 ### 예제: 전기 보일러 시스템 생성
 ```python
-boiler = ElectricBoiler()
-boiler.system_update()
-print(boiler.energy_balance)
+EB = enex.ElectricBoiler()
+EB.T0 = 10
+EB.system_update
+enex.print_balance(EB.exergy_balance)
 ```
 
-### 예제: 총 엑서지 사용량 계산
-```python
-from En_system_intergrated import calculate_total_exergy_consumption
-
-total_exergy = calculate_total_exergy_consumption(boiler.exergy_balance)
-print(f"총 엑서지 사용량: {total_exergy} W")
-```
