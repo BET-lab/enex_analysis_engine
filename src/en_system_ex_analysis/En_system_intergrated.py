@@ -160,6 +160,7 @@ def print_balance(balance, decimal=2):
                 print(f"{symbol}: {round(value, decimal)} {unit}")
 
 def calculate_ASHP_cooling_COP(T_a_int_out, T_a_ext_in, Q_r_int, Q_r_max, COP_ref):
+    # link
     PLR = Q_r_int / Q_r_max
     EIR_by_T = 0.38 + 0.02 * cu.K2C(T_a_int_out) + 0.01 * cu.K2C(T_a_ext_in)
     EIR_by_PLR = 0.22 + 0.50 * PLR + 0.26 * PLR**2
@@ -167,6 +168,7 @@ def calculate_ASHP_cooling_COP(T_a_int_out, T_a_ext_in, Q_r_int, Q_r_max, COP_re
     return COP
 
 def calculate_ASHP_heating_COP(T0, Q_r_int, Q_r_max):
+    # link
     PLR = Q_r_int / Q_r_max
     COP = -7.46 * (PLR - 0.0047 * cu.K2C(T0) - 0.477)**2 + 0.0941 * cu.K2C(T0) + 4.34
     return COP
@@ -1451,6 +1453,8 @@ class AirSourceHeatPump_cooling:
         self.Xout = self.X_a_int_out - self.X_a_int_in
         self.Xc   = self.Xin - self.Xout
         
+        self.X_eff = self.Xout/self.Xin
+        
         ## Exergy Balance ========================================
         self.exergy_balance = {}
         # Internal Unit
@@ -1497,66 +1501,6 @@ class AirSourceHeatPump_cooling:
             }
         }
 
-        ## Exergy Balance ========================================
-        self.exergy_balance = {}
-        # Internal Unit
-        self.exergy_balance["internal unit"] = {
-            "in": [
-                {"symbol": "$E_{f,int}$", "value": self.E_fan_int},
-                {"symbol": "$X_{r,int}$", "value": self.X_r_int},
-            ],
-            "con": [
-                {"symbol": "$X_{c,int}$", "value": self.Xc_int},
-            ],
-            "out": [
-                {"symbol": "$X_{a,int,out}$", "value": self.X_a_int_out},
-                {"symbol": "$X_{a,int,in}$", "value": self.X_a_int_in},
-            ],
-            "total": [
-                {"symbol": "$X_{in,int}$", "value": self.Xin_int},
-                {"symbol": "$X_{c,int}$", "value": self.Xc_int},
-                {"symbol": "$X_{out,int}$", "value": self.Xout_int},
-            ]
-        }
-        
-        # Refrigerant
-        self.exergy_balance["refrigerant loop"] = {
-            "in": [
-                {"symbol": "$E_{cmp}$", "value": self.E_cmp},
-            ],
-            "con": [
-                {"symbol": "$X_{c,r}$", "value": self.Xc_r},
-            ],
-            "out": [
-                {"symbol": "$X_{r,int}$", "value": self.X_r_int},
-                {"symbol": "$X_{r,ext}$", "value": self.X_r_ext},
-            ],
-            "total": [
-                {"symbol": "$X_{in,r}$", "value": self.Xin_r},
-                {"symbol": "$X_{c,r}$", "value": self.Xc_r},
-                {"symbol": "$X_{out,r}$", "value": self.Xout_r},
-            ]
-        }
-
-        # External Unit
-        self.exergy_balance["external unit"] = {
-            "in": [
-                {"symbol": "$E_{f,ext}$", "value": self.E_fan_ext},
-                {"symbol": "$X_{r,ext}$", "value": self.X_r_ext},
-            ],
-            "con": [
-                {"symbol": "$X_{c,ext}$", "value": self.Xc_ext},
-            ],
-            "out": [
-                {"symbol": "$X_{a,ext,out}$", "value": self.X_a_ext_out},
-                {"symbol": "$X_{a,ext,in}$", "value": self.X_a_ext_in},
-            ],
-            "total": [
-                {"symbol": "$X_{in,ext}$", "value": self.Xin_ext},
-                {"symbol": "$X_{c,ext}$", "value": self.Xc_ext},
-                {"symbol": "$X_{out,ext}$", "value": self.Xout_ext},
-            ]
-        }
 
 @dataclass
 class AirSourceHeatPump_heating:
@@ -1630,9 +1574,15 @@ class AirSourceHeatPump_heating:
         # External unit of ASHP
         self.Xin_ext = self.E_fan_ext + self.X_r_ext
         self.Xout_ext = self.X_a_ext_out - self.X_a_ext_in
-        
         self.Xc_ext = self.E_fan_ext + self.X_r_ext - (self.X_a_ext_out - self.X_a_ext_in)
-
+        
+        # Total exergy of ASHP
+        self.Xin  = self.E_fan_int + self.E_cmp + self.E_fan_ext
+        self.Xout = self.X_a_int_out - self.X_a_int_in
+        self.Xc   = self.Xin - self.Xout
+        
+        self.X_eff = self.Xout/self.Xin
+        
         ## Exergy Balance ========================================
         self.exergy_balance = {}
 
