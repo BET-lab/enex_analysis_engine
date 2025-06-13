@@ -354,7 +354,7 @@ class ElectricBoiler:
         # Temperature [K]
         self.T_w_tank = 60
         self.T_w_sup  = 10
-        self.T_w_tap  = 45
+        self.T_w_serv  = 45
         self.T0       = 0 
 
         # Tank water use [m3/s]
@@ -369,7 +369,7 @@ class ElectricBoiler:
         self.x_ins   = 0.10 
         
         # Tank thermal conductivity [W/mK]
-        self.k_shell = 50   
+        self.k_shell = 25   
         self.k_ins   = 0.03 
 
         # Overall heat transfer coefficient [W/m²K]
@@ -380,7 +380,7 @@ class ElectricBoiler:
         # Celcius to Kelvin
         self.T_w_tank = cu.C2K(self.T_w_tank) # tank water temperature [K]
         self.T_w_sup  = cu.C2K(self.T_w_sup)  # supply water temperature [K]
-        self.T_w_tap  = cu.C2K(self.T_w_tap)  # tap water temperature [K]
+        self.T_w_serv  = cu.C2K(self.T_w_serv)  # tap water temperature [K]
         self.T0       = cu.C2K(self.T0)       # reference temperature [K]
         
         # Temperature [K]
@@ -398,7 +398,7 @@ class ElectricBoiler:
         self.V_tank = self.A_base * self.H
 
         # Volumetric flow rate ratio [-]
-        self.alp = (self.T_w_tap - self.T_w_sup)/(self.T_w_tank - self.T_w_sup)
+        self.alp = (self.T_w_serv - self.T_w_sup)/(self.T_w_tank - self.T_w_sup)
         self.alp = print("alp is negative") if self.alp < 0 else self.alp
         
         # Volumetric flow rates [m³/s]
@@ -434,7 +434,7 @@ class ElectricBoiler:
         self.Q_w_sup_tank = c_w * rho_w * self.dV_w_sup_tank * (self.T_w_sup - self.T0)
         self.Q_w_tank     = c_w * rho_w * self.dV_w_sup_tank * (self.T_w_tank - self.T0)
         self.Q_w_sup_mix = c_w * rho_w * self.dV_w_sup_mix * (self.T_w_sup - self.T0)
-        self.Q_w_serv     = c_w * rho_w * self.dV_w_serv * (self.T_w_tap - self.T0)
+        self.Q_w_serv     = c_w * rho_w * self.dV_w_serv * (self.T_w_serv - self.T0)
 
         # Pre-calculate Entropy values
         self.S_heater = (1 / float('inf')) * self.E_heater
@@ -442,7 +442,7 @@ class ElectricBoiler:
         self.S_w_tank = c_w * rho_w * self.dV_w_sup_tank * math.log(self.T_w_tank / self.T0)
         self.S_l_tank = (1 / self.T_tank_is) * self.Q_l_tank
         self.S_w_sup_mix = c_w * rho_w * self.dV_w_sup_mix * math.log(self.T_w_sup / self.T0)
-        self.S_w_serv = c_w * rho_w * self.dV_w_serv * math.log(self.T_w_tap / self.T0)
+        self.S_w_serv = c_w * rho_w * self.dV_w_serv * math.log(self.T_w_serv / self.T0)
         self.S_g_tank = (self.S_w_tank + self.S_l_tank) - (self.S_heater + self.S_w_sup_tank)
         self.S_g_mix = self.S_w_serv - (self.S_w_tank + self.S_w_sup_mix)
 
@@ -455,7 +455,7 @@ class ElectricBoiler:
 
         # Pre-calculate Exergy values for mixing valve
         self.X_w_sup_mix = c_w * rho_w * self.dV_w_sup_mix * ((self.T_w_sup - self.T0) - self.T0 * math.log(self.T_w_sup / self.T0))
-        self.X_w_serv = c_w * rho_w * self.dV_w_serv * ((self.T_w_tap - self.T0) - self.T0 * math.log(self.T_w_tap / self.T0))
+        self.X_w_serv = c_w * rho_w * self.dV_w_serv * ((self.T_w_serv - self.T0) - self.T0 * math.log(self.T_w_serv / self.T0))
         self.X_c_mix = self.S_g_mix * self.T0
         
         # total
@@ -557,7 +557,7 @@ class GasBoiler:
         # Temperature [°C]
         self.T_w_tank = 60 
         self.T_w_sup  = 10
-        self.T_w_tap  = 45 
+        self.T_w_serv  = 45 
         self.T0       = 0
         self.T_exh    = 70 
         self.T_NG     = 1400
@@ -574,7 +574,7 @@ class GasBoiler:
         self.x_ins   = 0.10 
         
         # Tank thermal conductivity [W/mK]
-        self.k_shell = 50   
+        self.k_shell = 25   
         self.k_ins   = 0.03 
 
         # Overall heat transfer coefficient [W/m²K]
@@ -585,7 +585,7 @@ class GasBoiler:
         # Celcius to Kelvin
         self.T_w_tank = cu.C2K(self.T_w_tank) # tank water temperature [K]
         self.T_w_sup  = cu.C2K(self.T_w_sup)  # supply water temperature [K]
-        self.T_w_tap  = cu.C2K(self.T_w_tap)  # tap water temperature [K]
+        self.T_w_serv  = cu.C2K(self.T_w_serv)  # tap water temperature [K]
         self.T0       = cu.C2K(self.T0)       # reference temperature [K]
         self.T_exh    = cu.C2K(self.T_exh)    # exhaust gas temperature [K]
         self.T_NG     = cu.C2K(self.T_NG)     # natural gas temperature [K]
@@ -605,7 +605,7 @@ class GasBoiler:
         self.V_tank = self.A_base * self.H
 
         # Volumetric flow rate ratio [-]
-        self.alp = (self.T_w_tap - self.T_w_sup)/(self.T_w_tank - self.T_w_sup)
+        self.alp = (self.T_w_serv - self.T_w_sup)/(self.T_w_tank - self.T_w_sup)
         self.alp = print("alp is negative") if self.alp < 0 else self.alp
         
         # Volumetric flow rates [m³/s]
@@ -643,7 +643,7 @@ class GasBoiler:
         self.Q_w_comb_out = c_w * rho_w * self.dV_w_sup_comb * (self.T_w_comb - self.T0)
         self.Q_w_tank     = c_w * rho_w * self.dV_w_sup_comb * (self.T_w_tank - self.T0)
         self.Q_w_sup_mix = c_w * rho_w * self.dV_w_sup_mix * (self.T_w_sup - self.T0)
-        self.Q_w_serv     = c_w * rho_w * self.dV_w_serv * (self.T_w_tap - self.T0)
+        self.Q_w_serv     = c_w * rho_w * self.dV_w_serv * (self.T_w_serv - self.T0)
 
         # Pre-calculate Entropy values for boiler
         self.S_NG         = (1 / self.T_NG) * self.E_NG
@@ -657,7 +657,7 @@ class GasBoiler:
         self.S_g_tank = (self.S_w_tank + self.S_l_tank) - self.S_w_comb_out
 
         self.S_w_sup_mix = c_w * rho_w * self.dV_w_sup_mix * math.log(self.T_w_sup / self.T0)
-        self.S_w_serv = c_w * rho_w * self.dV_w_serv * math.log(self.T_w_tap / self.T0)
+        self.S_w_serv = c_w * rho_w * self.dV_w_serv * math.log(self.T_w_serv / self.T0)
         self.S_g_mix = self.S_w_serv - (self.S_w_tank + self.S_w_sup_mix)
 
         # Pre-calculate Exergy values for boiler
@@ -672,7 +672,7 @@ class GasBoiler:
         self.X_c_tank = self.S_g_tank * self.T0
 
         self.X_w_sup_mix = c_w * rho_w * self.dV_w_sup_mix * ((self.T_w_sup - self.T0) - self.T0 * math.log(self.T_w_sup / self.T0))
-        self.X_w_serv = c_w * rho_w * self.dV_w_serv * ((self.T_w_tap - self.T0) - self.T0 * math.log(self.T_w_tap / self.T0))
+        self.X_w_serv = c_w * rho_w * self.dV_w_serv * ((self.T_w_serv - self.T0) - self.T0 * math.log(self.T_w_serv / self.T0))
         self.X_c_mix = self.S_g_mix * self.T0
         
         # total
@@ -813,7 +813,7 @@ class HeatPumpBoiler:
         self.T_r_ext     = -10
         self.T_r_tank    = 65
         self.T_w_tank    = 60
-        self.T_w_tap     = 45
+        self.T_w_serv     = 45
         self.T_w_sup     = 10
 
         # Tank water use [m3/s]
@@ -828,7 +828,7 @@ class HeatPumpBoiler:
         self.x_ins   = 0.10 
         
         # Tank thermal conductivity [W/mK]
-        self.k_shell = 50   
+        self.k_shell = 25   
         self.k_ins   = 0.03 
 
         # Overall heat transfer coefficient [W/m²K]
@@ -842,7 +842,7 @@ class HeatPumpBoiler:
         self.T_r_ext     = cu.C2K(self.T_r_ext)
         self.T_r_tank    = cu.C2K(self.T_r_tank)
         self.T_w_tank    = cu.C2K(self.T_w_tank)
-        self.T_w_tap     = cu.C2K(self.T_w_tap)
+        self.T_w_serv     = cu.C2K(self.T_w_serv)
         self.T_w_sup     = cu.C2K(self.T_w_sup)
         
         # Temperature [K]
@@ -861,7 +861,7 @@ class HeatPumpBoiler:
         self.V_tank = self.A_base * self.H
 
         # Volumetric flow rate ratio [-]
-        self.alp = (self.T_w_tap - self.T_w_sup)/(self.T_w_tank - self.T_w_sup)
+        self.alp = (self.T_w_serv - self.T_w_sup)/(self.T_w_tank - self.T_w_sup)
         self.alp = print("alp is negative") if self.alp < 0 else self.alp
         
         # Volumetric flow rates [m³/s]
@@ -924,7 +924,7 @@ class HeatPumpBoiler:
         self.Q_w_sup_tank = c_w * rho_w * self.dV_w_sup_tank * (self.T_w_sup - self.T0)
         self.Q_w_tank     = c_w * rho_w * self.dV_w_sup_tank * (self.T_w_tank - self.T0)
         self.Q_w_sup_mix = c_w * rho_w * self.dV_w_sup_mix * (self.T_w_sup - self.T0)
-        self.Q_w_serv     = c_w * rho_w * self.dV_w_serv * (self.T_w_tap - self.T0)
+        self.Q_w_serv     = c_w * rho_w * self.dV_w_serv * (self.T_w_serv - self.T0)
         self.Q_a_ext_in   = c_a * rho_a * self.dV_a_ext * (self.T_a_ext_in - self.T0)
         self.Q_a_ext_out  = c_a * rho_a * self.dV_a_ext * (self.T_a_ext_out - self.T0)
 
@@ -939,7 +939,7 @@ class HeatPumpBoiler:
         self.S_w_tank     = c_w * rho_w * self.dV_w_sup_tank * math.log(self.T_w_tank / self.T0)
         self.S_l_tank     = (1 / self.T_tank_is) * self.Q_l_tank
         self.S_w_sup_mix = c_w * rho_w * self.dV_w_sup_mix * math.log(self.T_w_sup / self.T0)
-        self.S_w_serv      = c_w * rho_w * self.dV_w_serv * math.log(self.T_w_tap / self.T0)
+        self.S_w_serv      = c_w * rho_w * self.dV_w_serv * math.log(self.T_w_serv / self.T0)
 
         self.S_g_ext = self.S_a_ext_out + self.S_r_ext - (self.S_fan + self.S_a_ext_in)
         self.S_g_r = self.S_r_tank - (self.S_cmp + self.S_r_ext_cmp)
@@ -954,7 +954,7 @@ class HeatPumpBoiler:
         self.X_w_tank = c_w * rho_w * self.dV_w_sup_tank * ((self.T_w_tank - self.T0) - self.T0 * math.log(self.T_w_tank / self.T0))
         self.X_l_tank = (1 - self.T0 / self.T_tank_is) * self.Q_l_tank
         self.X_w_sup_mix = c_w * rho_w * self.dV_w_sup_mix * ((self.T_w_sup - self.T0) - self.T0 * math.log(self.T_w_sup / self.T0))
-        self.X_w_serv = c_w * rho_w * self.dV_w_serv * ((self.T_w_tap - self.T0) - self.T0 * math.log(self.T_w_tap / self.T0))
+        self.X_w_serv = c_w * rho_w * self.dV_w_serv * ((self.T_w_serv - self.T0) - self.T0 * math.log(self.T_w_serv / self.T0))
         self.X_a_ext_in = c_a * rho_a * self.dV_a_ext * ((self.T_a_ext_in - self.T0) - self.T0 * math.log(self.T_a_ext_in / self.T0))
         self.X_a_ext_out = c_a * rho_a * self.dV_a_ext * ((self.T_a_ext_out - self.T0) - self.T0 * math.log(self.T_a_ext_out / self.T0))
         
@@ -1142,7 +1142,7 @@ class SolarHotWater:
         # Temperature [°C]
         self.T0       = 0
         self.T_w_comb = 60
-        self.T_w_tap  = 45
+        self.T_w_serv  = 45
         self.T_w_sup  = 10
         self.T_exh    = 70
         
@@ -1183,13 +1183,13 @@ class SolarHotWater:
         # Celcius to Kelvin
         self.T0       = cu.C2K(self.T0)
         self.T_w_comb = cu.C2K(self.T_w_comb)
-        self.T_w_tap  = cu.C2K(self.T_w_tap)
+        self.T_w_serv  = cu.C2K(self.T_w_serv)
         self.T_w_sup  = cu.C2K(self.T_w_sup)
         self.T_exh    = cu.C2K(self.T_exh)
         self.T_NG     = self.T0 / (1 - self.eta_NG)
         
         # Volumetric flow rate ratio [-]
-        self.alp = (self.T_w_tap - self.T_w_sup)/(self.T_w_comb - self.T_w_sup)
+        self.alp = (self.T_w_serv - self.T_w_sup)/(self.T_w_comb - self.T_w_sup)
         self.alp = print("alp is negative") if self.alp < 0 else self.alp
         
         # Volumetric flow rates [m³/s]
@@ -1222,7 +1222,7 @@ class SolarHotWater:
         self.Q_w_comb = c_w * rho_w * self.dV_w_sup * (self.T_w_comb - self.T0)
         
         self.Q_w_sup_mix = c_w * rho_w * self.dV_w_sup_mix * (self.T_w_sup - self.T0)
-        self.Q_w_serv     = c_w * rho_w * self.dV_w_serv * (self.T_w_tap - self.T0)
+        self.Q_w_serv     = c_w * rho_w * self.dV_w_serv * (self.T_w_serv - self.T0)
         
         # Entropy balance
         self.S_w_sup = c_w * rho_w * self.dV_w_sup * math.log(self.T_w_sup / self.T0)
@@ -1239,7 +1239,7 @@ class SolarHotWater:
         self.S_g_comb = (self.S_w_comb + self.S_exh) - (self.S_NG + self.S_w_stp_out)
         
         self.S_w_sup_mix = c_w * rho_w * self.dV_w_sup_mix * math.log(self.T_w_sup / self.T0)
-        self.S_w_serv = c_w * rho_w * self.dV_w_serv * math.log(self.T_w_tap / self.T0)
+        self.S_w_serv = c_w * rho_w * self.dV_w_serv * math.log(self.T_w_serv / self.T0)
         self.S_g_mix = self.S_w_serv - (self.S_w_comb + self.S_w_sup_mix)
         
         # Exergy balance
@@ -1380,6 +1380,277 @@ class SolarHotWater:
             }
         }
               
+@dataclass
+class GroundSourceHeatPumpBoiler: 
+    def __post_init__(self): 
+        
+        self.time = 10 # [h]
+        
+        # Efficiency [-]
+        self.eta_fan = 0.6
+        self.COP_hp  = 4.0
+        
+        # Pressure [Pa]
+        self.dP = 200 
+
+        # Temperature [C]
+        self.T0 = 0
+        
+        self.T_w_tank = 60
+        self.T_w_serv = 45
+        self.T_w_sup  = 10
+        
+        self.T_g      = 15 
+        self.T_r_tank = 65
+        if self.T_r_tank < self.T_w_tank:
+            raise ValueError("T_r_tank cannot be smaller than T_w_tank")
+        self.T_r_ext  = 5 
+        
+        # Tank water use [m3/s]
+        self.dV_w_serv  = 0.0002
+
+        # Tank size [m]
+        self.r0 = 0.2
+        self.H = 0.8
+        
+        # Tank layer thickness [m]
+        self.x_shell = 0.01
+        self.x_ins   = 0.10
+        
+        # Tank thermal conductivity [W/mK]
+        self.k_shell = 25   
+        self.k_ins   = 0.03 
+
+        # Overall heat transfer coefficient [W/m²K]
+        self.h_o = 15 
+        
+        # Borehole parameters
+        self.depth = 0 # Borehole depth [m]
+        self.height = 200 # Borehole height [m]
+        self.r_b = 0.08 # Borehole radius [m]
+        self.R_b = 0.108 # Effective borehole thermal resistance [mK/W]
+
+        # Fluid parameters
+        self.V_f = 0.0004 # Volumetric flow rate of fluid [m³/s]
+
+        # Ground parameters
+        self.k_g = 2.0
+        self.c_g = 800
+        self.rho_g = 2000 
+
+        # Pump of ground heat exchanger
+        self.E_pmp = 200
+
+    def system_update(self):
+        # time
+        self.time = self.time * cu.h2s  # Convert hours to seconds
+
+        # Celcius to Kelvin
+        self.T0 = cu.C2K(self.T0)
+        
+        self.T_w_tank = cu.C2K(self.T_w_tank)
+        self.T_w_serv = cu.C2K(self.T_w_serv)
+        self.T_w_sup = cu.C2K(self.T_w_sup)
+        
+        self.T_g = cu.C2K(self.T_g)
+        
+        self.T_r_tank = cu.C2K(self.T_r_tank)
+        self.T_r_ext = cu.C2K(self.T_r_ext)
+        
+        # Temperature
+        self.T_tank_is = self.T_w_tank # inner surface temperature of tank [K]
+        
+        # Surface areas
+        self.r1 = self.r0 + self.x_shell
+        self.r2 = self.r1 + self.x_ins
+        
+        # Tank surface areas [m²]
+        self.A_side = 2 * math.pi * self.r2 * self.H
+        self.A_base = math.pi * self.r0**2
+        
+        # Total tank volume [m³]
+        self.V_tank = self.A_base * self.H
+
+        # Volumetric flow rate ratio [-]
+        self.alp = (self.T_w_serv - self.T_w_sup)/(self.T_w_tank - self.T_w_sup)
+        self.alp = print("alp is negative") if self.alp < 0 else self.alp
+        
+        # Volumetric flow rates [m³/s]
+        self.dV_w_sup_tank = self.alp * self.dV_w_serv
+        self.dV_w_sup_mix  = (1-self.alp)*self.dV_w_serv
+
+        # Thermal resistances per unit area/legnth
+        self.R_base_unit = self.x_shell / self.k_shell + self.x_ins / self.k_ins # [m2K/W]
+        self.R_side_unit = math.log(self.r1 / self.r0) / (2 * math.pi * self.k_shell) + math.log(self.r2 / self.r1) / (2 * math.pi * self.k_ins) # [mK/W]
+        
+        # Thermal resistances [K/W]
+        self.R_base = self.R_base_unit / self.A_base # [K/W]
+        self.R_side = self.R_side_unit / self.H # [K/W]
+        
+        # Thermal resistances [K/W]
+        self.R_base_ext = 1 / (self.h_o * self.A_base)
+        self.R_side_ext = 1 / (self.h_o * self.A_side)
+
+        # Total thermal resistances [K/W]
+        self.R_base_tot = self.R_base + self.R_base_ext
+        self.R_side_tot = self.R_side + self.R_side_ext
+
+        # U-value [W/K]
+        self.U_tank = 2/self.R_base_tot + 1/self.R_side_tot
+        
+        # Load [W]
+        self.Q_r_tank = c_w * rho_w * self.dV_w_sup_tank * (self.T_w_tank - self.T_w_sup)
+        self.Q_l_tank = self.U_tank * (self.T_tank_is - self.T0)
+        
+        # Others
+        self.E_cmp = self.Q_r_tank / self.COP_hp # compressor power input [W]
+        self.Q_r_ext = self.Q_r_tank - self.E_cmp
+        self.alpha = self.k_g / (self.c_g * self.rho_g) # thermal diffusivity of ground [m²/s]
+
+        # Borehole 
+        self.Q_bh = (self.Q_r_ext - self.E_pmp) / self.height # heat flow rate from borehole to ground per unit length [W/m]
+        self.g_i = g_function(self.time, self.r_b, self.alpha, self.k_g, self.height, self.depth) # g-function [mK/W]
+        
+        # fluid temperature & borehole wall temperature [K]
+        self.T_b = self.T_g - self.Q_bh * self.g_i # borehole wall temperature [K]
+        self.T_f = self.T_b - self.Q_bh * self.R_b # fluid temperature in borehole [K]
+        self.T_f_in = self.T_f - self.Q_bh * self.height / (2 * c_w * rho_w * self.V_f) # fluid inlet temperature [K]
+        self.T_f_out = self.T_f + self.Q_bh * self.height / (2 * c_w * rho_w * self.V_f) # fluid outlet temperature [K]
+
+        # Exergy result
+        self.X_w_sup_tank = c_w * rho_w * self.dV_w_sup_tank * ((self.T_w_sup - self.T0) - self.T0 * math.log(self.T_w_sup / self.T0))
+        self.X_w_tank = c_w * rho_w * self.dV_w_sup_tank * ((self.T_w_tank - self.T0) - self.T0 * math.log(self.T_w_tank / self.T0))
+        self.X_l_tank = (1 - self.T0 / self.T_tank_is) * self.Q_l_tank
+        self.X_w_sup_mix = c_w * rho_w * self.dV_w_sup_mix * ((self.T_w_sup - self.T0) - self.T0 * math.log(self.T_w_sup / self.T0))
+        self.X_w_serv = c_w * rho_w * self.dV_w_serv * ((self.T_w_serv - self.T0) - self.T0 * math.log(self.T_w_serv / self.T0))
+
+        self.X_r_int = self.Q_r_tank * (1 - self.T0 / self.T_r_tank)
+        self.X_r_ext = self.Q_r_ext * (1 - self.T0 / self.T_r_ext)
+
+        self.X_f_in  = c_w * rho_w * self.V_f * ((self.T_f_in - self.T0) - self.T0 * math.log(self.T_f_in / self.T0))
+        self.X_f_out = c_w * rho_w * self.V_f * ((self.T_f_out - self.T0) - self.T0 * math.log(self.T_f_out / self.T0))
+
+        self.X_g = (1 - self.T0 / self.T_g) * (self.Q_bh * self.height)
+        self.X_b = (1 - self.T0 / self.T_b) * (self.Q_bh * self.height)
+
+        # Mixing valve
+        self.Xin_mix = self.X_w_tank + self.X_w_sup_mix
+        self.Xout_mix = self.X_w_serv
+        self.Xc_mix = self.Xin_mix - self.Xout_mix
+        
+        # Tank
+        self.Xin_tank  = self.X_r_int + self.X_w_sup_tank
+        self.Xout_tank = self.X_w_tank + self.X_l_tank
+        self.Xc_tank   = self.Xin_tank - self.Xout_tank
+
+        # Closed refrigerant loop system
+        self.Xin_r  = self.E_cmp + self.X_r_ext
+        self.Xout_r = self.X_r_int
+        self.Xc_r   = self.Xin_r - self.Xout_r
+
+        # External unit
+        self.Xin_ext = self.X_f_out
+        self.Xout_ext = self.X_r_ext + self.X_f_in
+        self.Xc_ext = self.Xin_ext - self.Xout_ext
+
+        # Ground heat exchanger
+        self.Xin_GHE = self.E_pmp + self.X_b + self.X_f_in
+        self.Xout_GHE = self.X_f_out 
+        self.Xc_GHE = self.Xin_GHE - self.Xout_GHE
+
+        # Ground
+        self.Xin_g = self.X_g
+        self.Xout_g = self.X_b
+        self.Xc_g = self.Xin_g - self.Xout_g
+
+        ## Exergy Balance ========================================
+        self.exergy_balance = {}
+
+        # Internal Unit
+        # Mixing valve
+        self.exergy_balance["mixing valve"] = {
+            "in": {
+            "$X_{w,tank}$": self.X_w_tank,
+            "$X_{w,sup,mix}$": self.X_w_sup_mix,
+            },
+            "con": {
+            "$X_{c,mix}$": self.Xc_mix,
+            },
+            "out": {
+            "$X_{w,serv}$": self.X_w_serv,
+            }
+        }
+
+        # Hot water tank
+        self.exergy_balance["hot water tank"] = {
+            "in": {
+            "$X_{r,int}$": self.X_r_int,
+            "$X_{w,sup}$": self.X_w_sup_tank,
+            },
+            "con": {
+            "$X_{c,tank}$": self.Xc_tank,
+            },
+            "out": {
+            "$X_{w,tank}$": self.X_w_tank,
+            "$X_{l,tank}$": self.X_l_tank,
+            }
+        }
+
+        # Refrigerant loop
+        self.exergy_balance["refrigerant loop"] = {
+            "in": {
+            "$E_{cmp}$": self.E_cmp,
+            "$X_{r,ext}$": self.X_r_ext,
+            },
+            "con": {
+            "$X_{c,r}$": self.Xc_r,
+            },
+            "out": {
+            "$X_{r,int}$": self.X_r_int,
+            }
+        }
+
+        # External Unit
+        self.exergy_balance["external unit"] = {
+            "in": {
+            "$X_{f,out}$": self.X_f_out,
+            },
+            "con": {
+            "$X_{c,ext}$": self.Xc_ext,
+            },
+            "out": {
+            "$X_{r,ext}$": self.X_r_ext,
+            "$X_{f,in}$": self.X_f_in,
+            }
+        }
+
+        # Ground Heat Exchanger
+        self.exergy_balance["ground heat exchanger"] = {
+            "in": {
+            "$E_{pmp}$": self.E_pmp,
+            "$X_{b}$": self.X_b,
+            "$X_{f,in}$": self.X_f_in,
+            },
+            "con": {
+            "$X_{c,GHE}$": self.Xc_GHE,
+            },
+            "out": {
+            "$X_{f,out}$": self.X_f_out,
+            }
+        }
+
+        # Ground
+        self.exergy_balance["ground"] = {
+            "in": {
+            "$X_{g}$": self.X_g,
+            },
+            "con": {
+            "$X_{c,g}$": self.Xc_g,
+            },
+            "out": {
+            "$X_{b}$": self.X_b,
+            }
+        }
 
 #%%
 # class - AirSourceHeatPump
@@ -1649,7 +1920,7 @@ class AirSourceHeatPump_heating:
 class GroundSourceHeatPump_cooling:
     def __post_init__(self):
         # Time
-        self.time = 1000 # [s]
+        self.time = 10 # [h]
         
         # Borehole parameters
         self.depth = 0 # Borehole depth [m]
@@ -1675,20 +1946,22 @@ class GroundSourceHeatPump_cooling:
         self.COP_hp = 4.0
 
         # Temperature
-        self.T_0 = 30 # environmental temperature [ºC]
-        self.T_g = 15 # initial ground temperature [ºC]
-        self.T_a_room = 20 # room air temperature [ºC]
-        self.T_a_int_out = 10 # internal unit air outlet temperature [ºC]
-        self.T_r_int = 5 # internal unit refrigerant temperature [ºC]
-        self.T_r_ext = 25 # external unit refrigerant temperature [ºC]
+        self.T0 = 30 # environmental temperature [°C]
+        self.T_g = 15 # initial ground temperature [°C]
+        self.T_a_room = 20 # room air temperature [°C]
+        self.T_a_int_out = 10 # internal unit air outlet temperature [°C]
+        self.T_r_int = 5 # internal unit refrigerant temperature [°C]
+        self.T_r_ext = 25 # external unit refrigerant temperature [°C]
 
         # Load
         self.Q_r_int = 4000 # W
     
     def system_update(self):
+        # time
+        self.time = self.time * cu.h2s  # Convert hours to seconds
 
         # Celcius to Kelvin
-        self.T_0 = cu.C2K(self.T_0)
+        self.T0 = cu.C2K(self.T0)
         self.T_a_room = cu.C2K(self.T_a_room)
         self.T_a_int_out = cu.C2K(self.T_a_int_out)
         self.T_r_int = cu.C2K(self.T_r_int)
@@ -1710,27 +1983,27 @@ class GroundSourceHeatPump_cooling:
         self.E_fan_int = Fan().get_power(self.fan_int, self.dV_int) # power input of internal unit fan [W]
 
         # Borehole
-        self.Q_borehole = (self.Q_r_ext - self.E_pmp) / self.height # heat flow rate from borehole to ground per unit length [W/m]
+        self.Q_bh = (self.Q_r_ext - self.E_pmp) / self.height # heat flow rate from borehole to ground per unit length [W/m]
         self.g_i = g_function(self.time, self.r_b, self.alpha, self.k_g, self.height, self.depth) # g-function [mK/W]
         
         # fluid & bolehole wall temperature
-        self.T_b = self.T_g + self.Q_borehole * self.g_i # borehole wall temperature [K]
-        self.T_f = self.T_b + self.Q_borehole * self.R_b # fluid temperature in borehole [K]
-        self.T_f_in = self.T_f + self.Q_borehole * self.height / (2 * c_w * rho_w * self.V_f) # fluid inlet temperature [K]
-        self.T_f_out = self.T_f - self.Q_borehole * self.height / (2 * c_w * rho_w * self.V_f) # fluid outlet temperature [K]
+        self.T_b = self.T_g + self.Q_bh * self.g_i # borehole wall temperature [K]
+        self.T_f = self.T_b + self.Q_bh * self.R_b # fluid temperature in borehole [K]
+        self.T_f_in = self.T_f + self.Q_bh * self.height / (2 * c_w * rho_w * self.V_f) # fluid inlet temperature [K]
+        self.T_f_out = self.T_f - self.Q_bh * self.height / (2 * c_w * rho_w * self.V_f) # fluid outlet temperature [K]
 
         # Exergy result
-        self.X_a_int_in  = c_a * rho_a * self.dV_int * ((self.T_a_int_in - self.T_0) - self.T_0 * math.log(self.T_a_int_in / self.T_0))
-        self.X_a_int_out = c_a * rho_a * self.dV_int * ((self.T_a_int_out - self.T_0) - self.T_0 * math.log(self.T_a_int_out / self.T_0))
+        self.X_a_int_in  = c_a * rho_a * self.dV_int * ((self.T_a_int_in - self.T0) - self.T0 * math.log(self.T_a_int_in / self.T0))
+        self.X_a_int_out = c_a * rho_a * self.dV_int * ((self.T_a_int_out - self.T0) - self.T0 * math.log(self.T_a_int_out / self.T0))
 
-        self.X_r_int   = - self.Q_r_int * (1 - self.T_0 / self.T_r_int)
-        self.X_r_ext   = - self.Q_r_ext * (1 - self.T_0 / self.T_r_ext)
+        self.X_r_int   = - self.Q_r_int * (1 - self.T0 / self.T_r_int)
+        self.X_r_ext   = - self.Q_r_ext * (1 - self.T0 / self.T_r_ext)
 
-        self.X_f_in = c_w * rho_w * self.V_f * ((self.T_f_in - self.T_0) - self.T_0 * math.log(self.T_f_in / self.T_0))
-        self.X_f_out = c_w * rho_w * self.V_f * ((self.T_f_out - self.T_0) - self.T_0 * math.log(self.T_f_out / self.T_0))
+        self.X_f_in = c_w * rho_w * self.V_f * ((self.T_f_in - self.T0) - self.T0 * math.log(self.T_f_in / self.T0))
+        self.X_f_out = c_w * rho_w * self.V_f * ((self.T_f_out - self.T0) - self.T0 * math.log(self.T_f_out / self.T0))
 
-        self.X_g = (1 - self.T_0 / self.T_g) * (- self.Q_borehole * self.height)
-        self.X_b = (1 - self.T_0 / self.T_b) * (- self.Q_borehole * self.height)
+        self.X_g = (1 - self.T0 / self.T_g) * (- self.Q_bh * self.height)
+        self.X_b = (1 - self.T0 / self.T_b) * (- self.Q_bh * self.height)
 
         # Internal unit
         self.Xin_int = self.E_fan_int + self.X_r_int + self.X_a_int_in
@@ -1835,7 +2108,7 @@ class GroundSourceHeatPump_cooling:
 class GroundSourceHeatPump_heating:
     def __post_init__(self):
         # Time
-        self.time = 1000 # [s]
+        self.time = 10 # [s]
         
         # Borehole parameters
         self.depth = 0 # Borehole depth [m]
@@ -1861,20 +2134,22 @@ class GroundSourceHeatPump_heating:
         self.COP_hp = 4.0
 
         # Temperature
-        self.T_0 = 0 # environmental temperature [ºC]
-        self.T_g = 15 # initial ground temperature [ºC]
-        self.T_a_room = 20 # room air temperature [ºC]
-        self.T_a_int_out = 30 # internal unit air outlet temperature [ºC]
-        self.T_r_int = 35 # internal unit refrigerant temperature [ºC]
-        self.T_r_ext = 5 # external unit refrigerant temperature [ºC]
+        self.T0 = 0 # environmental temperature [°C]
+        self.T_g = 15 # initial ground temperature [°C]
+        self.T_a_room = 20 # room air temperature [°C]
+        self.T_a_int_out = 30 # internal unit air outlet temperature [°C]
+        self.T_r_int = 35 # internal unit refrigerant temperature [°C]
+        self.T_r_ext = 5 # external unit refrigerant temperature [°C]
 
         # Load
         self.Q_r_int = 4000 # W
         
     def system_update(self):
+        # time
+        self.time = self.time * cu.h2s  # Convert hours to seconds
 
         # Celcius to Kelvin
-        self.T_0 = cu.C2K(self.T_0)
+        self.T0 = cu.C2K(self.T0)
         self.T_a_room = cu.C2K(self.T_a_room)
         self.T_a_int_out = cu.C2K(self.T_a_int_out)
         self.T_r_int = cu.C2K(self.T_r_int)
@@ -1896,31 +2171,31 @@ class GroundSourceHeatPump_heating:
         self.E_fan_int = Fan().get_power(self.fan_int, self.dV_int) # power input of internal unit fan [W]
 
         # Borehole 
-        self.Q_borehole = (self.Q_r_ext - self.E_pmp) / self.height # heat flow rate from borehole to ground per unit length [W/m]
+        self.Q_bh = (self.Q_r_ext - self.E_pmp) / self.height # heat flow rate from borehole to ground per unit length [W/m]
         self.g_i = g_function(self.time, self.r_b, self.alpha, self.k_g, self.height, self.depth) # g-function [mK/W]
         
         # fluid temperature & borehole wall temperature [K]
-        self.T_b = self.T_g - self.Q_borehole * self.g_i # borehole wall temperature [K]
-        self.T_f = self.T_b - self.Q_borehole * self.R_b # fluid temperature in borehole [K]
-        self.T_f_in = self.T_f - self.Q_borehole * self.height / (2 * c_w * rho_w * self.V_f) # fluid inlet temperature [K]
-        self.T_f_out = self.T_f + self.Q_borehole * self.height / (2 * c_w * rho_w * self.V_f) # fluid outlet temperature [K]
+        self.T_b = self.T_g - self.Q_bh * self.g_i # borehole wall temperature [K]
+        self.T_f = self.T_b - self.Q_bh * self.R_b # fluid temperature in borehole [K]
+        self.T_f_in = self.T_f - self.Q_bh * self.height / (2 * c_w * rho_w * self.V_f) # fluid inlet temperature [K]
+        self.T_f_out = self.T_f + self.Q_bh * self.height / (2 * c_w * rho_w * self.V_f) # fluid outlet temperature [K]
 
         # Exergy result
-        self.X_a_int_in  = c_a * rho_a * self.dV_int * ((self.T_a_int_in - self.T_0) - self.T_0 * math.log(self.T_a_int_in / self.T_0))
-        self.X_a_int_out = c_a * rho_a * self.dV_int * ((self.T_a_int_out - self.T_0) - self.T_0 * math.log(self.T_a_int_out / self.T_0))
+        self.X_a_int_in  = c_a * rho_a * self.dV_int * ((self.T_a_int_in - self.T0) - self.T0 * math.log(self.T_a_int_in / self.T0))
+        self.X_a_int_out = c_a * rho_a * self.dV_int * ((self.T_a_int_out - self.T0) - self.T0 * math.log(self.T_a_int_out / self.T0))
 
-        self.X_r_int   = self.Q_r_int * (1 - self.T_0 / self.T_r_int)
-        self.X_r_ext   = self.Q_r_ext * (1 - self.T_0 / self.T_r_ext)
+        self.X_r_int   = self.Q_r_int * (1 - self.T0 / self.T_r_int)
+        self.X_r_ext   = self.Q_r_ext * (1 - self.T0 / self.T_r_ext)
 
-        self.X_f_in = c_w * rho_w * self.V_f * ((self.T_f_in - self.T_0) - self.T_0 * math.log(self.T_f_in / self.T_0))
-        self.X_f_out = c_w * rho_w * self.V_f * ((self.T_f_out - self.T_0) - self.T_0 * math.log(self.T_f_out / self.T_0))
+        self.X_f_in = c_w * rho_w * self.V_f * ((self.T_f_in - self.T0) - self.T0 * math.log(self.T_f_in / self.T0))
+        self.X_f_out = c_w * rho_w * self.V_f * ((self.T_f_out - self.T0) - self.T0 * math.log(self.T_f_out / self.T0))
 
-        self.X_g = (1 - self.T_0 / self.T_g) * (self.Q_borehole * self.height)
-        self.X_b = (1 - self.T_0 / self.T_b) * (self.Q_borehole * self.height)
+        self.X_g = (1 - self.T0 / self.T_g) * (self.Q_bh * self.height)
+        self.X_b = (1 - self.T0 / self.T_b) * (self.Q_bh * self.height)
 
         # Internal unit
-        self.Xin_int = self.E_fan_int + self.X_r_int
-        self.Xout_int = self.X_a_int_out - self.X_a_int_in
+        self.Xin_int = self.E_fan_int + self.X_r_int + self.X_a_int_in
+        self.Xout_int = self.X_a_int_out
         self.Xc_int = self.Xin_int - self.Xout_int
 
         # Closed refrigerant loop system
@@ -1929,13 +2204,13 @@ class GroundSourceHeatPump_heating:
         self.Xc_r = self.Xin_r - self.Xout_r
 
         # External unit
-        self.Xin_ext = self.X_f_out - self.X_f_in
-        self.Xout_ext = self.X_r_ext
+        self.Xin_ext = self.X_f_out 
+        self.Xout_ext = self.X_r_ext + self.X_f_in
         self.Xc_ext = self.Xin_ext - self.Xout_ext
 
         # Ground heat exchanger
-        self.Xin_GHE = self.E_pmp + self.X_b
-        self.Xout_GHE = self.X_f_out - self.X_f_in
+        self.Xin_GHE = self.E_pmp + self.X_b + self.X_f_in
+        self.Xout_GHE = self.X_f_out 
         self.Xc_GHE = self.Xin_GHE - self.Xout_GHE
 
         # Ground
@@ -1951,13 +2226,13 @@ class GroundSourceHeatPump_heating:
             "in": {
                 "$E_{f,int}$": self.E_fan_int,
                 "$X_{r,int}$": self.X_r_int,
+                "$X_{a,int,in}$": self.X_a_int_in,
             },
             "con": {
                 "$X_{c,int}$": self.Xc_int,
             },
             "out": {
                 "$X_{a,int,out}$": self.X_a_int_out,
-                "$X_{a,int,in}$": self.X_a_int_in,
             }
         }
 
@@ -1979,13 +2254,13 @@ class GroundSourceHeatPump_heating:
         self.exergy_balance["external unit"] = {
             "in": {
                 "$X_{f,out}$": self.X_f_out,
-                "$X_{f,in}$": self.X_f_in,
             },
             "con": {
                 "$X_{c,ext}$": self.Xc_ext,
             },
             "out": {
                 "$X_{r,ext}$": self.X_r_ext,
+                "$X_{f,in}$": self.X_f_in,
             }
         }
 
@@ -1994,13 +2269,13 @@ class GroundSourceHeatPump_heating:
             "in": {
                 "$E_{pmp}$": self.E_pmp,
                 "$X_{b}$": self.X_b,
+                "$X_{f,in}$": self.X_f_in,
             },
             "con": {
                 "$X_{c,GHE}$": self.Xc_GHE,
             },
             "out": {
                 "$X_{f,out}$": self.X_f_out,
-                "$X_{f,in}$": self.X_f_in,
             }
         }
 
