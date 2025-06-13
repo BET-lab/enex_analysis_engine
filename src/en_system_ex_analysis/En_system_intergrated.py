@@ -6,6 +6,8 @@ from dataclasses import dataclass
 import dartwork_mpl as dm
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
+from scipy.integrate import dblquad
+from scipy.special import erfc
 
 #%%
 # constant
@@ -80,13 +82,13 @@ def calc_h_vertical_plate(T_s, T_inf, L):
 def linear_function(x, a, b):
     return a * x + b
 
-def quadratic_function(x, a, b, c):
+def quadratic_wunction(x, a, b, c):
     return a * x ** 2 + b * x + c
 
-def cubic_function(x, a, b, c, d):
+def cubic_wunction(x, a, b, c, d):
     return a * x ** 3 + b * x ** 2 + c * x + d
 
-def quartic_function(x, a, b, c, d, e):
+def quartic_wunction(x, a, b, c, d, e):
     return a * x ** 4 + b * x ** 3 + c * x ** 2 + d * x + e
 
 def print_balance(balance, decimal=2):
@@ -173,6 +175,17 @@ def calculate_ASHP_heating_COP(T0, Q_r_int, Q_r_max):
     COP = -7.46 * (PLR - 0.0047 * cu.K2C(T0) - 0.477)**2 + 0.0941 * cu.K2C(T0) + 4.34
     return COP
 
+def g_function(t, r_b, alpha, k_g, H, D):
+    def integrand(h, z):
+        term1 = np.sqrt(r_b**2 + (z - h)**2)
+        term2 = np.sqrt(r_b**2 + (z + h)**2)
+        val1 = erfc(term1 / (2 * np.sqrt(alpha * t))) / term1
+        val2 = erfc(term2 / (2 * np.sqrt(alpha * t))) / term2
+        return val1 - val2
+
+    epsabs, epsrel = 1e-6, 1e-6 # t 구간에 따라 수렴조건 다르게 초반부 수렴조건 높게 설정
+    integral, _ = dblquad(integrand, D, D + H, lambda h: D, lambda h: D + H, epsabs=epsabs, epsrel=epsrel)
+    return integral / (4 * np.pi * k_g * H)
 #%%
 # class - Fan & Pump
 @dataclass
@@ -192,13 +205,13 @@ class Fan:
         self.fan_list = [self.fan1, self.fan2]
 
     def get_effieciency(self, fan, dV_fan):
-        self.efficiency_coeffs, _ = curve_fit(cubic_function, fan['flow rate'], fan['efficiency'])
-        eff = cubic_function(dV_fan, *self.efficiency_coeffs)
+        self.efficiency_coeffs, _ = curve_fit(cubic_wunction, fan['flow rate'], fan['efficiency'])
+        eff = cubic_wunction(dV_fan, *self.efficiency_coeffs)
         return eff
     
     def get_pressure(self, fan, dV_fan):
-        self.pressure_coeffs, _ = curve_fit(cubic_function, fan['flow rate'], fan['pressure'])
-        pressure = cubic_function(dV_fan, *self.pressure_coeffs)
+        self.pressure_coeffs, _ = curve_fit(cubic_wunction, fan['flow rate'], fan['pressure'])
+        pressure = cubic_wunction(dV_fan, *self.pressure_coeffs)
         return pressure
     
     def get_power(self, fan, dV_fan):
@@ -231,9 +244,9 @@ class Fan:
                 ax.scatter(fan['flow rate'], fan[key], label=f'Fan {i+1} Data', color=scatter_colors[i], s=2)
 
                 # 곡선 피팅 수행
-                coeffs, _ = curve_fit(cubic_function, fan['flow rate'], fan[key])
+                coeffs, _ = curve_fit(cubic_wunction, fan['flow rate'], fan[key])
                 flow_range = np.linspace(min(fan['flow rate']), max(fan['flow rate']), 100)
-                fitted_values = cubic_function(flow_range, *coeffs)
+                fitted_values = cubic_wunction(flow_range, *coeffs)
 
                 # 피팅된 곡선 (line 형태)
                 ax.plot(flow_range, fitted_values, label=f'Fan {i+1} Fit', color=plot_colors[i], linestyle='-')
@@ -282,8 +295,8 @@ class Pump:
         :param V_pmp: 유량 (m3/h)
         :return: 예측된 펌프 효율
         """
-        self.efficiency_coeffs, _ = curve_fit(cubic_function, pump['flow rate'], pump['efficiency'])
-        eff = cubic_function(dV_pmp, *self.efficiency_coeffs)
+        self.efficiency_coeffs, _ = curve_fit(cubic_wunction, pump['flow rate'], pump['efficiency'])
+        eff = cubic_wunction(dV_pmp, *self.efficiency_coeffs)
         return eff
 
     def get_power(self, pump, V_pmp, dP_pmp):
@@ -316,9 +329,9 @@ class Pump:
             ax.scatter(pump['flow rate']*cu.h2s, pump['efficiency'], label=f'Pump {i+1} Data', color=scatter_colors[i], s=2)
 
             # 곡선 피팅 수행
-            coeffs, _ = curve_fit(cubic_function, pump['flow rate']*cu.h2s, pump['efficiency'])
+            coeffs, _ = curve_fit(cubic_wunction, pump['flow rate']*cu.h2s, pump['efficiency'])
             flow_range = np.linspace(min(pump['flow rate']), max(pump['flow rate']), 100)*cu.h2s
-            fitted_values = cubic_function(flow_range, *coeffs)
+            fitted_values = cubic_wunction(flow_range, *coeffs)
 
             # 피팅된 곡선 (line 형태)
             a,b,c,d = coeffs
@@ -1633,118 +1646,376 @@ class AirSourceHeatPump_heating:
 #%%
 # class - GroundSourceHeatPump
 @dataclass
-class GroundSourceHeatPump:
+class GroundSourceHeatPump_cooling:
     def __post_init__(self):
+        # Time
+        self.time = 1000 # [s]
+        
+        # Borehole parameters
+        self.depth = 0 # Borehole depth [m]
+        self.height = 200 # Borehole height [m]
+        self.r_b = 0.08 # Borehole radius [m]
+        self.R_b = 0.108 # Effective borehole thermal resistance [mK/W]
 
-        # subsystem
-        self.fan = Fan().fan1
-        self.pump = Pump().pump1
+        # Fluid parameters
+        self.V_f = 0.0004 # Volumetric flow rate of fluid [m³/s]
 
-        # efficiency
-        self.eta_hp = 0.4 # efficiency of heat pump [-]
+        # Ground parameters
+        self.k_g = 2.0 # Ground thermal conductivity [W/mK]
+        self.c_g = 800 # Ground specific heat capacity [J/(kgK)]
+        self.rho_g = 2000 # Ground density [kg/m³]
 
-        # temperature
-        self.dT_a        = 10 # internal unit air temperature difference 
-        self.dT_r        = 15 # refrigerant temperature difference 
-        self.dT_g        = 5  # circulating water temperature difference
-        self.T0         = cu.C2K(32) # environmental temperature [K]
-        self.T_g         = cu.C2K(22) # ground temperature [K]
-        self.T_a_int_in  = cu.C2K(20) # internal unit air inlet temperature [K]
+        # Pump power of ground heat exchanger
+        self.E_pmp = 200 # Pump power input [W]
 
-        # Pipe parameters
-        self.L_pipe       = 800 # length of pipe [m]
-        self.K_pipe       = 0.2 # thermal conductance of pipe [W/m2K]
-        self.D_outer_pipe = cu.mm2m(32) # outer diameter of pipe [m]
-        self.pipe_thick   = cu.mm2m(2.9) # thickness of pipe [m]
-        self.epsilon_hsipe = 0.003e-3 # m
+        # Fan
+        self.fan_int = Fan().fan1
 
-        # plate heat exchanger
-        self.N_tot = 20
-        self.N_pass = 1
-        self.L_ex = 0.203 # m
-        self.L_w = 0.108 # m
-        self.b = 0.002 # m
-        self.lamda = 0.007 # m
-        self.beta = 60
+        # COP
+        self.COP_hp = 4.0
 
-        # load
-        self.Q_r_int = 10000 # [W]
+        # Temperature
+        self.T_0 = 30 # environmental temperature [ºC]
+        self.T_g = 15 # initial ground temperature [ºC]
+        self.T_a_room = 20 # room air temperature [ºC]
+        self.T_a_int_out = 10 # internal unit air outlet temperature [ºC]
+        self.T_r_int = 5 # internal unit refrigerant temperature [ºC]
+        self.T_r_ext = 25 # external unit refrigerant temperature [ºC]
 
+        # Load
+        self.Q_r_int = 4000 # W
+    
     def system_update(self):
 
-        # temperature
-        self.T_r_int = self.T_a_int_in - self.dT_r # internal unit refrigerant temperature [K]
-        self.T_r_ext = self.T_g + self.dT_g # external unit refrigerant temperature [K]
-        
-        # others
-        self.COP = self.eta_hp * self.T_r_int / (self.T_r_ext - self.T_r_int) # COP of GSHP [K]
-        
-        # pipe parameters
-        self.D_inner_pipe      = self.D_outer_pipe - 2 * self.pipe_thick # inner diameter of pipe [m]
-        self.A_pipe = math.pi * self.D_inner_pipe ** 2 / 4 # area of pipe [m2]
-        self.v_pipe = self.dV_pmp * 0.5 / self.A_pipe # velocity in pipe [m/s] 0.5는 왜 곱하는거지?
-        self.e_d    = self.epsilon_hsipe / self.D_inner_pipe # relative roughness [-]
-        self.Re     = rho_w * self.v_pipe * self.D_inner_pipe / mu_w # Reynolds number [-]
-        
-        self.f = darcy_friction_factor(self.Re, self.e_d) # darcey friction factor [-]
-        self.dP_pipe = self.f * (self.L_pipe) / self.D_inner_pipe * (rho_w * self.v_pipe ** 2) / 2 # pipe pressure drop [Pa]
-        self.dP_minor = self.K_pipe * (self.v_pipe ** 2) * (rho_w / 2) # minor loss pressure drop [Pa]
+        # Celcius to Kelvin
+        self.T_0 = cu.C2K(self.T_0)
+        self.T_a_room = cu.C2K(self.T_a_room)
+        self.T_a_int_out = cu.C2K(self.T_a_int_out)
+        self.T_r_int = cu.C2K(self.T_r_int)
+        self.T_r_ext = cu.C2K(self.T_r_ext)
+        self.T_g = cu.C2K(self.T_g)
 
-        # plate heatexchanger (이거 너무 복잡한데 따로 빼서 쓸수는 없나) -> 변수명도 수정
-        self.N_ch   = int((self.N_tot - 1) / (2 * self.N_pass))
-        self.psi    = math.pi * self.b / self.lamda
-        self.phi    = (1/6) * (1 + np.sqrt(1 + self.psi**2) + 4 * np.sqrt(1 + (self.psi**2) / 2))
-        self.D_ex   = 2 * self.b / self.phi # m
-        self.G_c    = self.dV_pmp * rho_w / (self.N_ch * self.b * self.L_w) # [kg/m2s]
-        self.Re_ex  = self.G_c * self.D_ex / mu_w # 
-        self.f_ex   = 0.8 * self.phi ** (1.25) * self.Re_ex ** (-0.25) * (self.beta/30) ** 3.6 # friction factor [-]
-        self.dP_ex  = 2 * self.f_ex * (self.L_ex / self.D_ex) * (self.G_c ** 2) / rho_w # Pa
-        self.dP_pmp = self.dP_pipe + self.dP_minor + self.dP_ex # pressure difference of pump [Pa]
+        # Temperature
+        self.T_a_int_in = self.T_a_room # internal unit air inlet temperature [K]
 
-        # heat rate
-        self.Q_r_ext = self.Q_r_int + self.E_cmp # heat transfer from external unit to refrigerant [W]
-        self.Q_g = self.Q_r_ext + self.E_pmp # heat transfer from GHE to ground [W]
-        
-        # pump, compressor
-        self.E_cmp = self.Q_r_int / self.COP # compressor power input [W]
-        self.dV_pmp  = self.Q_r_ext / (c_w * rho_w * self.dT_g) # volumetric flow rate of pump [m3/s]
-        self.E_pmp   = Pump().get_power(self.pump, self.dV_pmp, self.dP_pmp) # pump power input [W]
-
-        # internal, external unit
-        self.dV_int = self.Q_r_int / (c_a * rho_a * self.dT_a) # volumetric flow rate of internal unit [m3/s]
-        self.dV_ext = self.Q_r_ext / (c_a * rho_a * self.dT_a) # volumetric flow rate of external unit [m3/s]
-
-        # Circulating water parameters
-        self.X_a_int_in  = c_a * rho_a * self.dV_int * ((self.T_a_int_in - self.T0) - self.T0 * math.log(self.T_a_int_in / self.T0))
-        self.X_a_int_out = c_a * rho_a * self.dV_int * ((self.T_a_int_out - self.T0) - self.T0 * math.log(self.T_a_int_out / self.T0))
-        self.X_a_ext_in  = c_a * rho_a * self.dV_ext * ((self.T_a_ext_in - self.T0) - self.T0 * math.log(self.T_a_ext_in / self.T0))
-        self.X_a_ext_out = c_a * rho_a * self.dV_ext * ((self.T_a_ext_out - self.T0) - self.T0 * math.log(self.T_a_ext_out / self.T0))
-
-        ## exergy results
-        self.X_r_int = - self.Q_r_int * (1 - self.T0 / self.T_r_int)
-        self.X_r_ext = - self.Q_r_ext * (1 - self.T0 / self.T_r_ext)
-        self.X_g = - self.Q_g * (1 - self.T0 / self.T_g)
+        # Others
+        self.E_cmp = self.Q_r_int / self.COP_hp # compressor power input [W]
+        self.Q_r_ext = self.Q_r_int + self.E_cmp
+        self.alpha = self.k_g / (self.c_g * self.rho_g) # thermal diffusivity of ground [m²/s]
 
         # Internal unit
-        self.Xin_int  = self.E_fan_int + self.X_r_int
-        self.Xout_int = self.X_a_int_out - self.X_a_int_in
-        self.Xc_int   = self.Xin_int - self.Xout_int
+        self.dV_int = self.Q_r_int / (c_a * rho_a * (abs(self.T_a_int_out - self.T_a_int_in))) # volumetric flow rate of internal unit [m3/s]
+            
+        # Fan power
+        self.E_fan_int = Fan().get_power(self.fan_int, self.dV_int) # power input of internal unit fan [W]
+
+        # Borehole
+        self.Q_borehole = (self.Q_r_ext - self.E_pmp) / self.height # heat flow rate from borehole to ground per unit length [W/m]
+        self.g_i = g_function(self.time, self.r_b, self.alpha, self.k_g, self.height, self.depth) # g-function [mK/W]
+        
+        # fluid & bolehole wall temperature
+        self.T_b = self.T_g + self.Q_borehole * self.g_i # borehole wall temperature [K]
+        self.T_f = self.T_b + self.Q_borehole * self.R_b # fluid temperature in borehole [K]
+        self.T_f_in = self.T_f + self.Q_borehole * self.height / (2 * c_w * rho_w * self.V_f) # fluid inlet temperature [K]
+        self.T_f_out = self.T_f - self.Q_borehole * self.height / (2 * c_w * rho_w * self.V_f) # fluid outlet temperature [K]
+
+        # Exergy result
+        self.X_a_int_in  = c_a * rho_a * self.dV_int * ((self.T_a_int_in - self.T_0) - self.T_0 * math.log(self.T_a_int_in / self.T_0))
+        self.X_a_int_out = c_a * rho_a * self.dV_int * ((self.T_a_int_out - self.T_0) - self.T_0 * math.log(self.T_a_int_out / self.T_0))
+
+        self.X_r_int   = - self.Q_r_int * (1 - self.T_0 / self.T_r_int)
+        self.X_r_ext   = - self.Q_r_ext * (1 - self.T_0 / self.T_r_ext)
+
+        self.X_f_in = c_w * rho_w * self.V_f * ((self.T_f_in - self.T_0) - self.T_0 * math.log(self.T_f_in / self.T_0))
+        self.X_f_out = c_w * rho_w * self.V_f * ((self.T_f_out - self.T_0) - self.T_0 * math.log(self.T_f_out / self.T_0))
+
+        self.X_g = (1 - self.T_0 / self.T_g) * (- self.Q_borehole * self.height)
+        self.X_b = (1 - self.T_0 / self.T_b) * (- self.Q_borehole * self.height)
+
+        # Internal unit
+        self.Xin_int = self.E_fan_int + self.X_r_int + self.X_a_int_in
+        self.Xout_int = self.X_a_int_out
+        self.Xc_int = self.Xin_int - self.Xout_int
 
         # Closed refrigerant loop system
-        self.Xin_r  = self.E_cmp + self.X_r_ext
+        self.Xin_r = self.E_cmp + self.X_r_ext
         self.Xout_r = self.X_r_int
-        self.Xc_r   = self.Xin_r - self.Xout_r
+        self.Xc_r = self.Xin_r - self.Xout_r
 
         # External unit
-        self.Xin_ext  = self.E_pmp + self.X_g
-        self.Xout_ext = self.X_r_ext
-        self.Xc_ext   = self.Xin_ext - self.Xout_ext
+        self.Xin_ext = self.X_f_out 
+        self.Xout_ext = self.X_r_ext + self.X_f_in
+        self.Xc_ext = self.Xin_ext - self.Xout_ext
 
-        # Total exergy
-        self.Xin  = self.E_fan_int + self.E_cmp + self.E_pmp
-        self.Xout = self.X_a_int_out - self.X_a_int_in
-        self.Xc   = self.Xin - self.Xout
- 
+        # Ground heat exchanger
+        self.Xin_GHE = self.E_pmp + self.X_b + self.X_f_in
+        self.Xout_GHE = self.X_f_out 
+        self.Xc_GHE = self.Xin_GHE - self.Xout_GHE
+
+        # Ground
+        self.Xin_g = self.X_g
+        self.Xout_g = self.X_b
+        self.Xc_g = self.Xin_g - self.Xout_g
+
+        ## Exergy Balance ========================================
+        self.exergy_balance = {}
+
+        # Internal Unit
+        self.exergy_balance["internal unit"] = {
+            "in": {
+                "$E_{f,int}$": self.E_fan_int,
+                "$X_{r,int}$": self.X_r_int,
+                "$X_{a,int,in}$": self.X_a_int_in,
+            },
+            "con": {
+                "$X_{c,int}$": self.Xc_int,
+            },
+            "out": {
+                "$X_{a,int,out}$": self.X_a_int_out,
+            }
+        }
+
+        # Refrigerant loop
+        self.exergy_balance["refrigerant loop"] = {
+            "in": {
+                "$E_{cmp}$": self.E_cmp,
+                "$X_{r,ext}$": self.X_r_ext,
+            },
+            "con": {
+                "$X_{c,r}$": self.Xc_r,
+            },
+            "out": {
+                "$X_{r,int}$": self.X_r_int,
+            }
+        }
+
+        # External Unit
+        self.exergy_balance["external unit"] = {
+            "in": {
+                "$X_{f,out}$": self.X_f_out,
+            },
+            "con": {
+                "$X_{c,ext}$": self.Xc_ext,
+            },
+            "out": {
+                "$X_{r,ext}$": self.X_r_ext,
+                "$X_{f,in}$": self.X_f_in,
+            }
+        }
+
+        # Ground Heat Exchanger
+        self.exergy_balance["ground heat exchanger"] = {
+            "in": {
+                "$E_{pmp}$": self.E_pmp,
+                "$X_{b}$": self.X_b,
+                "$X_{f,in}$": self.X_f_in,
+            },
+            "con": {
+                "$X_{c,GHE}$": self.Xc_GHE,
+            },
+            "out": {
+                "$X_{f,out}$": self.X_f_out,
+            }
+        }
+
+        # Ground
+        self.exergy_balance["ground"] = {
+            "in": {
+                "$X_{g}$": self.X_g,
+            },
+            "con": {
+                "$X_{c,g}$": self.Xc_g,
+            },
+            "out": {
+                "$X_{b}$": self.X_b,
+            }
+        }
+        
+@dataclass
+class GroundSourceHeatPump_heating:
+    def __post_init__(self):
+        # Time
+        self.time = 1000 # [s]
+        
+        # Borehole parameters
+        self.depth = 0 # Borehole depth [m]
+        self.height = 200 # Borehole height [m]
+        self.r_b = 0.08 # Borehole radius [m]
+        self.R_b = 0.108 # Effective borehole thermal resistance [mK/W]
+
+        # Fluid parameters
+        self.V_f = 0.0004 # Volumetric flow rate of fluid [m³/s]
+
+        # Ground parameters
+        self.k_g = 2.0 # Ground thermal conductivity [W/mK]
+        self.c_g = 800 # Ground specific heat capacity [J/(kgK)]
+        self.rho_g = 2000 # Ground density [kg/m³]
+
+        # Pump power of ground heat exchanger
+        self.E_pmp = 200 # Pump power input [W]
+
+        # Fan
+        self.fan_int = Fan().fan1
+
+        # COP
+        self.COP_hp = 4.0
+
+        # Temperature
+        self.T_0 = 0 # environmental temperature [ºC]
+        self.T_g = 15 # initial ground temperature [ºC]
+        self.T_a_room = 20 # room air temperature [ºC]
+        self.T_a_int_out = 30 # internal unit air outlet temperature [ºC]
+        self.T_r_int = 35 # internal unit refrigerant temperature [ºC]
+        self.T_r_ext = 5 # external unit refrigerant temperature [ºC]
+
+        # Load
+        self.Q_r_int = 4000 # W
+        
+    def system_update(self):
+
+        # Celcius to Kelvin
+        self.T_0 = cu.C2K(self.T_0)
+        self.T_a_room = cu.C2K(self.T_a_room)
+        self.T_a_int_out = cu.C2K(self.T_a_int_out)
+        self.T_r_int = cu.C2K(self.T_r_int)
+        self.T_r_ext = cu.C2K(self.T_r_ext)
+        self.T_g = cu.C2K(self.T_g)
+        
+        # Temperature
+        self.T_a_int_in = self.T_a_room # internal unit air inlet temperature [K]
+
+        # Others
+        self.E_cmp = self.Q_r_int / self.COP_hp # compressor power input [W]
+        self.Q_r_ext = self.Q_r_int - self.E_cmp
+        self.alpha = self.k_g / (self.c_g * self.rho_g) # thermal diffusivity of ground [m²/s]
+
+        # Internal unit
+        self.dV_int = self.Q_r_int / (c_a * rho_a * (abs(self.T_a_int_out - self.T_a_int_in))) # volumetric flow rate of internal unit [m3/s]
+            
+        # Fan power
+        self.E_fan_int = Fan().get_power(self.fan_int, self.dV_int) # power input of internal unit fan [W]
+
+        # Borehole 
+        self.Q_borehole = (self.Q_r_ext - self.E_pmp) / self.height # heat flow rate from borehole to ground per unit length [W/m]
+        self.g_i = g_function(self.time, self.r_b, self.alpha, self.k_g, self.height, self.depth) # g-function [mK/W]
+        
+        # fluid temperature & borehole wall temperature [K]
+        self.T_b = self.T_g - self.Q_borehole * self.g_i # borehole wall temperature [K]
+        self.T_f = self.T_b - self.Q_borehole * self.R_b # fluid temperature in borehole [K]
+        self.T_f_in = self.T_f - self.Q_borehole * self.height / (2 * c_w * rho_w * self.V_f) # fluid inlet temperature [K]
+        self.T_f_out = self.T_f + self.Q_borehole * self.height / (2 * c_w * rho_w * self.V_f) # fluid outlet temperature [K]
+
+        # Exergy result
+        self.X_a_int_in  = c_a * rho_a * self.dV_int * ((self.T_a_int_in - self.T_0) - self.T_0 * math.log(self.T_a_int_in / self.T_0))
+        self.X_a_int_out = c_a * rho_a * self.dV_int * ((self.T_a_int_out - self.T_0) - self.T_0 * math.log(self.T_a_int_out / self.T_0))
+
+        self.X_r_int   = self.Q_r_int * (1 - self.T_0 / self.T_r_int)
+        self.X_r_ext   = self.Q_r_ext * (1 - self.T_0 / self.T_r_ext)
+
+        self.X_f_in = c_w * rho_w * self.V_f * ((self.T_f_in - self.T_0) - self.T_0 * math.log(self.T_f_in / self.T_0))
+        self.X_f_out = c_w * rho_w * self.V_f * ((self.T_f_out - self.T_0) - self.T_0 * math.log(self.T_f_out / self.T_0))
+
+        self.X_g = (1 - self.T_0 / self.T_g) * (self.Q_borehole * self.height)
+        self.X_b = (1 - self.T_0 / self.T_b) * (self.Q_borehole * self.height)
+
+        # Internal unit
+        self.Xin_int = self.E_fan_int + self.X_r_int
+        self.Xout_int = self.X_a_int_out - self.X_a_int_in
+        self.Xc_int = self.Xin_int - self.Xout_int
+
+        # Closed refrigerant loop system
+        self.Xin_r = self.E_cmp + self.X_r_ext
+        self.Xout_r = self.X_r_int
+        self.Xc_r = self.Xin_r - self.Xout_r
+
+        # External unit
+        self.Xin_ext = self.X_f_out - self.X_f_in
+        self.Xout_ext = self.X_r_ext
+        self.Xc_ext = self.Xin_ext - self.Xout_ext
+
+        # Ground heat exchanger
+        self.Xin_GHE = self.E_pmp + self.X_b
+        self.Xout_GHE = self.X_f_out - self.X_f_in
+        self.Xc_GHE = self.Xin_GHE - self.Xout_GHE
+
+        # Ground
+        self.Xin_g = self.X_g
+        self.Xout_g = self.X_b
+        self.Xc_g = self.Xin_g - self.Xout_g
+
+        ## Exergy Balance ========================================
+        self.exergy_balance = {}
+
+        # Internal Unit
+        self.exergy_balance["internal unit"] = {
+            "in": {
+                "$E_{f,int}$": self.E_fan_int,
+                "$X_{r,int}$": self.X_r_int,
+            },
+            "con": {
+                "$X_{c,int}$": self.Xc_int,
+            },
+            "out": {
+                "$X_{a,int,out}$": self.X_a_int_out,
+                "$X_{a,int,in}$": self.X_a_int_in,
+            }
+        }
+
+        # Refrigerant loop
+        self.exergy_balance["refrigerant loop"] = {
+            "in": {
+                "$E_{cmp}$": self.E_cmp,
+                "$X_{r,ext}$": self.X_r_ext,
+            },
+            "con": {
+                "$X_{c,r}$": self.Xc_r,
+            },
+            "out": {
+                "$X_{r,int}$": self.X_r_int,
+            }
+        }
+
+        # External Unit
+        self.exergy_balance["external unit"] = {
+            "in": {
+                "$X_{f,out}$": self.X_f_out,
+                "$X_{f,in}$": self.X_f_in,
+            },
+            "con": {
+                "$X_{c,ext}$": self.Xc_ext,
+            },
+            "out": {
+                "$X_{r,ext}$": self.X_r_ext,
+            }
+        }
+
+        # Ground Heat Exchanger
+        self.exergy_balance["ground heat exchanger"] = {
+            "in": {
+                "$E_{pmp}$": self.E_pmp,
+                "$X_{b}$": self.X_b,
+            },
+            "con": {
+                "$X_{c,GHE}$": self.Xc_GHE,
+            },
+            "out": {
+                "$X_{f,out}$": self.X_f_out,
+                "$X_{f,in}$": self.X_f_in,
+            }
+        }
+
+        # Ground
+        self.exergy_balance["ground"] = {
+            "in": {
+                "$X_{g}$": self.X_g,
+            },
+            "con": {
+                "$X_{c,g}$": self.Xc_g,
+            },
+            "out": {
+                "$X_{b}$": self.X_b,
+            }
+        }
  #%% 
 # class - Electric heater
 @dataclass
