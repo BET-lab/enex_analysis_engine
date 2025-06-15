@@ -17,6 +17,7 @@ rho_a = 1.225 # Density of air [kg/m³]
 c_w   = 4186 # Water specific heat [J/kgK]
 rho_w = 1000
 mu_w = 0.001 # Water dynamic viscosity [Pa.s]
+k_w = 0.606 # Water thermal conductivity [W/mK]
 
 sigma = 5.67*10**-8 # Stefan-Boltzmann constant [W/m²K⁴]
 
@@ -175,6 +176,37 @@ def calculate_ASHP_heating_COP(T0, Q_r_int, Q_r_max):
     COP = -7.46 * (PLR - 0.0047 * cu.K2C(T0) - 0.477)**2 + 0.0941 * cu.K2C(T0) + 4.34
     return COP
 
+def calculate_GSHP_COP(Tg, T_cond, T_evap, theta_hat):
+    """
+    https://www.sciencedirect.com/science/article/pii/S0360544219304347?via%3Dihub
+    Calculate the Carnot-based COP of a GSHP system using the modified formula:
+    COP = 1 / (1 - T0/T_cond + ΔT * θ̂ / T_cond)
+
+    Parameters:
+    - Tg: Undisturbed ground temperature [K]
+    - T_cond: Condenser refrigerant temperature [K]
+    - T_evap: Evaporator refrigerant temperature [K]
+    - theta_hat: θ̂(x0, k_sb), dimensionless average fluid temperature -> 논문 Fig 8 참조
+
+    Returns:
+    - COP_carnot_modified: Modified Carnot-based COP (float)
+    """
+
+    # Temperature difference (ΔT = T0 - T1)
+    if T_cond <= T_evap:
+        raise ValueError("T_cond must be greater than T_evap for a valid COP calculation.")
+    
+    delta_T = Tg - T_evap
+
+    # Compute COP using the modified Carnot expression
+    denominator = 1 - (Tg / T_cond) + (delta_T * theta_hat / T_cond)
+
+    if denominator <= 0:
+        return float('nan')  # Avoid division by zero or negative COP
+
+    COP = 1 / denominator
+    return COP
+
 def g_function(t, r_b, alpha, k_g, H, D):
     def integrand(h, z):
         term1 = np.sqrt(r_b**2 + (z - h)**2)
@@ -186,6 +218,8 @@ def g_function(t, r_b, alpha, k_g, H, D):
     epsabs, epsrel = 1e-6, 1e-6 # t 구간에 따라 수렴조건 다르게 초반부 수렴조건 높게 설정
     integral, _ = dblquad(integrand, D, D + H, lambda h: D, lambda h: D + H, epsabs=epsabs, epsrel=epsrel)
     return integral / (4 * np.pi * k_g * H)
+
+
 #%%
 # class - Fan & Pump
 @dataclass
@@ -1527,41 +1561,44 @@ class GroundSourceHeatPumpBoiler:
         self.X_r_int = self.Q_r_tank * (1 - self.T0 / self.T_r_tank)
         self.X_r_ext = self.Q_r_ext * (1 - self.T0 / self.T_r_ext)
 
+        self.X_pmp = self.E_pmp - (1 / float('inf')) * self.T0  
+        self.X_cmp = self.E_cmp - (1 / float('inf')) * self.T0  
+        
         self.X_f_in  = c_w * rho_w * self.V_f * ((self.T_f_in - self.T0) - self.T0 * math.log(self.T_f_in / self.T0))
         self.X_f_out = c_w * rho_w * self.V_f * ((self.T_f_out - self.T0) - self.T0 * math.log(self.T_f_out / self.T0))
 
         self.X_g = (1 - self.T0 / self.T_g) * (self.Q_bh * self.height)
         self.X_b = (1 - self.T0 / self.T_b) * (self.Q_bh * self.height)
 
-        # Mixing valve
-        self.Xin_mix = self.X_w_tank + self.X_w_sup_mix
-        self.Xout_mix = self.X_w_serv
-        self.Xc_mix = self.Xin_mix - self.Xout_mix
-        
-        # Tank
-        self.Xin_tank  = self.X_r_int + self.X_w_sup_tank
-        self.Xout_tank = self.X_w_tank + self.X_l_tank
-        self.Xc_tank   = self.Xin_tank - self.Xout_tank
+        # Ground
+        self.Xin_g = self.X_g
+        self.Xout_g = self.X_b
+        self.Xc_g = self.Xin_g - self.Xout_g
+
+        # Ground heat exchanger
+        self.Xin_GHE = self.E_pmp + self.Xout_g + self.X_f_in  # self.X_b 대신 self.Xout_g 사용
+        self.Xout_GHE = self.X_f_out 
+        self.Xc_GHE = self.Xin_GHE - self.Xout_GHE
+
+        # External unit
+        self.Xin_ext = self.Xout_GHE 
+        self.Xout_ext = self.X_r_ext + self.X_f_in
+        self.Xc_ext = self.Xin_ext - self.Xout_ext
 
         # Closed refrigerant loop system
         self.Xin_r  = self.E_cmp + self.X_r_ext
         self.Xout_r = self.X_r_int
         self.Xc_r   = self.Xin_r - self.Xout_r
 
-        # External unit
-        self.Xin_ext = self.X_f_out
-        self.Xout_ext = self.X_r_ext + self.X_f_in
-        self.Xc_ext = self.Xin_ext - self.Xout_ext
+        # Tank
+        self.Xin_tank  = self.X_r_int + self.X_w_sup_tank
+        self.Xout_tank = self.X_w_tank + self.X_l_tank
+        self.Xc_tank   = self.Xin_tank - self.Xout_tank
 
-        # Ground heat exchanger
-        self.Xin_GHE = self.E_pmp + self.X_b + self.X_f_in
-        self.Xout_GHE = self.X_f_out 
-        self.Xc_GHE = self.Xin_GHE - self.Xout_GHE
-
-        # Ground
-        self.Xin_g = self.X_g
-        self.Xout_g = self.X_b
-        self.Xc_g = self.Xin_g - self.Xout_g
+        # Mixing valve
+        self.Xin_mix = self.X_w_tank + self.X_w_sup_mix
+        self.Xout_mix = self.X_w_serv
+        self.Xc_mix = self.Xin_mix - self.Xout_mix
 
         ## Exergy Balance ========================================
         self.exergy_balance = {}
@@ -1599,7 +1636,7 @@ class GroundSourceHeatPumpBoiler:
         # Refrigerant loop
         self.exergy_balance["refrigerant loop"] = {
             "in": {
-            "$E_{cmp}$": self.E_cmp,
+            "$X_{cmp}$": self.X_cmp,
             "$X_{r,ext}$": self.X_r_ext,
             },
             "con": {
@@ -1627,7 +1664,7 @@ class GroundSourceHeatPumpBoiler:
         # Ground Heat Exchanger
         self.exergy_balance["ground heat exchanger"] = {
             "in": {
-            "$E_{pmp}$": self.E_pmp,
+            "$X_{pmp}$": self.X_pmp,
             "$X_{b}$": self.X_b,
             "$X_{f,in}$": self.X_f_in,
             },
@@ -1940,10 +1977,7 @@ class GroundSourceHeatPump_cooling:
         self.E_pmp = 200 # Pump power input [W]
 
         # Fan
-        self.fan_int = Fan().fan1
-
-        # COP
-        self.COP_hp = 4.0
+        self.fan_int = Fan().fan1     
 
         # Temperature
         self.T0 = 30 # environmental temperature [°C]
@@ -1957,9 +1991,10 @@ class GroundSourceHeatPump_cooling:
         self.Q_r_int = 4000 # W
     
     def system_update(self):
+        self.alpha = self.k_g / (self.c_g * self.rho_g) # thermal diffusivity of ground [m²/s]
         # time
         self.time = self.time * cu.h2s  # Convert hours to seconds
-
+        
         # Celcius to Kelvin
         self.T0 = cu.C2K(self.T0)
         self.T_a_room = cu.C2K(self.T_a_room)
@@ -1968,13 +2003,17 @@ class GroundSourceHeatPump_cooling:
         self.T_r_ext = cu.C2K(self.T_r_ext)
         self.T_g = cu.C2K(self.T_g)
 
+        self.COP_hp = calculate_GSHP_COP(Tg = self.T_g,
+                                         T_cond = self.T_r_ext,
+                                         T_evap = self.T_r_int,
+                                         theta_hat = 0.7)
+        
         # Temperature
         self.T_a_int_in = self.T_a_room # internal unit air inlet temperature [K]
 
         # Others
         self.E_cmp = self.Q_r_int / self.COP_hp # compressor power input [W]
         self.Q_r_ext = self.Q_r_int + self.E_cmp
-        self.alpha = self.k_g / (self.c_g * self.rho_g) # thermal diffusivity of ground [m²/s]
 
         # Internal unit
         self.dV_int = self.Q_r_int / (c_a * rho_a * (abs(self.T_a_int_out - self.T_a_int_in))) # volumetric flow rate of internal unit [m3/s]
@@ -2005,30 +2044,30 @@ class GroundSourceHeatPump_cooling:
         self.X_g = (1 - self.T0 / self.T_g) * (- self.Q_bh * self.height)
         self.X_b = (1 - self.T0 / self.T_b) * (- self.Q_bh * self.height)
 
-        # Internal unit
-        self.Xin_int = self.E_fan_int + self.X_r_int + self.X_a_int_in
-        self.Xout_int = self.X_a_int_out
-        self.Xc_int = self.Xin_int - self.Xout_int
+        # Ground
+        self.Xin_g = self.X_g
+        self.Xout_g = self.X_b
+        self.Xc_g = self.Xin_g - self.Xout_g
+
+        # Ground heat exchanger
+        self.Xin_GHE = self.E_pmp + self.Xout_g + self.X_f_in
+        self.Xout_GHE = self.X_f_out 
+        self.Xc_GHE = self.Xin_GHE - self.Xout_GHE
+
+        # External unit
+        self.Xin_ext = self.Xout_GHE 
+        self.Xout_ext = self.X_r_ext + self.X_f_in
+        self.Xc_ext = self.Xin_ext - self.Xout_ext
 
         # Closed refrigerant loop system
         self.Xin_r = self.E_cmp + self.X_r_ext
         self.Xout_r = self.X_r_int
         self.Xc_r = self.Xin_r - self.Xout_r
 
-        # External unit
-        self.Xin_ext = self.X_f_out 
-        self.Xout_ext = self.X_r_ext + self.X_f_in
-        self.Xc_ext = self.Xin_ext - self.Xout_ext
-
-        # Ground heat exchanger
-        self.Xin_GHE = self.E_pmp + self.X_b + self.X_f_in
-        self.Xout_GHE = self.X_f_out 
-        self.Xc_GHE = self.Xin_GHE - self.Xout_GHE
-
-        # Ground
-        self.Xin_g = self.X_g
-        self.Xout_g = self.X_b
-        self.Xc_g = self.Xin_g - self.Xout_g
+        # Internal unit
+        self.Xin_int = self.E_fan_int + self.X_r_int + self.X_a_int_in
+        self.Xout_int = self.X_a_int_out
+        self.Xc_int = self.Xin_int - self.Xout_int
 
         ## Exergy Balance ========================================
         self.exergy_balance = {}
@@ -2036,7 +2075,7 @@ class GroundSourceHeatPump_cooling:
         # Internal Unit
         self.exergy_balance["internal unit"] = {
             "in": {
-                "$E_{f,int}$": self.E_fan_int,
+                "$X_{f,int}$": self.E_fan_int,
                 "$X_{r,int}$": self.X_r_int,
                 "$X_{a,int,in}$": self.X_a_int_in,
             },
@@ -2051,7 +2090,7 @@ class GroundSourceHeatPump_cooling:
         # Refrigerant loop
         self.exergy_balance["refrigerant loop"] = {
             "in": {
-                "$E_{cmp}$": self.E_cmp,
+                "$X_{cmp}$": self.E_cmp,
                 "$X_{r,ext}$": self.X_r_ext,
             },
             "con": {
@@ -2130,9 +2169,6 @@ class GroundSourceHeatPump_heating:
         # Fan
         self.fan_int = Fan().fan1
 
-        # COP
-        self.COP_hp = 4.0
-
         # Temperature
         self.T0 = 0 # environmental temperature [°C]
         self.T_g = 15 # initial ground temperature [°C]
@@ -2145,6 +2181,7 @@ class GroundSourceHeatPump_heating:
         self.Q_r_int = 4000 # W
         
     def system_update(self):
+    
         # time
         self.time = self.time * cu.h2s  # Convert hours to seconds
 
@@ -2155,6 +2192,12 @@ class GroundSourceHeatPump_heating:
         self.T_r_int = cu.C2K(self.T_r_int)
         self.T_r_ext = cu.C2K(self.T_r_ext)
         self.T_g = cu.C2K(self.T_g)
+        
+        # Calculate COP
+        self.COP_hp = calculate_GSHP_COP(Tg = self.T_g,
+                                    T_cond = self.T_r_int,
+                                    T_evap = self.T_r_ext,
+                                    theta_hat = 0.7)
         
         # Temperature
         self.T_a_int_in = self.T_a_room # internal unit air inlet temperature [K]
@@ -2224,7 +2267,7 @@ class GroundSourceHeatPump_heating:
         # Internal Unit
         self.exergy_balance["internal unit"] = {
             "in": {
-                "$E_{f,int}$": self.E_fan_int,
+                "$X_{f,int}$": self.E_fan_int,
                 "$X_{r,int}$": self.X_r_int,
                 "$X_{a,int,in}$": self.X_a_int_in,
             },
@@ -2239,7 +2282,7 @@ class GroundSourceHeatPump_heating:
         # Refrigerant loop
         self.exergy_balance["refrigerant loop"] = {
             "in": {
-                "$E_{cmp}$": self.E_cmp,
+                "$X_{cmp}$": self.E_cmp,
                 "$X_{r,ext}$": self.X_r_ext,
             },
             "con": {
