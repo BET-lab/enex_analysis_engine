@@ -2057,7 +2057,7 @@ class GroundSourceHeatPump_cooling:
         self.Xout_GHE = self.X_f_out 
         self.Xc_GHE = self.Xin_GHE - self.Xout_GHE
 
-        # External unit
+        # Heat exchanger
         self.Xin_exch = self.Xout_GHE 
         self.Xout_exch = self.X_r_exch + self.X_f_in
         self.Xc_exch = self.Xin_exch - self.Xout_exch
@@ -2148,7 +2148,7 @@ class GroundSourceHeatPump_cooling:
                 "$X_{b}$": self.X_b,
             }
         }
-        
+
 @dataclass
 class GroundSourceHeatPump_heating:
     def __post_init__(self):
@@ -2367,7 +2367,7 @@ class ElectricHeater:
         self.T0   = 10
         self.T_mr = 15
         self.T_init = 20 # Initial temperature of the heater [°C]
-        self.T_ia = 20 # Inlet air temperature [°C]
+        self.T_a_room = 20 # Indoor air temperature [°C]
         
         # Emissivity [-]
         self.epsilon_hs = 1 # hs: heater surface
@@ -2381,7 +2381,7 @@ class ElectricHeater:
         # Temperature [K]
         self.T0     = cu.C2K(self.T0) # 두번 system update를 할 경우 절대온도 변환 중첩됨
         self.T_mr   = cu.C2K(self.T_mr)
-        self.T_ia   = cu.C2K(self.T_ia)
+        self.T_a_room   = cu.C2K(self.T_a_room)
         self.T_init = cu.C2K(self.T_init)
         self.T_hb   = self.T_init # hb: heater body
         self.T_hs   = self.T_init # hs: heater surface
@@ -2439,7 +2439,7 @@ class ElectricHeater:
                 # Tps 계산 (표면에너지 평형으로부터)
                 Tps = (
                     self.K_cond * Tp_new
-                    + self.h_cp * self.T_ia
+                    + self.h_cp * self.T_a_room
                     + self.epsilon_hs * self.epsilon_rs * sigma * (self.T_mr**4 - self.T0**4)
                     - self.epsilon_hs * self.epsilon_rs * sigma * (Tp_new**4 - self.T0**4)
                 ) / (self.K_cond + self.h_cp)
@@ -2461,7 +2461,7 @@ class ElectricHeater:
             # T_hs update (Energy balance surface: Q_cond + Q_rad_rs = Q_conv + Q_rad_hs)
             self.T_hs = (
                 self.K_cond * self.T_hb
-                + self.h_cp * self.T_ia
+                + self.h_cp * self.T_a_room
                 + self.epsilon_hs * self.epsilon_rs * sigma * (self.T_mr ** 4 - self.T0 ** 4)
                 - self.epsilon_hs * self.epsilon_rs * sigma * (self.T_hb ** 4 - self.T0 ** 4)
             ) / (self.K_cond + self.h_cp)
@@ -2473,7 +2473,7 @@ class ElectricHeater:
             # Conduction [W]
             self.Q_st = self.C * self.V * (self.T_hb_next - self.T_hb_old) / self.dt
             self.Q_cond = self.A * self.K_cond * (self.T_hb - self.T_hs)
-            self.Q_conv = self.A * self.h_cp * (self.T_hs - self.T_ia) # h_cp 추후 변하게
+            self.Q_conv = self.A * self.h_cp * (self.T_hs - self.T_a_room) # h_cp 추후 변하게
             self.Q_rad_rs = self.A * self.epsilon_hs * self.epsilon_rs * sigma * (self.T_mr ** 4 - self.T0 ** 4)
             self.Q_rad_hs = self.A * self.epsilon_hs * self.epsilon_rs * sigma * (self.T_hb ** 4 - self.T0 ** 4)
             
