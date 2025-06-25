@@ -1427,9 +1427,6 @@ class GroundSourceHeatPumpBoiler:
         self.eta_fan = 0.6
         self.COP_hp  = 4.0
         
-        # Pressure [Pa]
-        self.dP = 200 
-
         # Temperature [C]
         self.T0 = 0
         
@@ -1602,6 +1599,8 @@ class GroundSourceHeatPumpBoiler:
         self.Xin_mix = self.X_w_tank + self.X_w_sup_mix
         self.Xout_mix = self.X_w_serv
         self.Xc_mix = self.Xin_mix - self.Xout_mix
+        
+        self.X_eff = self.X_w_serv / (self.X_pmp + self.X_cmp)
 
         ## Exergy Balance ========================================
         self.exergy_balance = {}
