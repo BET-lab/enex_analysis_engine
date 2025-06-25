@@ -13,6 +13,7 @@ from scipy.special import erfc
 # constant
 c_a = 1005 # Specific heat capacity of air [J/kgK]
 rho_a = 1.225 # Density of air [kg/m³]
+k_a = 0.0257 # Thermal conductivity of air [W/mK]
 
 c_w   = 4186 # Water specific heat [J/kgK]
 rho_w = 1000
@@ -598,7 +599,6 @@ class GasBoiler:
         self.T_w_serv  = 45 
         self.T0       = 0
         self.T_exh    = 70 
-        self.T_NG     = 1400
 
         # Tank water use [m3/s]
         self.dV_w_serv  = 0.0002
@@ -1192,7 +1192,6 @@ class SolarHotWater:
         self.h_r = 2 # radiative heat transfer coefficient in air layer [W/m²K]
         
         # Thermal conductivity [W/mK]
-        self.k_air = 0.025 # Air thermal conductivity [W/mK]
         self.k_ins = 0.03 # Insulation thermal conductivity [W/mK]
         
         # Thickness [m]
@@ -1204,7 +1203,7 @@ class SolarHotWater:
         self.I_sol = self.I_DN + self.I_dH
         
         # Resistance [m2K/W] (conduction)
-        self.R_air = self.x_air / self.k_air # [m2K/W]
+        self.R_air = self.x_air / k_a # [m2K/W]
         self.R_ins = self.x_ins / self.k_ins # [m2K/W]
         self.R_o   = 1/self.h_o
         self.R_r   = 1/self.h_r
@@ -1442,7 +1441,7 @@ class GroundSourceHeatPumpBoiler:
         self.T_r_tank = 65
         if self.T_r_tank < self.T_w_tank:
             raise ValueError("T_r_tank cannot be smaller than T_w_tank")
-        self.T_r_ext  = 5 
+        self.T_r_exch  = 5  # changed from T_r_ext to T_r_exch
         
         # Tank water use [m3/s]
         self.dV_w_serv  = 0.0002
@@ -1493,7 +1492,7 @@ class GroundSourceHeatPumpBoiler:
         self.T_g = cu.C2K(self.T_g)
         
         self.T_r_tank = cu.C2K(self.T_r_tank)
-        self.T_r_ext = cu.C2K(self.T_r_ext)
+        self.T_r_exch = cu.C2K(self.T_r_exch)  # changed from T_r_ext to T_r_exch
         
         # Temperature
         self.T_tank_is = self.T_w_tank # inner surface temperature of tank [K]
@@ -1542,11 +1541,11 @@ class GroundSourceHeatPumpBoiler:
         
         # Others
         self.E_cmp = self.Q_r_tank / self.COP_hp # compressor power input [W]
-        self.Q_r_ext = self.Q_r_tank - self.E_cmp
+        self.Q_r_exch = self.Q_r_tank - self.E_cmp  # changed from Q_r_ext to Q_r_exch
         self.alpha = self.k_g / (self.c_g * self.rho_g) # thermal diffusivity of ground [m²/s]
 
         # Borehole 
-        self.Q_bh = (self.Q_r_ext - self.E_pmp) / self.height # heat flow rate from borehole to ground per unit length [W/m]
+        self.Q_bh = (self.Q_r_exch - self.E_pmp) / self.height # heat flow rate from borehole to ground per unit length [W/m]
         self.g_i = g_function(self.time, self.r_b, self.alpha, self.k_g, self.height, self.depth) # g-function [mK/W]
         
         # fluid temperature & borehole wall temperature [K]
@@ -1563,7 +1562,7 @@ class GroundSourceHeatPumpBoiler:
         self.X_w_serv = c_w * rho_w * self.dV_w_serv * ((self.T_w_serv - self.T0) - self.T0 * math.log(self.T_w_serv / self.T0))
 
         self.X_r_int = self.Q_r_tank * (1 - self.T0 / self.T_r_tank)
-        self.X_r_ext = self.Q_r_ext * (1 - self.T0 / self.T_r_ext)
+        self.X_r_exch = self.Q_r_exch * (1 - self.T0 / self.T_r_exch)  # changed from X_r_ext to X_r_exch
 
         self.X_pmp = self.E_pmp - (1 / float('inf')) * self.T0  
         self.X_cmp = self.E_cmp - (1 / float('inf')) * self.T0  
@@ -1584,13 +1583,13 @@ class GroundSourceHeatPumpBoiler:
         self.Xout_GHE = self.X_f_out 
         self.Xc_GHE = self.Xin_GHE - self.Xout_GHE
 
-        # External unit
-        self.Xin_ext = self.Xout_GHE 
-        self.Xout_ext = self.X_r_ext + self.X_f_in
-        self.Xc_ext = self.Xin_ext - self.Xout_ext
+        # Heat exchanger 
+        self.Xin_exch = self.Xout_GHE 
+        self.Xout_exch = self.X_r_exch + self.X_f_in
+        self.Xc_exch = self.Xin_exch - self.Xout_exch
 
         # Closed refrigerant loop system
-        self.Xin_r  = self.E_cmp + self.X_r_ext
+        self.Xin_r  = self.E_cmp + self.X_r_exch
         self.Xout_r = self.X_r_int
         self.Xc_r   = self.Xin_r - self.Xout_r
 
@@ -1607,7 +1606,6 @@ class GroundSourceHeatPumpBoiler:
         ## Exergy Balance ========================================
         self.exergy_balance = {}
 
-        # Internal Unit
         # Mixing valve
         self.exergy_balance["mixing valve"] = {
             "in": {
@@ -1641,7 +1639,7 @@ class GroundSourceHeatPumpBoiler:
         self.exergy_balance["refrigerant loop"] = {
             "in": {
             "$X_{cmp}$": self.X_cmp,
-            "$X_{r,ext}$": self.X_r_ext,
+            "$X_{r,exch}$": self.X_r_exch,
             },
             "con": {
             "$X_{c,r}$": self.Xc_r,
@@ -1651,16 +1649,16 @@ class GroundSourceHeatPumpBoiler:
             }
         }
 
-        # External Unit
-        self.exergy_balance["external unit"] = {
+        # Heat exchanger 
+        self.exergy_balance["heat exchanger"] = {
             "in": {
             "$X_{f,out}$": self.X_f_out,
             },
             "con": {
-            "$X_{c,ext}$": self.Xc_ext,
+            "$X_{c,exch}$": self.Xc_exch,
             },
             "out": {
-            "$X_{r,ext}$": self.X_r_ext,
+            "$X_{r,exch}$": self.X_r_exch,
             "$X_{f,in}$": self.X_f_in,
             }
         }
