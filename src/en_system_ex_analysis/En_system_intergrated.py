@@ -24,6 +24,11 @@ sigma = 5.67*10**-8 # Stefan-Boltzmann constant [W/m²K⁴]
 # https://www.notion.so/betlab/Scattering-of-photon-particles-coming-from-the-sun-and-their-energy-entropy-exergy-b781821ae9a24227bbf1a943ba9df51a?pvs=4#1ea6947d125d80ddb0a5caec50031ae3
 k_D = 0.000462 # direct solar entropy coefficient [-]
 k_d = 0.0014 # diffuse solar entropy coefficient [-]
+
+# Shukuya - Exergy theory and applications in the built environment, 2013
+# The ratio of chemical exergy to higher heating value of liquefied natural gas (LNG) is 0.93.
+ex_eff_NG   = 0.93 # exergy efficiency of natural gas [-]
+
 #%%
 # function
 def darcy_friction_factor(Re, e_d):
@@ -586,7 +591,6 @@ class GasBoiler:
         
         # Efficiency [-]
         self.eta_comb = 0.9
-        self.eta_NG   = 0.93
 
         # Temperature [°C]
         self.T_w_tank = 60 
@@ -668,7 +672,7 @@ class GasBoiler:
 
         # Temperature [K]
         self.T_w_comb = self.T_w_tank + self.Q_l_tank / (c_w * rho_w * self.dV_w_sup_comb)
-        self.T_NG = self.T0 / (1 - self.eta_NG) # eta_NG = 1 - T0/T_NG => T_NG = T0/(1-eta_NG) [K]
+        self.T_NG = self.T0 / (1 - ex_eff_NG) # eta_NG = 1 - T0/T_NG => T_NG = T0/(1-eta_NG) [K]
         
         # Pre-define variables for balance dictionaries
         self.E_NG     = c_w * rho_w * self.dV_w_sup_comb * (self.T_w_comb - self.T_w_sup) / self.eta_comb
@@ -695,7 +699,7 @@ class GasBoiler:
         self.S_g_mix = self.S_w_serv - (self.S_w_tank + self.S_w_sup_mix)
 
         # Pre-calculate Exergy values for boiler
-        self.X_NG = self.eta_NG * self.E_NG
+        self.X_NG = ex_eff_NG * self.E_NG
         self.X_w_sup = c_w * rho_w * self.dV_w_sup_comb * ((self.T_w_sup - self.T0) - self.T0 * math.log(self.T_w_sup / self.T0))
         self.X_w_comb_out = c_w * rho_w * self.dV_w_sup_comb * ((self.T_w_comb - self.T0) - self.T0 * math.log(self.T_w_comb / self.T0))
         self.X_exh = (1 - self.T0 / self.T_exh) * self.Q_exh
@@ -1164,7 +1168,7 @@ class SolarHotWater:
         # Constants [-]
         self.alpha    = 0.95 # Absorptivity of collector
         self.eta_comb = 0.9 # Efficiency of combustion chamber
-        self.eta_NG   = 0.93 # Efficiency of natural gas
+        ex_eff_NG   = 0.93 # Efficiency of natural gas
 
         # Solar radiation [W/m²]  
         self.I_DN = 800
@@ -1220,7 +1224,7 @@ class SolarHotWater:
         self.T_w_serv  = cu.C2K(self.T_w_serv)
         self.T_w_sup  = cu.C2K(self.T_w_sup)
         self.T_exh    = cu.C2K(self.T_exh)
-        self.T_NG     = self.T0 / (1 - self.eta_NG)
+        self.T_NG     = self.T0 / (1 - ex_eff_NG)
         
         # Volumetric flow rate ratio [-]
         self.alp = (self.T_w_serv - self.T_w_sup)/(self.T_w_comb - self.T_w_sup)
@@ -1283,7 +1287,7 @@ class SolarHotWater:
         self.X_l = self.Q_l - self.S_l * self.T0
         self.X_c_stp = self.S_g_stp * self.T0
 
-        self.X_NG = self.eta_NG * self.E_NG
+        self.X_NG = ex_eff_NG * self.E_NG
         self.X_exh = (1 - self.T0 / self.T_exh) * self.Q_exh
         self.X_w_comb = self.Q_w_comb - self.S_w_comb * self.T0
         self.X_c_comb = self.S_g_comb * self.T0
