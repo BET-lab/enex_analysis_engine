@@ -394,8 +394,8 @@ class ElectricBoiler:
         # Temperature [K]
         self.T_w_tank = 60
         self.T_w_sup  = 10
-        self.T_w_serv  = 45
-        self.T0       = 0 
+        self.T_w_serv = 45
+        self.T0       = 0
 
         # Tank water use [m3/s]
         self.dV_w_serv  = 0.0002
@@ -626,7 +626,6 @@ class GasBoiler:
         self.T_w_serv  = cu.C2K(self.T_w_serv)  # tap water temperature [K]
         self.T0       = cu.C2K(self.T0)       # reference temperature [K]
         self.T_exh    = cu.C2K(self.T_exh)    # exhaust gas temperature [K]
-        self.T_NG     = cu.C2K(self.T_NG)     # natural gas temperature [K]
         
         # Temperature [K]
         self.T_tank_is = self.T_w_tank # inner surface temperature of tank [K]
@@ -1424,7 +1423,6 @@ class GroundSourceHeatPumpBoiler:
         self.time = 10 # [h]
         
         # Efficiency [-]
-        self.eta_fan = 0.6
         self.COP_hp  = 4.0
         
         # Temperature [C]
@@ -1438,7 +1436,7 @@ class GroundSourceHeatPumpBoiler:
         self.T_r_tank = 65
         if self.T_r_tank < self.T_w_tank:
             raise ValueError("T_r_tank cannot be smaller than T_w_tank")
-        self.T_r_exch  = 5  # changed from T_r_ext to T_r_exch
+        self.T_r_exch  = 5  # changed from T_r_ext to T_r_exchx
         
         # Tank water use [m3/s]
         self.dV_w_serv  = 0.0002
@@ -1459,8 +1457,8 @@ class GroundSourceHeatPumpBoiler:
         self.h_o = 15 
         
         # Borehole parameters
-        self.depth = 0 # Borehole depth [m]
-        self.height = 200 # Borehole height [m]
+        self.D_b = 0 # Borehole depth [m]
+        self.H_b = 200 # Borehole height [m]
         self.r_b = 0.08 # Borehole radius [m]
         self.R_b = 0.108 # Effective borehole thermal resistance [mK/W]
 
@@ -1542,14 +1540,14 @@ class GroundSourceHeatPumpBoiler:
         self.alpha = self.k_g / (self.c_g * self.rho_g) # thermal diffusivity of ground [m²/s]
 
         # Borehole 
-        self.Q_bh = (self.Q_r_exch - self.E_pmp) / self.height # heat flow rate from borehole to ground per unit length [W/m]
-        self.g_i = g_function(self.time, self.r_b, self.alpha, self.k_g, self.height, self.depth) # g-function [mK/W]
+        self.Q_bh = (self.Q_r_exch - self.E_pmp) / self.H_b # heat flow rate from borehole to ground per unit length [W/m]
+        self.g_i = g_function(self.time, self.r_b, self.alpha, self.k_g, self.H_b, self.D_b) # g-function [mK/W]
         
         # fluid temperature & borehole wall temperature [K]
         self.T_b = self.T_g - self.Q_bh * self.g_i # borehole wall temperature [K]
         self.T_f = self.T_b - self.Q_bh * self.R_b # fluid temperature in borehole [K]
-        self.T_f_in = self.T_f - self.Q_bh * self.height / (2 * c_w * rho_w * self.V_f) # fluid inlet temperature [K]
-        self.T_f_out = self.T_f + self.Q_bh * self.height / (2 * c_w * rho_w * self.V_f) # fluid outlet temperature [K]
+        self.T_f_in = self.T_f - self.Q_bh * self.H_b / (2 * c_w * rho_w * self.V_f) # fluid inlet temperature [K]
+        self.T_f_out = self.T_f + self.Q_bh * self.H_b / (2 * c_w * rho_w * self.V_f) # fluid outlet temperature [K]
 
         # Exergy result
         self.X_w_sup_tank = c_w * rho_w * self.dV_w_sup_tank * ((self.T_w_sup - self.T0) - self.T0 * math.log(self.T_w_sup / self.T0))
@@ -1567,8 +1565,8 @@ class GroundSourceHeatPumpBoiler:
         self.X_f_in  = c_w * rho_w * self.V_f * ((self.T_f_in - self.T0) - self.T0 * math.log(self.T_f_in / self.T0))
         self.X_f_out = c_w * rho_w * self.V_f * ((self.T_f_out - self.T0) - self.T0 * math.log(self.T_f_out / self.T0))
 
-        self.X_g = (1 - self.T0 / self.T_g) * (self.Q_bh * self.height)
-        self.X_b = (1 - self.T0 / self.T_b) * (self.Q_bh * self.height)
+        self.X_g = (1 - self.T0 / self.T_g) * (self.Q_bh * self.H_b)
+        self.X_b = (1 - self.T0 / self.T_b) * (self.Q_bh * self.H_b)
 
         # Ground
         self.Xin_g = self.X_g
@@ -1960,8 +1958,8 @@ class GroundSourceHeatPump_cooling:
         self.time = 10 # [h]
         
         # Borehole parameters
-        self.depth = 0 # Borehole depth [m]
-        self.height = 200 # Borehole height [m]
+        self.D_b = 0 # Borehole depth [m]
+        self.H_b = 200 # Borehole height [m]
         self.r_b = 0.08 # Borehole radius [m]
         self.R_b = 0.108 # Effective borehole thermal resistance [mK/W]
 
@@ -1993,7 +1991,7 @@ class GroundSourceHeatPump_cooling:
     def system_update(self):
         self.alpha = self.k_g / (self.c_g * self.rho_g) # thermal diffusivity of ground [m²/s]
         self.Lx = 2*self.V_f/(math.pi*self.alpha)
-        self.x0 = self.height / self.Lx # dimensionless borehole depth
+        self.x0 = self.H_b / self.Lx # dimensionless borehole depth
         self.k_sb = self.k_g/k_w # ratio of ground thermal conductivity
 
         # time
@@ -2026,14 +2024,14 @@ class GroundSourceHeatPump_cooling:
         self.E_fan_int = Fan().get_power(self.fan_int, self.dV_int) # power input of internal unit fan [W]
 
         # Borehole
-        self.Q_bh = (self.Q_r_exch - self.E_pmp) / self.height # heat flow rate from borehole to ground per unit length [W/m]
-        self.g_i = g_function(self.time, self.r_b, self.alpha, self.k_g, self.height, self.depth) # g-function [mK/W]
+        self.Q_bh = (self.Q_r_exch - self.E_pmp) / self.H_b # heat flow rate from borehole to ground per unit length [W/m]
+        self.g_i = g_function(self.time, self.r_b, self.alpha, self.k_g, self.H_b, self.D_b) # g-function [mK/W]
         
         # fluid & bolehole wall temperature
         self.T_b = self.T_g + self.Q_bh * self.g_i # borehole wall temperature [K]
         self.T_f = self.T_b + self.Q_bh * self.R_b # fluid temperature in borehole [K]
-        self.T_f_in = self.T_f + self.Q_bh * self.height / (2 * c_w * rho_w * self.V_f) # fluid inlet temperature [K]
-        self.T_f_out = self.T_f - self.Q_bh * self.height / (2 * c_w * rho_w * self.V_f) # fluid outlet temperature [K]
+        self.T_f_in = self.T_f + self.Q_bh * self.H_b / (2 * c_w * rho_w * self.V_f) # fluid inlet temperature [K]
+        self.T_f_out = self.T_f - self.Q_bh * self.H_b / (2 * c_w * rho_w * self.V_f) # fluid outlet temperature [K]
 
         # Exergy result
         self.X_a_int_in  = c_a * rho_a * self.dV_int * ((self.T_a_int_in - self.T0) - self.T0 * math.log(self.T_a_int_in / self.T0))
@@ -2045,8 +2043,8 @@ class GroundSourceHeatPump_cooling:
         self.X_f_in = c_w * rho_w * self.V_f * ((self.T_f_in - self.T0) - self.T0 * math.log(self.T_f_in / self.T0))
         self.X_f_out = c_w * rho_w * self.V_f * ((self.T_f_out - self.T0) - self.T0 * math.log(self.T_f_out / self.T0))
 
-        self.X_g = (1 - self.T0 / self.T_g) * (- self.Q_bh * self.height)
-        self.X_b = (1 - self.T0 / self.T_b) * (- self.Q_bh * self.height)
+        self.X_g = (1 - self.T0 / self.T_g) * (- self.Q_bh * self.H_b)
+        self.X_b = (1 - self.T0 / self.T_b) * (- self.Q_bh * self.H_b)
 
         # Ground
         self.Xin_g = self.X_g
@@ -2157,8 +2155,8 @@ class GroundSourceHeatPump_heating:
         self.time = 10 # [s]
         
         # Borehole parameters
-        self.depth = 0 # Borehole depth [m]
-        self.height = 200 # Borehole height [m]
+        self.D_b = 0 # Borehole depth [m]
+        self.H_b = 200 # Borehole height [m]
         self.r_b = 0.08 # Borehole radius [m]
         self.R_b = 0.108 # Effective borehole thermal resistance [mK/W]
 
@@ -2221,14 +2219,14 @@ class GroundSourceHeatPump_heating:
         self.E_fan_int = Fan().get_power(self.fan_int, self.dV_int) # power input of internal unit fan [W]
 
         # Borehole
-        self.Q_bh = (self.Q_r_exch - self.E_pmp) / self.height # heat flow rate from borehole to ground per unit length [W/m]
-        self.g_i = g_function(self.time, self.r_b, self.alpha, self.k_g, self.height, self.depth) # g-function [mK/W]
+        self.Q_bh = (self.Q_r_exch - self.E_pmp) / self.H_b # heat flow rate from borehole to ground per unit length [W/m]
+        self.g_i = g_function(self.time, self.r_b, self.alpha, self.k_g, self.H_b, self.D_b) # g-function [mK/W]
         
         # fluid temperature & borehole wall temperature [K]
         self.T_b = self.T_g - self.Q_bh * self.g_i # borehole wall temperature [K]
         self.T_f = self.T_b - self.Q_bh * self.R_b # fluid temperature in borehole [K]
-        self.T_f_in = self.T_f - self.Q_bh * self.height / (2 * c_w * rho_w * self.V_f) # fluid inlet temperature [K]
-        self.T_f_out = self.T_f + self.Q_bh * self.height / (2 * c_w * rho_w * self.V_f) # fluid outlet temperature [K]
+        self.T_f_in = self.T_f - self.Q_bh * self.H_b / (2 * c_w * rho_w * self.V_f) # fluid inlet temperature [K]
+        self.T_f_out = self.T_f + self.Q_bh * self.H_b / (2 * c_w * rho_w * self.V_f) # fluid outlet temperature [K]
 
         # Exergy result
         self.X_a_int_in  = c_a * rho_a * self.dV_int * ((self.T_a_int_in - self.T0) - self.T0 * math.log(self.T_a_int_in / self.T0))
@@ -2240,8 +2238,8 @@ class GroundSourceHeatPump_heating:
         self.X_f_in = c_w * rho_w * self.V_f * ((self.T_f_in - self.T0) - self.T0 * math.log(self.T_f_in / self.T0))
         self.X_f_out = c_w * rho_w * self.V_f * ((self.T_f_out - self.T0) - self.T0 * math.log(self.T_f_out / self.T0))
 
-        self.X_g = (1 - self.T0 / self.T_g) * (self.Q_bh * self.height)
-        self.X_b = (1 - self.T0 / self.T_b) * (self.Q_bh * self.height)
+        self.X_g = (1 - self.T0 / self.T_g) * (self.Q_bh * self.H_b)
+        self.X_b = (1 - self.T0 / self.T_b) * (self.Q_bh * self.H_b)
 
         # Internal unit
         self.Xin_int = self.E_fan_int + self.X_r_int + self.X_a_int_in
@@ -2581,7 +2579,6 @@ class ElectricHeater:
                 "S_rad_hs": self.S_rad_hs
             }
         }
-        
         
         self.exergy_balance = {}
         self.exergy_balance["heater body"] = {
