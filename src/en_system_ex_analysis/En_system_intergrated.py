@@ -389,6 +389,10 @@ class Pump:
 # class - Domestic Hot Water System
 @dataclass
 class ElectricBoiler:
+    __slots__ = (
+        'T_w_tank', 'T_w_sup', 'T_w_serv', 'T0', 'dV_w_serv',
+        'r0', 'H', 'x_shell', 'x_ins', 'k_shell', 'k_ins', 'h_o'
+    )
     def __post_init__(self):
         
         # Temperature [K]
@@ -588,6 +592,10 @@ class ElectricBoiler:
 
 @dataclass
 class GasBoiler:
+    __slots__ = (
+        'eta_comb', 'T_w_tank', 'T_w_sup', 'T_w_serv', 'T0', 'T_exh',
+        'dV_w_serv', 'r0', 'H', 'x_shell', 'x_ins', 'k_shell', 'k_ins', 'h_o'
+    )
     def __post_init__(self):
         
         # Efficiency [-]
@@ -831,7 +839,12 @@ class GasBoiler:
         }
 
 @dataclass
-class HeatPumpBoiler: 
+class HeatPumpBoiler:
+    __slots__ = (
+        'eta_fan', 'COP_hp', 'r_ext', 'dP', 'T0', 'T_a_ext_out', 'T_r_ext', 'T_r_tank',
+        'T_w_tank', 'T_w_serv', 'T_w_sup', 'dV_w_serv', 'r0', 'H', 'x_shell', 'x_ins',
+        'k_shell', 'k_ins', 'h_o'
+    )
     def __post_init__(self): 
         
         # Efficiency [-]
@@ -1163,6 +1176,10 @@ class HeatPumpBoiler:
 
 @dataclass
 class SolarHotWater:
+    __slots__ = (
+        'alpha', 'eta_comb', 'I_DN', 'I_dH', 'A_stp', 'T0', 'T_w_comb', 'T_w_serv', 'T_w_sup', 'T_exh',
+        'dV_w_serv', 'h_o', 'h_r', 'k_ins', 'x_air', 'x_ins'
+    )
     def __post_init__(self):
         # Constants [-]
         self.alpha    = 0.95 # Absorptivity of collector
@@ -1417,7 +1434,12 @@ class SolarHotWater:
         }
               
 @dataclass
-class GroundSourceHeatPumpBoiler: 
+class GroundSourceHeatPumpBoiler:
+    __slots__ = (
+        'time', 'COP_hp', 'T0', 'T_w_tank', 'T_w_serv', 'T_w_sup', 'T_g', 'T_r_tank', 'T_r_exch',
+        'dV_w_serv', 'r0', 'H', 'x_shell', 'x_ins', 'k_shell', 'k_ins', 'h_o',
+        'D_b', 'H_b', 'r_b', 'R_b', 'V_f', 'k_g', 'c_g', 'rho_g', 'E_pmp'
+    )
     def __post_init__(self): 
         
         self.time = 10 # [h]
@@ -1692,8 +1714,12 @@ class GroundSourceHeatPumpBoiler:
 # class - AirSourceHeatPump
 @dataclass
 class AirSourceHeatPump_cooling:
+    __slots__ = (
+        'fan_int', 'fan_ext', 'Q_r_max', 'T0', 'T_a_room',
+        'T_r_int', 'T_a_int_out', 'T_a_ext_out', 'T_r_ext',
+        'Q_r_int', 'COP_ref'
+    )
     def __post_init__(self):
-
         # fan
         self.fan_int = Fan().fan1
         self.fan_ext = Fan().fan2
@@ -1823,6 +1849,10 @@ class AirSourceHeatPump_cooling:
 
 @dataclass
 class AirSourceHeatPump_heating:
+    __slots__ = (
+        'fan_int', 'fan_ext', 'Q_r_max', 'T0', 'T_a_room',
+        'T_r_int', 'T_a_int_out', 'T_a_ext_out', 'T_r_ext', 'Q_r_int'
+    )
     def __post_init__(self):
 
         # fan
@@ -1953,6 +1983,12 @@ class AirSourceHeatPump_heating:
 # class - GroundSourceHeatPump
 @dataclass
 class GroundSourceHeatPump_cooling:
+    __slots__ = (
+        'time', 'COP_hp', 'D_b', 'H_b', 'r_b', 'R_b',
+        'V_f', 'k_g', 'c_g', 'rho_g', 'E_pmp',
+        'fan_int', 'T0', 'T_g', 'T_a_room', 'T_a_int_out',
+        'T_r_int', 'T_r_exch', 'Q_r_int'
+    )
     def __post_init__(self):
         # Time
         self.time = 10 # [h]
@@ -2150,6 +2186,12 @@ class GroundSourceHeatPump_cooling:
 
 @dataclass
 class GroundSourceHeatPump_heating:
+    __slots__ = (
+        'time', 'COP_hp', 'D_b', 'H_b', 'r_b', 'R_b',
+        'V_f', 'k_g', 'c_g', 'rho_g', 'E_pmp',
+        'fan_int', 'T0', 'T_g', 'T_a_room', 'T_a_int_out',
+        'T_r_int', 'T_r_exch', 'Q_r_int'
+    )    
     def __post_init__(self):
         # Time
         self.time = 10 # [s]
@@ -2343,6 +2385,10 @@ class GroundSourceHeatPump_heating:
 # class - Electric heater
 @dataclass
 class ElectricHeater:
+    __slots__ = (
+        'c', 'rho', 'k', 'D', 'H', 'W', 'E_heater', 'T0', 'T_mr', 'T_init', 'T_a_room',
+        'epsilon_hs', 'epsilon_rs', 'dt'
+    )
     def __post_init__(self): 
         
         # hb: heater body
