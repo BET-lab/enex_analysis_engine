@@ -1171,7 +1171,6 @@ class SolarHotWater:
         # Constants [-]
         self.alpha    = 0.95 # Absorptivity of collector
         self.eta_comb = 0.9 # Efficiency of combustion chamber
-        ex_eff_NG   = 0.93 # Efficiency of natural gas
 
         # Solar radiation [W/m²]  
         self.I_DN = 800
