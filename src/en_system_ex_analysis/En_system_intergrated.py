@@ -2077,7 +2077,7 @@ class GroundSourceHeatPump_cooling:
         self.Xc_int = self.Xin_int - self.Xout_int
 
         # Exergy efficiency
-        self.X_eff = (self.X_a_out_int - self.X_a_int_in) / (self.E_fan_int + self.E_cmp + self.E_pmp)
+        self.X_eff = (self.X_a_int_out - self.X_a_int_in) / (self.E_fan_int + self.E_cmp + self.E_pmp)
 
         ## Exergy Balance ========================================
         self.exergy_balance = {}
