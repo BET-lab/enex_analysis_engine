@@ -2540,6 +2540,7 @@ class ElectricHeater:
                 print("time step is too short")
                 break
         
+        self.X_eff = (self.X_rad_hs + self.X_conv)/ self.X_heater 
         self.energy_balance = {}
         self.energy_balance["heater body"] = {
             "in": {
