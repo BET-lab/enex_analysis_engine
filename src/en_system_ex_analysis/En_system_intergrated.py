@@ -2158,7 +2158,7 @@ class GroundSourceHeatPump_heating:
 
     def __post_init__(self):
         # Time
-        self.time = 10 # [s]
+        self.time = 10 # [h]
         
         # Borehole parameters
         self.D_b = 0 # Borehole depth [m]
@@ -2271,6 +2271,9 @@ class GroundSourceHeatPump_heating:
         self.Xin_g = self.X_g
         self.Xout_g = self.X_b
         self.Xc_g = self.Xin_g - self.Xout_g
+        
+        # Exergy efficiency
+        self.X_eff = (self.X_a_int_out - self.X_a_int_in) / (self.E_fan_int + self.E_cmp + self.E_pmp)
 
         ## Exergy Balance ========================================
         self.exergy_balance = {}
