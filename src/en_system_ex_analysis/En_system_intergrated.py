@@ -853,7 +853,7 @@ class HeatPumpBoiler:
         self.T_r_ext     = -10
         self.T_r_tank    = 65
         self.T_w_tank    = 60
-        self.T_w_serv     = 45
+        self.T_w_serv    = 45
         self.T_w_sup     = 10
 
         # Tank water use [m3/s]
@@ -1165,7 +1165,7 @@ class HeatPumpBoiler:
         }
 
 @dataclass
-class SolarHotWater:
+class SolarAssistedGasBoiler:
 
     def __post_init__(self):
         # Constants [-]
