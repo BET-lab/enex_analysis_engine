@@ -6,7 +6,7 @@ from dataclasses import dataclass
 import dartwork_mpl as dm
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
-from scipy.integrate import dblquad, integrate
+from scipy import integrate
 from scipy.special import erf
 
 #%%
