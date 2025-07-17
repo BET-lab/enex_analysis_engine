@@ -6,8 +6,8 @@ from dataclasses import dataclass
 import dartwork_mpl as dm
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
-from scipy.integrate import dblquad
-from scipy.special import erfc
+from scipy.integrate import dblquad, integrate
+from scipy.special import erf
 
 #%%
 # constant
@@ -29,6 +29,8 @@ k_d = 0.0014 # diffuse solar entropy coefficient [-]
 # Shukuya - Exergy theory and applications in the built environment, 2013
 # The ratio of chemical exergy to higher heating value of liquefied natural gas (LNG) is 0.93.
 ex_eff_NG   = 0.93 # exergy efficiency of natural gas [-]
+
+SP = np.sqrt(np.pi) # Square root of pi
 
 #%%
 # function
@@ -213,17 +215,51 @@ def calculate_GSHP_COP(Tg, T_cond, T_evap, theta_hat):
     COP = 1 / denominator
     return COP
 
-def g_function(t, r_b, alpha, k_g, H, D):
-    def integrand(h, z):
-        term1 = np.sqrt(r_b**2 + (z - h)**2)
-        term2 = np.sqrt(r_b**2 + (z + h)**2)
-        val1 = erfc(term1 / (2 * np.sqrt(alpha * t))) / term1
-        val2 = erfc(term2 / (2 * np.sqrt(alpha * t))) / term2
-        return val1 - val2
+def f(x):
+    return x*erf(x) - (1-np.exp(-x**2))/SP
 
-    epsabs, epsrel = 1e-6, 1e-6 # t 구간에 따라 수렴조건 다르게 초반부 수렴조건 높게 설정
-    integral, _ = dblquad(integrand, D, D + H, lambda h: D, lambda h: D + H, epsabs=epsabs, epsrel=epsrel)
-    return integral / (4 * np.pi * k_g * H)
+def chi(s, rb, H, z0=0):
+    h = H * s
+    d = z0 * s
+    
+    temp = np.exp(-(rb*s)**2) / (h * s)
+    Is = 2*f(h) + 2*f(h+2*d) - f(2*h+2*d) - f(2*d)
+    
+    return temp * Is
+
+_g_func_cache = {}
+def G_FLS(t, ks, as_, rb, H):
+    key = (round(t, 6), round(ks, 6), round(as_, 6), round(rb, 6), round(H, 6))
+    if key in _g_func_cache:
+        return _g_func_cache[key]
+
+    factor = 1 / (4 * np.pi * ks)
+    
+    lbs = 1 / np.sqrt(4*as_*t)
+    
+    # Scalar 값인 경우 shape == (,).
+    single = len(lbs.shape) == 0
+    # 0차원에 1차원으로 변경.
+    lbs = lbs.reshape(-1)
+        
+    # 0 부터 inf 까지의 적분값 미리 계산.
+    total = integrate.quad(chi, 0, np.inf, args=(rb, H))[0]
+    # ODE 초기값.
+    first = integrate.quad(chi, 0, lbs[0], args=(rb, H))[0]
+   
+    # Scipy의 ODE solver의 인자의 함수 형태는 dydx = f(y, x).
+    def func(y, s):
+        return chi(s, rb, H, z0=0)
+    
+    values = total - integrate.odeint(func, first, lbs)[:, 0]
+    
+    # Single time 값은 첫 번째 값만 선택하여 float를 리턴하도록 함.
+    if single:
+        values = values[0]
+
+    result = factor * values
+    _g_func_cache[key] = result
+    return result
 
 
 #%%
@@ -399,7 +435,7 @@ class ElectricBoiler:
         self.T0       = 0
 
         # Tank water use [m3/s]
-        self.dV_w_serv  = 0.0002
+        self.dV_w_serv  = 0.00002
 
         # Tank size [m]
         self.r0 = 0.2
@@ -603,7 +639,7 @@ class GasBoiler:
         self.T_exh    = 70 
 
         # Tank water use [m3/s]
-        self.dV_w_serv  = 0.0002
+        self.dV_w_serv  = 0.00002
 
         # Tank size [m]
         self.r0 = 0.2
@@ -850,14 +886,16 @@ class HeatPumpBoiler:
         # Temperature [K]
         self.T0          = 0
         self.T_a_ext_out = -5
+        
         self.T_r_ext     = -10
         self.T_r_tank    = 65
+        
         self.T_w_tank    = 60
         self.T_w_serv    = 45
         self.T_w_sup     = 10
 
         # Tank water use [m3/s]
-        self.dV_w_serv  = 0.0002
+        self.dV_w_serv  = 0.00002
 
         # Tank size [m]
         self.r0 = 0.2
@@ -1187,7 +1225,7 @@ class SolarAssistedGasBoiler:
         self.T_exh    = 70
         
         # Tank water use [m3/s]
-        self.dV_w_serv = 0.0002
+        self.dV_w_serv = 0.00002
         
         # Overall heat transfer coefficient [W/m²K]
         self.h_o = 15
@@ -1296,6 +1334,8 @@ class SolarAssistedGasBoiler:
         self.X_w_sup_mix = self.Q_w_sup_mix - self.S_w_sup_mix * self.T0
         self.X_w_serv = self.Q_w_serv - self.S_w_serv * self.T0 
         self.X_c_mix = self.S_g_mix * self.T0
+
+        self.X_eff = self.X_w_serv / (self.X_NG)
 
         self.energy_balance = {}
         self.energy_balance["solar thermal panel"] = {
@@ -1442,7 +1482,7 @@ class GroundSourceHeatPumpBoiler:
         self.T_r_exch  = 5  # changed from T_r_ext to T_r_exchx
         
         # Tank water use [m3/s]
-        self.dV_w_serv  = 0.0002
+        self.dV_w_serv  = 0.00002
 
         # Tank size [m]
         self.r0 = 0.2
@@ -1544,7 +1584,7 @@ class GroundSourceHeatPumpBoiler:
 
         # Borehole 
         self.Q_bh = (self.Q_r_exch - self.E_pmp) / self.H_b # heat flow rate from borehole to ground per unit length [W/m]
-        self.g_i = g_function(self.time, self.r_b, self.alpha, self.k_g, self.H_b, self.D_b) # g-function [mK/W]
+        self.g_i = G_FLS(t = self.time, ks = self.k_g, as_ = self.alpha, rb = self.r_b, H = self.H_b) # g-function [mK/W]
         
         # fluid temperature & borehole wall temperature [K]
         self.T_b = self.T_g - self.Q_bh * self.g_i # borehole wall temperature [K]
@@ -2030,7 +2070,7 @@ class GroundSourceHeatPump_cooling:
 
         # Borehole
         self.Q_bh = (self.Q_r_exch - self.E_pmp) / self.H_b # heat flow rate from borehole to ground per unit length [W/m]
-        self.g_i = g_function(self.time, self.r_b, self.alpha, self.k_g, self.H_b, self.D_b) # g-function [mK/W]
+        self.g_i = G_FLS(t = self.time, ks = self.k_g, as_ = self.alpha, rb = self.r_b, H = self.H_b) # g-function [mK/W]
         
         # fluid & bolehole wall temperature
         self.T_b = self.T_g + self.Q_bh * self.g_i # borehole wall temperature [K]
@@ -2226,7 +2266,7 @@ class GroundSourceHeatPump_heating:
 
         # Borehole
         self.Q_bh = (self.Q_r_exch - self.E_pmp) / self.H_b # heat flow rate from borehole to ground per unit length [W/m]
-        self.g_i = g_function(self.time, self.r_b, self.alpha, self.k_g, self.H_b, self.D_b) # g-function [mK/W]
+        self.g_i = G_FLS(t = self.time, ks = self.k_g, as_ = self.alpha, rb = self.r_b, H = self.H_b) # g-function [mK/W]
         
         # fluid temperature & borehole wall temperature [K]
         self.T_b = self.T_g - self.Q_bh * self.g_i # borehole wall temperature [K]
