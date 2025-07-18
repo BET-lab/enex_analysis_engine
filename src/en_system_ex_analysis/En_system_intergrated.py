@@ -2406,8 +2406,8 @@ class ElectricHeater:
     
         # Heater geometry [m]
         self.D = 0.005 
-        self.H = 0.5 
-        self.W = 1 
+        self.H = 0.8 
+        self.W = 1.0
         
         # Electricity input to the heater [W]
         self.E_heater = 1000
@@ -2556,7 +2556,12 @@ class ElectricHeater:
             self.X_st = (1 - self.T0 / self.T_hb) * (self.Q_st)
             self.X_heater = (1 - self.T0 / float('inf')) * (self.E_heater)
             self.X_cond = (1 - self.T0 / self.T_hb) * (self.Q_cond)
-            self.X_conv = (1 - self.T0 / self.T_hs) * (self.Q_conv)
+            
+            ###########################
+            # self.X_conv = (1 - self.T0 / self.T_hs) * (self.Q_conv) # h_cp 추후 변하게
+            self.X_conv = (1 - self.T0 / ((self.T_hs+self.T0)/2)) * (self.Q_conv) # 임시 변경 사항있으니 주의 필요 -----------------------------
+            ############################
+            
             self.X_rad_rs = self.Q_rad_rs - self.T0 * self.S_rad_rs
             self.X_rad_hs = self.Q_rad_hs - self.T0 * self.S_rad_hs
             self.X_c_hb = -(self.X_st + self.X_cond - self.X_heater)
