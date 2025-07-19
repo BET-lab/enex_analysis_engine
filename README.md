@@ -12,7 +12,7 @@
 모델을 사용하려면 필요한 패키지를 설치해야 합니다. 다음 명령어를 실행하세요:
 
 ```bash
-uv add git+https://github.com/BET-lab/En_system_Ex_analysis.git
+uv add git+https://github.com/BET-lab/enex_analysis_engine.git
 ```
 
 ```bash
