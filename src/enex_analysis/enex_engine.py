@@ -1754,7 +1754,6 @@ class AirSourceHeatPump_cooling:
         self.T_a_ext_out = 40 # external unit air outlet temperature [°C]
         self.T_r_ext     = 45 # external unit refrigerant temperature [°C]
         
-        
         # load
         self.Q_r_int = 10000 # [W]
         
@@ -2074,7 +2073,7 @@ class GroundSourceHeatPump_cooling:
         
         # fluid & bolehole wall temperature
         self.T_b = self.T_g + self.Q_bh * self.g_i # borehole wall temperature [K]
-        self.T_f = self.T_b + self.Q_bh * self.R_b # fluid temperature in borehole [K]
+        self.T_f = self.T_b + self.Q_bh * self.R_b # fluid temperature in borehole [K] -> Rb를 올렸는데 올라간다? 이상함
         self.T_f_in = self.T_f + self.Q_bh * self.H_b / (2 * c_w * rho_w * self.V_f) # fluid inlet temperature [K]
         self.T_f_out = self.T_f - self.Q_bh * self.H_b / (2 * c_w * rho_w * self.V_f) # fluid outlet temperature [K]
 

@@ -23,7 +23,7 @@ uv sync
 
 ### 모듈 임포트하기
 ```python
-import en_system_ex_analysis as enex
+import enex_analysis as enex
 ```
 
 ### 예제: 전기 보일러 시스템 생성
