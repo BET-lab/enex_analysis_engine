@@ -1479,7 +1479,7 @@ class GroundSourceHeatPumpBoiler:
         self.T_r_tank = 65
         if self.T_r_tank < self.T_w_tank:
             raise ValueError("T_r_tank cannot be smaller than T_w_tank")
-        self.T_r_exch  = 5  # changed from T_r_ext to T_r_exchx
+        self.dT_r_exch = -5  # 예시: 열교환기의 온도 - 열교환후 지중순환수 온도 [K]
         
         # Tank water use [m3/s]
         self.dV_w_serv  = 0.00002
@@ -1522,15 +1522,14 @@ class GroundSourceHeatPumpBoiler:
 
         # Celcius to Kelvin
         self.T0 = cu.C2K(self.T0)
-        
         self.T_w_tank = cu.C2K(self.T_w_tank)
         self.T_w_serv = cu.C2K(self.T_w_serv)
         self.T_w_sup = cu.C2K(self.T_w_sup)
-        
         self.T_g = cu.C2K(self.T_g)
-        
         self.T_r_tank = cu.C2K(self.T_r_tank)
-        self.T_r_exch = cu.C2K(self.T_r_exch)  # changed from T_r_ext to T_r_exch
+                
+        # Others
+        self.alpha = self.k_g / (self.c_g * self.rho_g) # thermal diffusivity of ground [m²/s]
         
         # Temperature
         self.T_tank_is = self.T_w_tank # inner surface temperature of tank [K]
@@ -1574,23 +1573,41 @@ class GroundSourceHeatPumpBoiler:
         self.U_tank = 2/self.R_base_tot + 1/self.R_side_tot
         
         # Load [W]
-        self.Q_r_tank = c_w * rho_w * self.dV_w_sup_tank * (self.T_w_tank - self.T_w_sup)
         self.Q_l_tank = self.U_tank * (self.T_tank_is - self.T0)
+        self.Q_r_tank = c_w * rho_w * self.dV_w_sup_tank * (self.T_w_tank - self.T_w_sup)
         
-        # Others
-        self.E_cmp = self.Q_r_tank / self.COP_hp # compressor power input [W]
-        self.Q_r_exch = self.Q_r_tank - self.E_cmp  # changed from Q_r_ext to Q_r_exch
-        self.alpha = self.k_g / (self.c_g * self.rho_g) # thermal diffusivity of ground [m²/s]
+        # 반복 수치해법 적용
+        '''
+        반복 수치해법을 사용하는 이유:
+        1. 냉매 온도(T_r_exch)와 유체 입구 온도(T_f_in)가 서로 연동되어 직접 계산이 불가능함.
+        2. 보어홀 열저항, 유량, 토양물성 등 시스템 파라미터가 COP, 온도, 효율에 반영되도록 하기 위함.
+        3. 두 온도가 수렴할 때까지 반복 계산하여 물리적으로 일관된 해를 얻기 위함.
+        '''
+        max_iter = 20
+        tol = 1e-3
+        self.T_f = self.T_g  # 초기값
+        self.T_f_in = self.T_f + self.dT_r_exch  # 초기값, 열교환기에서의 순환수 유입 온도
 
-        # Borehole 
-        self.Q_bh = (self.Q_r_exch - self.E_pmp) / self.H_b # heat flow rate from borehole to ground per unit length [W/m]
-        self.g_i = G_FLS(t = self.time, ks = self.k_g, as_ = self.alpha, rb = self.r_b, H = self.H_b) # g-function [mK/W]
-        
-        # fluid temperature & borehole wall temperature [K]
-        self.T_b = self.T_g - self.Q_bh * self.g_i # borehole wall temperature [K]
-        self.T_f = self.T_b - self.Q_bh * self.R_b # fluid temperature in borehole [K]
-        self.T_f_in = self.T_f - self.Q_bh * self.H_b / (2 * c_w * rho_w * self.V_f) # fluid inlet temperature [K]
-        self.T_f_out = self.T_f + self.Q_bh * self.H_b / (2 * c_w * rho_w * self.V_f) # fluid outlet temperature [K]
+        for _ in range(max_iter):
+            self.T_r_exch = self.T_f_in + self.dT_r_exch  # 5 K 높게 설정
+            self.COP_hp = calculate_GSHP_COP(Tg = self.T_g,
+                                         T_cond = self.T_r_tank,
+                                         T_evap = self.T_r_exch,
+                                         theta_hat = 0.3)
+            # Others
+            self.E_cmp = self.Q_r_tank / self.COP_hp # compressor power input [W]
+            self.Q_r_exch = self.Q_r_tank - self.E_cmp  # changed from Q_r_ext to Q_r_exch
+            # Borehole 
+            self.Q_bh = (self.Q_r_exch - self.E_pmp) / self.H_b # heat flow rate from borehole to ground per unit length [W/m]
+            self.g_i = G_FLS(t = self.time, ks = self.k_g, as_ = self.alpha, rb = self.r_b, H = self.H_b) # g-function [mK/W]
+            # fluid temperature & borehole wall temperature [K]
+            T_f_in_old = self.T_f_in  # 이전 유체 입구 온도 저장
+            self.T_b = self.T_g - self.Q_bh * self.g_i # borehole wall temperature [K]
+            self.T_f = self.T_b - self.Q_bh * self.R_b # fluid temperature in borehole [K]
+            self.T_f_in = self.T_f - self.Q_bh * self.H_b / (2 * c_w * rho_w * self.V_f) # fluid inlet temperature [K]
+            self.T_f_out = self.T_f + self.Q_bh * self.H_b / (2 * c_w * rho_w * self.V_f) # fluid outlet temperature [K]
+            if abs(self.T_f_in - T_f_in_old) < tol:
+                break
 
         # Exergy result
         self.X_w_sup_tank = c_w * rho_w * self.dV_w_sup_tank * ((self.T_w_sup - self.T0) - self.T0 * math.log(self.T_w_sup / self.T0))
@@ -2022,6 +2039,7 @@ class GroundSourceHeatPump_cooling:
         self.fan_int = Fan().fan1     
 
         # Temperature
+        self.dT_r_exch = 5  # 예시: 열교환기의 온도 - 열교환후 지중순환수 온도 [K]
         self.T0 = 30 # environmental temperature [°C]
         self.T_g = 15 # initial ground temperature [°C]
         self.T_a_room = 20 # room air temperature [°C]
@@ -2046,36 +2064,46 @@ class GroundSourceHeatPump_cooling:
         self.T_a_room = cu.C2K(self.T_a_room)
         self.T_a_int_out = cu.C2K(self.T_a_int_out)
         self.T_r_int = cu.C2K(self.T_r_int)
-        self.T_r_exch = cu.C2K(self.T_r_exch)
         self.T_g = cu.C2K(self.T_g)
+        
+        # 반복 수치해법 적용
+        '''
+        반복 수치해법을 사용하는 이유:
+        1. 냉매 온도(T_r_exch)와 유체 입구 온도(T_f_in)가 서로 연동되어 직접 계산이 불가능함.
+        2. 보어홀 열저항, 유량, 토양물성 등 시스템 파라미터가 COP, 온도, 효율에 반영되도록 하기 위함.
+        3. 두 온도가 수렴할 때까지 반복 계산하여 물리적으로 일관된 해를 얻기 위함.
+        '''
+        max_iter = 20
+        tol = 1e-3
+        self.T_f = self.T_g  # 초기값
+        self.T_f_in = self.T_f + self.dT_r_exch  # 초기값, 열교환기에서의 순환수 유입 온도
 
-        self.COP_hp = calculate_GSHP_COP(Tg = self.T_g,
+        for _ in range(max_iter):
+            self.T_r_exch = self.T_f_in + self.dT_r_exch  # 5 K 높게 설정
+            self.COP_hp = calculate_GSHP_COP(Tg = self.T_g,
                                          T_cond = self.T_r_exch,
                                          T_evap = self.T_r_int,
                                          theta_hat = 0.3)
+            self.E_cmp = self.Q_r_int / self.COP_hp # compressor power input [W]
+            self.Q_r_exch = self.Q_r_int + self.E_cmp
+            self.Q_bh = (self.Q_r_exch - self.E_pmp) / self.H_b
+            T_f_in_old = self.T_f_in
+            self.g_i = G_FLS(t = self.time, ks = self.k_g, as_ = self.alpha, rb = self.r_b, H = self.H_b) # g-function [mK/W]
+            self.T_b = self.T_g + self.Q_bh * self.g_i # borehole wall temperature [K]
+            self.T_f = self.T_b + self.Q_bh * self.R_b
+            self.T_f_in = self.T_f + self.Q_bh * self.H_b / (2 * c_w * rho_w * self.V_f) # fluid inlet temperature [K]
+            self.T_f_out = self.T_f - self.Q_bh * self.H_b / (2 * c_w * rho_w * self.V_f) # fluid outlet temperature [K]
+            if abs(self.T_f_in - T_f_in_old) < tol:
+                break
         
         # Temperature
         self.T_a_int_in = self.T_a_room # internal unit air inlet temperature [K]
-
-        # Others
-        self.E_cmp = self.Q_r_int / self.COP_hp # compressor power input [W]
-        self.Q_r_exch = self.Q_r_int + self.E_cmp
 
         # Internal unit
         self.dV_int = self.Q_r_int / (c_a * rho_a * (abs(self.T_a_int_out - self.T_a_int_in))) # volumetric flow rate of internal unit [m3/s]
             
         # Fan power
         self.E_fan_int = Fan().get_power(self.fan_int, self.dV_int) # power input of internal unit fan [W]
-
-        # Borehole
-        self.Q_bh = (self.Q_r_exch - self.E_pmp) / self.H_b # heat flow rate from borehole to ground per unit length [W/m]
-        self.g_i = G_FLS(t = self.time, ks = self.k_g, as_ = self.alpha, rb = self.r_b, H = self.H_b) # g-function [mK/W]
-        
-        # fluid & bolehole wall temperature
-        self.T_b = self.T_g + self.Q_bh * self.g_i # borehole wall temperature [K]
-        self.T_f = self.T_b + self.Q_bh * self.R_b # fluid temperature in borehole [K] -> Rb를 올렸는데 올라간다? 이상함
-        self.T_f_in = self.T_f + self.Q_bh * self.H_b / (2 * c_w * rho_w * self.V_f) # fluid inlet temperature [K]
-        self.T_f_out = self.T_f - self.Q_bh * self.H_b / (2 * c_w * rho_w * self.V_f) # fluid outlet temperature [K]
 
         # Exergy result
         self.X_a_int_in  = c_a * rho_a * self.dV_int * ((self.T_a_int_in - self.T0) - self.T0 * math.log(self.T_a_int_in / self.T0))
@@ -2194,7 +2222,6 @@ class GroundSourceHeatPump_cooling:
 
 @dataclass
 class GroundSourceHeatPump_heating:
-
     def __post_init__(self):
         # Time
         self.time = 10 # [h]
@@ -2220,6 +2247,7 @@ class GroundSourceHeatPump_heating:
         self.fan_int = Fan().fan1
 
         # Temperature
+        self.dT_r_exch = -5  # 예시: 열교환기 측 냉매 온도 - 열교환후 지중순환수 온도 [K]
         self.T0 = 0 # environmental temperature [°C]
         self.T_g = 15 # initial ground temperature [°C]
         self.T_a_room = 20 # room air temperature [°C]
@@ -2240,38 +2268,52 @@ class GroundSourceHeatPump_heating:
         self.T_a_room = cu.C2K(self.T_a_room)
         self.T_a_int_out = cu.C2K(self.T_a_int_out)
         self.T_r_int = cu.C2K(self.T_r_int)
-        self.T_r_exch = cu.C2K(self.T_r_exch)
         self.T_g = cu.C2K(self.T_g)
         
-        # Calculate COP
-        self.COP_hp = calculate_GSHP_COP(Tg = self.T_g,
-                                    T_cond = self.T_r_int,
-                                    T_evap = self.T_r_exch,
-                                    theta_hat = 0.3)
+        # Others
+        self.alpha = self.k_g / (self.c_g * self.rho_g) # thermal diffusivity of ground [m²/s]
+        
+        # 반복 수치해법 적용
+        '''
+        반복 수치해법을 사용하는 이유:
+        1. 냉매 온도(T_r_exch)와 유체 입구 온도(T_f_in)가 서로 연동되어 직접 계산이 불가능함.
+        2. 보어홀 열저항, 유량, 토양물성 등 시스템 파라미터가 COP, 온도, 효율에 반영되도록 하기 위함.
+        3. 두 온도가 수렴할 때까지 반복 계산하여 물리적으로 일관된 해를 얻기 위함.
+        '''
+        max_iter = 20
+        tol = 1e-3
+        self.T_f = self.T_g  # 초기값
+        self.T_f_in = self.T_f + self.dT_r_exch  # 초기값, 열교환기에서의 순환수 유입 온도
+
+        for _ in range(max_iter):
+            self.T_r_exch = self.T_f_in + self.dT_r_exch  # 5 K 높게 설정
+            self.COP_hp = calculate_GSHP_COP(Tg = self.T_g,
+                                         T_cond = self.T_r_int,
+                                         T_evap = self.T_r_exch,
+                                         theta_hat = 0.3)
+            # Others
+            self.E_cmp = self.Q_r_int / self.COP_hp # compressor power input [W]
+            self.Q_r_exch = self.Q_r_int - self.E_cmp  # changed from Q_r_ext to Q_r_exch
+            # Borehole 
+            self.Q_bh = (self.Q_r_exch - self.E_pmp) / self.H_b # heat flow rate from borehole to ground per unit length [W/m]
+            self.g_i = G_FLS(t = self.time, ks = self.k_g, as_ = self.alpha, rb = self.r_b, H = self.H_b) # g-function [mK/W]
+            # fluid temperature & borehole wall temperature [K]
+            T_f_in_old = self.T_f_in  # 이전 유체 입구 온도 저장
+            self.T_b = self.T_g - self.Q_bh * self.g_i # borehole wall temperature [K]
+            self.T_f = self.T_b - self.Q_bh * self.R_b # fluid temperature in borehole [K]
+            self.T_f_in = self.T_f - self.Q_bh * self.H_b / (2 * c_w * rho_w * self.V_f) # fluid inlet temperature [K]
+            self.T_f_out = self.T_f + self.Q_bh * self.H_b / (2 * c_w * rho_w * self.V_f) # fluid outlet temperature [K]
+            if abs(self.T_f_in - T_f_in_old) < tol:
+                break
         
         # Temperature
         self.T_a_int_in = self.T_a_room # internal unit air inlet temperature [K]
-
-        # Others
-        self.E_cmp = self.Q_r_int / self.COP_hp # compressor power input [W]
-        self.Q_r_exch = self.Q_r_int - self.E_cmp
-        self.alpha = self.k_g / (self.c_g * self.rho_g) # thermal diffusivity of ground [m²/s]
 
         # Internal unit
         self.dV_int = self.Q_r_int / (c_a * rho_a * (abs(self.T_a_int_out - self.T_a_int_in))) # volumetric flow rate of internal unit [m3/s]
             
         # Fan power
         self.E_fan_int = Fan().get_power(self.fan_int, self.dV_int) # power input of internal unit fan [W]
-
-        # Borehole
-        self.Q_bh = (self.Q_r_exch - self.E_pmp) / self.H_b # heat flow rate from borehole to ground per unit length [W/m]
-        self.g_i = G_FLS(t = self.time, ks = self.k_g, as_ = self.alpha, rb = self.r_b, H = self.H_b) # g-function [mK/W]
-        
-        # fluid temperature & borehole wall temperature [K]
-        self.T_b = self.T_g - self.Q_bh * self.g_i # borehole wall temperature [K]
-        self.T_f = self.T_b - self.Q_bh * self.R_b # fluid temperature in borehole [K]
-        self.T_f_in = self.T_f - self.Q_bh * self.H_b / (2 * c_w * rho_w * self.V_f) # fluid inlet temperature [K]
-        self.T_f_out = self.T_f + self.Q_bh * self.H_b / (2 * c_w * rho_w * self.V_f) # fluid outlet temperature [K]
 
         # Exergy result
         self.X_a_int_in  = c_a * rho_a * self.dV_int * ((self.T_a_int_in - self.T0) - self.T0 * math.log(self.T_a_int_in / self.T0))
