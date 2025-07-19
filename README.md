@@ -16,7 +16,7 @@ uv 설치
 powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
 ```
 
-uv를 이용해 다운로드
+소스 코드 다운로드
 ```bash
 uv add git+https://github.com/BET-lab/enex_analysis_engine.git
 ```
