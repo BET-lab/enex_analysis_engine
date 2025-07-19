@@ -16,6 +16,7 @@ uv add git+https://github.com/BET-lab/enex_analysis_engine.git
 ```
 
 ```bash
+cd enex_analysis_engine
 uv sync
 ```
 
