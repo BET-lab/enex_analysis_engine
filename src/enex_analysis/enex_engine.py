@@ -229,7 +229,7 @@ def chi(s, rb, H, z0=0):
 
 _g_func_cache = {}
 def G_FLS(t, ks, as_, rb, H):
-    key = (round(t, 6), round(ks, 6), round(as_, 6), round(rb, 6), round(H, 6))
+    key = (round(t, 0), round(ks, 2), round(as_, 6), round(rb, 2), round(H, 0))
     if key in _g_func_cache:
         return _g_func_cache[key]
 
@@ -1478,9 +1478,6 @@ class GroundSourceHeatPumpBoiler:
     def __post_init__(self): 
         self.time = 10 # [h]
         
-        # Efficiency [-]
-        self.COP_hp  = 4.0
-        
         # Temperature [C]
         self.T0 = 0
         
@@ -1776,7 +1773,7 @@ class AirSourceHeatPump_cooling:
         self.fan_ext = Fan().fan2
 
         # COP
-        self.Q_r_max = 10000 # [W]
+        self.Q_r_max = 9000 # [W]
 
         # temperature
         self.T0      = 30 # environmental temperature [°C]
@@ -1919,7 +1916,7 @@ class AirSourceHeatPump_heating:
         self.T_r_ext = -15 # external unit refrigerant temperature [°C]
         
         # load
-        self.Q_r_int = 10000 # [W]
+        self.Q_r_int = 4000 # [W]
 
     def system_update(self):
         
