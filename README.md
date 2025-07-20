@@ -6,16 +6,24 @@
 ## 파일 설명
 
 - `constant.py`: 온도, 길이, 에너지, 전력 변환을 위한 다양한 단위 변환 상수 및 함수 정의.
-- `En_system_intergrated.py`: 전기 보일러, 가스 보일러, 열 펌프 등 다양한 난방 시스템 모델을 구현하며, 열역학 분석과 균형 계산을 수행.
+- `enex_engine.py`: 전기 보일러, 가스 보일러, 열 펌프 등 다양한 난방 시스템 모델을 구현하며, 열역학 분석과 균형 계산을 수행.
 
 ## 설치 방법
-모델을 사용하려면 필요한 패키지를 설치해야 합니다. 다음 명령어를 실행하세요:
+모델을 사용하려면 필요한 패키지를 설치해야 합니다. 본 리포지토리의 패키지는 uv에 기반해 관리됩니다. 
 
+uv 설치 
+```bash
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+소스 코드 다운로드
 ```bash
 uv add git+https://github.com/BET-lab/enex_analysis_engine.git
 ```
 
+환경 설치
 ```bash
+cd enex_analysis_engine
 uv sync
 ```
 
