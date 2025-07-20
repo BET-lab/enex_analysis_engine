@@ -434,8 +434,8 @@ class ElectricBoiler:
         self.T_w_serv = 45
         self.T0       = 0
 
-        # Tank water use [m3/s]
-        self.dV_w_serv  = 0.00002
+        # Tank water use [L/min]
+        self.dV_w_serv  = 1.2
 
         # Tank size [m]
         self.r0 = 0.2
@@ -459,6 +459,9 @@ class ElectricBoiler:
         self.T_w_sup  = cu.C2K(self.T_w_sup)  # supply water temperature [K]
         self.T_w_serv  = cu.C2K(self.T_w_serv)  # tap water temperature [K]
         self.T0       = cu.C2K(self.T0)       # reference temperature [K]
+        
+        # L/min to m³/s
+        self.dV_w_serv = self.dV_w_serv / 60 / 1000
         
         # Temperature [K]
         self.T_tank_is = self.T_w_tank # inner surface temperature of tank [K]
@@ -638,8 +641,8 @@ class GasBoiler:
         self.T0       = 0
         self.T_exh    = 70 
 
-        # Tank water use [m3/s]
-        self.dV_w_serv  = 0.00002
+        # Tank water use [L/min]
+        self.dV_w_serv  = 1.2
 
         # Tank size [m]
         self.r0 = 0.2
@@ -664,6 +667,9 @@ class GasBoiler:
         self.T_w_serv  = cu.C2K(self.T_w_serv)  # tap water temperature [K]
         self.T0       = cu.C2K(self.T0)       # reference temperature [K]
         self.T_exh    = cu.C2K(self.T_exh)    # exhaust gas temperature [K]
+
+        # L/min to m³/s
+        self.dV_w_serv = self.dV_w_serv / 60 / 1000 # L/min to m³/s
         
         # Temperature [K]
         self.T_tank_is = self.T_w_tank # inner surface temperature of tank [K]
@@ -894,8 +900,8 @@ class HeatPumpBoiler:
         self.T_w_serv    = 45
         self.T_w_sup     = 10
 
-        # Tank water use [m3/s]
-        self.dV_w_serv  = 0.00002
+        # Tank water use [L/min]
+        self.dV_w_serv  = 1.2
 
         # Tank size [m]
         self.r0 = 0.2
@@ -922,6 +928,9 @@ class HeatPumpBoiler:
         self.T_w_tank    = cu.C2K(self.T_w_tank)
         self.T_w_serv     = cu.C2K(self.T_w_serv)
         self.T_w_sup     = cu.C2K(self.T_w_sup)
+        
+        # L/min to m³/s
+        self.dV_w_serv = self.dV_w_serv / 60 / 1000 # L/min to m³/s
         
         # Temperature [K]
         self.T_tank_is = self.T_w_tank 
@@ -1223,9 +1232,9 @@ class SolarAssistedGasBoiler:
         self.T_w_serv  = 45
         self.T_w_sup  = 10
         self.T_exh    = 70
-        
-        # Tank water use [m3/s]
-        self.dV_w_serv = 0.00002
+
+        # Tank water use [L/min]
+        self.dV_w_serv = 1.2
         
         # Overall heat transfer coefficient [W/m²K]
         self.h_o = 15
@@ -1239,6 +1248,10 @@ class SolarAssistedGasBoiler:
         self.x_ins = 0.05 # insulation layer thickness [m]
         
     def system_update(self): 
+    
+        # L/min to m³/s
+        self.dV_w_serv = self.dV_w_serv / 60 / 1000 # L/min to m³/s
+        
         # Iradiance [W/m²]
         self.I_sol = self.I_DN + self.I_dH
         
@@ -1481,8 +1494,8 @@ class GroundSourceHeatPumpBoiler:
             raise ValueError("T_r_tank cannot be smaller than T_w_tank")
         self.dT_r_exch = -5  # 예시: 열교환기의 온도 - 열교환후 지중순환수 온도 [K]
         
-        # Tank water use [m3/s]
-        self.dV_w_serv  = 0.00002
+        # Tank water use [L/min]
+        self.dV_w_serv  = 1.2
 
         # Tank size [m]
         self.r0 = 0.2
@@ -1517,6 +1530,10 @@ class GroundSourceHeatPumpBoiler:
         self.E_pmp = 200
 
     def system_update(self):
+        
+        # L/min to m³/s
+        self.dV_w_serv = self.dV_w_serv / 60 / 1000 # L/min to m³/s
+        
         # time
         self.time = self.time * cu.h2s  # Convert hours to seconds
 
@@ -2048,7 +2065,7 @@ class GroundSourceHeatPump_cooling:
         self.T_r_exch = 25 # heat exchanger side refrigerant temperature [°C]
 
         # Load
-        self.Q_r_int = 4000 # W
+        self.Q_r_int = 10000 # W
     
     def system_update(self):
         self.alpha = self.k_g / (self.c_g * self.rho_g) # thermal diffusivity of ground [m²/s]
@@ -2086,7 +2103,7 @@ class GroundSourceHeatPump_cooling:
                                          theta_hat = 0.3)
             self.E_cmp = self.Q_r_int / self.COP_hp # compressor power input [W]
             self.Q_r_exch = self.Q_r_int + self.E_cmp
-            self.Q_bh = (self.Q_r_exch - self.E_pmp) / self.H_b
+            self.Q_bh = (self.Q_r_exch - self.E_pmp) / self.H_b 
             T_f_in_old = self.T_f_in
             self.g_i = G_FLS(t = self.time, ks = self.k_g, as_ = self.alpha, rb = self.r_b, H = self.H_b) # g-function [mK/W]
             self.T_b = self.T_g + self.Q_bh * self.g_i # borehole wall temperature [K]
