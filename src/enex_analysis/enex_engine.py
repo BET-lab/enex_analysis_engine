@@ -1220,7 +1220,7 @@ class SolarAssistedGasBoiler:
         self.eta_comb = 0.9 # Efficiency of combustion chamber
 
         # Solar radiation [W/m²]  
-        self.I_DN = 800
+        self.I_DN = 500
         self.I_dH = 200
         
         # solar thermal panel
@@ -2468,7 +2468,7 @@ class ElectricHeater:
         self.E_heater = 1000
         
         # Temperature [°C]
-        self.T0   = 10
+        self.T0   = 0
         self.T_mr = 15
         self.T_init = 20 # Initial temperature of the heater [°C]
         self.T_a_room = 20 # Indoor air temperature [°C]
