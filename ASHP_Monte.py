@@ -1,7 +1,7 @@
 #%% 
 import sys
 sys.path.append('src')
-import en_system_ex_analysis as enex
+import enex_analysis as enex
 from SALib.sample import saltelli
 from SALib.analyze import sobol
 import scipy.stats as st
