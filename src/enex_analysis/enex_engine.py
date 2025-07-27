@@ -882,10 +882,7 @@ class HeatPumpBoiler:
         # Efficiency [-]
         self.eta_fan = 0.6
         self.COP_hp   = 2.5
-        
-        # Fan diameter [m]
-        self.r_ext = 0.2 
-        
+                
         # Pressure [Pa]
         self.dP = 200 
 
@@ -1485,7 +1482,7 @@ class GroundSourceHeatPumpBoiler:
         self.T_w_serv = 45
         self.T_w_sup  = 10
         
-        self.T_g      = 15 
+        self.T_g      = 11
         self.T_r_tank = 65
         if self.T_r_tank < self.T_w_tank:
             raise ValueError("T_r_tank cannot be smaller than T_w_tank")
@@ -1516,7 +1513,7 @@ class GroundSourceHeatPumpBoiler:
         self.R_b = 0.108 # Effective borehole thermal resistance [mK/W]
 
         # Fluid parameters
-        self.V_f = 0.0004 # Volumetric flow rate of fluid [m³/s]
+        self.dV_f = 24 # Volumetric flow rate of fluid [L/min]
 
         # Ground parameters
         self.k_g = 2.0
@@ -1530,7 +1527,8 @@ class GroundSourceHeatPumpBoiler:
         
         # L/min to m³/s
         self.dV_w_serv = self.dV_w_serv / 60 / 1000 # L/min to m³/s
-        
+        self.dV_f = self.dV_f / 60 / 1000 # L/min to m³/s
+
         # time
         self.time = self.time * cu.h2s  # Convert hours to seconds
 
@@ -1776,7 +1774,7 @@ class AirSourceHeatPump_cooling:
         self.Q_r_max = 9000 # [W]
 
         # temperature
-        self.T0      = 30 # environmental temperature [°C]
+        self.T0      = 32 # environmental temperature [°C]
         self.T_a_room = 20 # room air temperature [°C]
         
         self.T_r_int     = 5 # internal unit refrigerant temperature [°C]
@@ -1786,7 +1784,7 @@ class AirSourceHeatPump_cooling:
         self.T_r_ext     = 45 # external unit refrigerant temperature [°C]
         
         # load
-        self.Q_r_int = 10000 # [W]
+        self.Q_r_int = 6000 # [W]
         
         # COP의 reference로 삼을 수 있는 값
         self.COP_ref = 4
@@ -1904,7 +1902,7 @@ class AirSourceHeatPump_heating:
         self.fan_ext = Fan().fan2
 
         # COP
-        self.Q_r_max = 10000 # maximum heating capacity [W]
+        self.Q_r_max = 9000 # maximum heating capacity [W]
 
         # temperature
         self.T0      = 0 # environmental temperature [°C]
@@ -1916,7 +1914,7 @@ class AirSourceHeatPump_heating:
         self.T_r_ext = -15 # external unit refrigerant temperature [°C]
         
         # load
-        self.Q_r_int = 4000 # [W]
+        self.Q_r_int = 6000 # [W]
 
     def system_update(self):
         
@@ -2039,7 +2037,7 @@ class GroundSourceHeatPump_cooling:
         self.R_b = 0.108 # Effective borehole thermal resistance [mK/W]
 
         # Fluid parameters
-        self.V_f = 0.0004 # Volumetric flow rate of fluid [m³/s]
+        self.dV_f = 24 # Volumetric flow rate of fluid [L/min]
 
         # Ground parameters
         self.k_g = 2.0 # Ground thermal conductivity [W/mK]
@@ -2054,7 +2052,7 @@ class GroundSourceHeatPump_cooling:
 
         # Temperature
         self.dT_r_exch = 5  # 예시: 열교환기의 온도 - 열교환후 지중순환수 온도 [K]
-        self.T0 = 30 # environmental temperature [°C]
+        self.T0 = 32 # environmental temperature [°C]
         self.T_g = 15 # initial ground temperature [°C]
         self.T_a_room = 20 # room air temperature [°C]
         self.T_a_int_out = 10 # internal unit air outlet temperature [°C]
@@ -2062,23 +2060,26 @@ class GroundSourceHeatPump_cooling:
         self.T_r_exch = 25 # heat exchanger side refrigerant temperature [°C]
 
         # Load
-        self.Q_r_int = 10000 # W
+        self.Q_r_int = 6000 # W
     
     def system_update(self):
-        self.alpha = self.k_g / (self.c_g * self.rho_g) # thermal diffusivity of ground [m²/s]
-        self.Lx = 2*self.V_f/(math.pi*self.alpha)
-        self.x0 = self.H_b / self.Lx # dimensionless borehole depth
-        self.k_sb = self.k_g/k_w # ratio of ground thermal conductivity
-
-        # time
+        
+        # Unit conversion
+        self.dV_f = self.dV_f / 60 / 1000 # L/min to m³/s
+        
         self.time = self.time * cu.h2s  # Convert hours to seconds
         
-        # Celcius to Kelvin
         self.T0 = cu.C2K(self.T0)
         self.T_a_room = cu.C2K(self.T_a_room)
         self.T_a_int_out = cu.C2K(self.T_a_int_out)
         self.T_r_int = cu.C2K(self.T_r_int)
         self.T_g = cu.C2K(self.T_g)
+        
+        # Others
+        self.alpha = self.k_g / (self.c_g * self.rho_g) # thermal diffusivity of ground [m²/s]
+        self.Lx = 2*self.V_f/(math.pi*self.alpha)
+        self.x0 = self.H_b / self.Lx # dimensionless borehole depth
+        self.k_sb = self.k_g/k_w # ratio of ground thermal conductivity
         
         # 반복 수치해법 적용
         '''
@@ -2247,7 +2248,7 @@ class GroundSourceHeatPump_heating:
         self.R_b = 0.108 # Effective borehole thermal resistance [mK/W]
 
         # Fluid parameters
-        self.V_f = 0.0004 # Volumetric flow rate of fluid [m³/s]
+        self.dV_f = 24 # Volumetric flow rate of fluid [L/min]
 
         # Ground parameters
         self.k_g = 2.0 # Ground thermal conductivity [W/mK]
@@ -2270,12 +2271,12 @@ class GroundSourceHeatPump_heating:
         self.T_r_exch = 5 # heat exchanger side refrigerant temperature [°C]
 
         # Load
-        self.Q_r_int = 4000 # W
+        self.Q_r_int = 6000 # W
         
     def system_update(self):
-    
-        # time
+        # Unit conversion
         self.time = self.time * cu.h2s  # Convert hours to seconds
+        self.dV_f = self.dV_f / 60 / 1000 # L/min to m³/s
 
         # Celcius to Kelvin
         self.T0 = cu.C2K(self.T0)
