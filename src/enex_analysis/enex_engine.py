@@ -2101,7 +2101,7 @@ class GroundSourceHeatPump_cooling:
                                          theta_hat = 0.3)
             self.E_cmp = self.Q_r_int / self.COP_hp # compressor power input [W]
             self.Q_r_exch = self.Q_r_int + self.E_cmp
-            self.Q_bh = (self.Q_r_exch - self.E_pmp) / self.H_b 
+            self.Q_bh = (self.Q_r_exch + self.E_pmp) / self.H_b 
             T_f_in_old = self.T_f_in
             self.g_i = G_FLS(t = self.time, ks = self.k_g, as_ = self.alpha, rb = self.r_b, H = self.H_b) # g-function [mK/W]
             self.T_b = self.T_g + self.Q_bh * self.g_i # borehole wall temperature [K]
