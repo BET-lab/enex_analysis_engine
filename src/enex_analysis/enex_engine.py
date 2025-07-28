@@ -74,7 +74,7 @@ def calc_h_vertical_plate(T_s, T_inf, L):
     # 공기 물성치 @ 40°C
     nu = 1.6e-5  # 0.000016 m²/s
     k_air = 0.027 # W/m·K
-    Pr = 0.7
+    Pr = 0.7 # Prandtl number 
     beta = 1 / ((T_s + T_inf)/2) # 1/K
     g = 9.81 # m/s²
 
@@ -1017,7 +1017,7 @@ class HeatPumpBoiler:
         self.S_a_ext_out = c_a * rho_a * self.dV_a_ext * math.log(self.T_a_ext_out / self.T0)
         self.S_r_ext     = (1 / self.T_r_ext) * self.Q_r_ext
         self.S_cmp       = (1 / float('inf')) * self.E_cmp
-        self.S_r_ext_cmp = (1 / self.T_r_ext) * self.Q_r_ext
+        
         self.S_r_tank    = (1 / self.T_r_tank) * self.Q_r_tank
         self.S_w_sup_tank = c_w * rho_w * self.dV_w_sup_tank * math.log(self.T_w_sup / self.T0)
         self.S_w_tank     = c_w * rho_w * self.dV_w_sup_tank * math.log(self.T_w_tank / self.T0)
@@ -1026,7 +1026,7 @@ class HeatPumpBoiler:
         self.S_w_serv      = c_w * rho_w * self.dV_w_serv * math.log(self.T_w_serv / self.T0)
 
         self.S_g_ext = self.S_a_ext_out + self.S_r_ext - (self.S_fan + self.S_a_ext_in)
-        self.S_g_r = self.S_r_tank - (self.S_cmp + self.S_r_ext_cmp)
+        self.S_g_r = self.S_r_tank - (self.S_cmp + self.S_r_ext)
         self.S_g_tank = (self.S_w_tank + self.S_l_tank) - (self.S_r_tank + self.S_w_sup_tank)
         self.S_g_mix = self.S_w_serv - (self.S_w_tank + self.S_w_sup_mix)
 
@@ -1114,7 +1114,7 @@ class HeatPumpBoiler:
         self.entropy_balance["refrigerant loop"] = {
             "in": {
             "S_cmp": self.S_cmp,
-            "S_r_ext": self.S_r_ext_cmp
+            "S_r_ext": self.S_r_ext
             },
             "out": {
             "S_r_tank": self.S_r_tank
@@ -1219,10 +1219,10 @@ class SolarAssistedGasBoiler:
         # Solar radiation [W/m²]  
         self.I_DN = 500
         self.I_dH = 200
-        
-        # solar thermal panel
-        self.A_stp = 2 # Solar thermal panel area [m²]
-        
+
+        # solar thermal collector
+        self.A_stc = 2 # Solar thermal collector area [m²]
+
         # Temperature [°C]
         self.T0       = 0
         self.T_w_comb = 60
@@ -1284,27 +1284,27 @@ class SolarAssistedGasBoiler:
         self.dV_w_sup_mix = (1-self.alp)*self.dV_w_serv
         
         # Demensionless numbers
-        self.ksi_sp = np.exp(-self.A_stp * self.U/(c_w * rho_w * self.dV_w_sup))
+        self.ksi_stc = np.exp(-self.A_stp * self.U/(c_w * rho_w * self.dV_w_sup))
         
         # Energy balance
         self.Q_w_sup     = c_w * rho_w * self.dV_w_sup * (self.T_w_sup - self.T0)
         self.Q_sol       = self.I_sol * self.A_stp * self.alpha
         
-        T_w_stp_out_numerator = self.T0 + (
+        T_w_stc_out_numerator = self.T0 + (
         self.Q_sol + self.Q_w_sup
-        + self.A_stp * self.U * (self.ksi_sp * self.T_w_sup / (1 - self.ksi_sp))
+        + self.A_stp * self.U * (self.ksi_stc * self.T_w_sup / (1 - self.ksi_stc))
         + self.A_stp * self.U * self.T0
         ) / (c_w * rho_w * self.dV_w_sup)
 
-        T_w_stp_out_denominator = 1 + (self.A_stp * self.U) / ((1 - self.ksi_sp) * c_w * rho_w * self.dV_w_sup)
+        T_w_stc_out_denominator = 1 + (self.A_stp * self.U) / ((1 - self.ksi_stc) * c_w * rho_w * self.dV_w_sup)
 
-        self.T_w_stp_out = T_w_stp_out_numerator / T_w_stp_out_denominator
-        self.T_sp = 1/(1-self.ksi_sp)*self.T_w_stp_out - self.ksi_sp/(1-self.ksi_sp)*self.T_w_sup
+        self.T_w_stc_out = T_w_stc_out_numerator / T_w_stc_out_denominator
+        self.T_stc = 1/(1-self.ksi_stc)*self.T_w_stc_out - self.ksi_stc/(1-self.ksi_stc)*self.T_w_sup
 
-        self.Q_w_stp_out = c_w * rho_w * self.dV_w_sup * (self.T_w_stp_out - self.T0)
-        self.Q_l         = self.A_stp * self.U * (self.T_sp - self.T0)
+        self.Q_w_stp_out = c_w * rho_w * self.dV_w_sup * (self.T_w_stc_out - self.T0)
+        self.Q_l         = self.A_stp * self.U * (self.T_stc - self.T0)
         
-        self.E_NG     = c_w * rho_w * self.dV_w_sup * (self.T_w_comb - self.T_w_stp_out) / self.eta_comb
+        self.E_NG     = c_w * rho_w * self.dV_w_sup * (self.T_w_comb - self.T_w_stc_out) / self.eta_comb
         self.Q_exh    = (1 - self.eta_comb) * self.E_NG  # Heat loss from exhaust gases
         self.Q_w_comb = c_w * rho_w * self.dV_w_sup * (self.T_w_comb - self.T0)
         
@@ -1316,8 +1316,8 @@ class SolarAssistedGasBoiler:
         self.S_DN = k_D * self.I_DN**(0.9)
         self.S_dH = k_d * self.I_dH**(0.9)
         self.S_sol = self.S_DN + self.S_dH
-        self.S_w_stp_out = c_w * rho_w * self.dV_w_sup * math.log(self.T_w_stp_out / self.T0)       
-        self.S_l = (1 / self.T_sp) * self.A_stp * self.U * (self.T_sp - self.T0)
+        self.S_w_stp_out = c_w * rho_w * self.dV_w_sup * math.log(self.T_w_stc_out / self.T0)       
+        self.S_l = (1 / self.T_stc) * self.A_stp * self.U * (self.T_stc - self.T0)
         self.S_g_stp = self.S_w_stp_out + self.S_l - (self.S_sol + self.S_w_sup)
         
         self.S_NG = (1 / self.T_NG) * self.E_NG
