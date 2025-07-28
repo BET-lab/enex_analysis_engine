@@ -971,9 +971,6 @@ class HeatPumpBoiler:
         # U-value [W/K]
         self.U_tank = 2/self.R_base_tot + 1/self.R_side_tot
 
-        # Fan and Compressor Parameters
-        self.A_ext = math.pi * self.r_ext**2  # External unit area [m²] 20 cm x 20 cm assumption
-
         # Heat transfer
         self.Q_l_tank = self.U_tank * (self.T_tank_is - self.T0) # Tank heat losses
         self.Q_w_tank      = c_w * rho_w * self.dV_w_sup_tank * (self.T_w_tank - self.T0) # Heat transfer from tank water to mixing valve
