@@ -881,7 +881,7 @@ class HeatPumpBoiler:
         
         # Efficiency [-]
         self.eta_fan = 0.6
-        self.COP_hp   = 2.5
+        self.COP   = 2.5
                 
         # Pressure [Pa]
         self.dP = 200 
@@ -977,7 +977,7 @@ class HeatPumpBoiler:
         self.Q_w_sup_tank  = c_w * rho_w * self.dV_w_sup_tank * (self.T_w_sup - self.T0) # Heat transfer from supply water to tank water
 
         self.Q_r_tank = self.Q_l_tank + (self.Q_w_tank - self.Q_w_sup_tank) # Heat transfer from refrigerant to tank water
-        self.E_cmp    = self.Q_r_tank/self.COP_hp  # E_cmp [W]
+        self.E_cmp    = self.Q_r_tank/self.COP  # E_cmp [W]
         self.Q_r_ext  = self.Q_r_tank - self.E_cmp # Heat transfer from external unit to refrigerant
 
         def fan_equation(V_a_ext): 
@@ -1273,25 +1273,25 @@ class SolarAssistedGasBoiler:
         self.dV_w_sup_mix = (1-self.alp)*self.dV_w_serv
         
         # Demensionless numbers
-        self.ksi_stc = np.exp(-self.A_stp * self.U/(c_w * rho_w * self.dV_w_sup))
+        self.ksi_stc = np.exp(-self.A_stc * self.U/(c_w * rho_w * self.dV_w_sup))
         
         # Energy balance
         self.Q_w_sup     = c_w * rho_w * self.dV_w_sup * (self.T_w_sup - self.T0)
-        self.Q_sol       = self.I_sol * self.A_stp * self.alpha
+        self.Q_sol       = self.I_sol * self.A_stc * self.alpha
         
         T_w_stc_out_numerator = self.T0 + (
         self.Q_sol + self.Q_w_sup
-        + self.A_stp * self.U * (self.ksi_stc * self.T_w_sup / (1 - self.ksi_stc))
-        + self.A_stp * self.U * self.T0
+        + self.A_stc * self.U * (self.ksi_stc * self.T_w_sup / (1 - self.ksi_stc))
+        + self.A_stc * self.U * self.T0
         ) / (c_w * rho_w * self.dV_w_sup)
 
-        T_w_stc_out_denominator = 1 + (self.A_stp * self.U) / ((1 - self.ksi_stc) * c_w * rho_w * self.dV_w_sup)
+        T_w_stc_out_denominator = 1 + (self.A_stc * self.U) / ((1 - self.ksi_stc) * c_w * rho_w * self.dV_w_sup)
 
         self.T_w_stc_out = T_w_stc_out_numerator / T_w_stc_out_denominator
         self.T_stc = 1/(1-self.ksi_stc)*self.T_w_stc_out - self.ksi_stc/(1-self.ksi_stc)*self.T_w_sup
 
         self.Q_w_stp_out = c_w * rho_w * self.dV_w_sup * (self.T_w_stc_out - self.T0)
-        self.Q_l         = self.A_stp * self.U * (self.T_stc - self.T0)
+        self.Q_l         = self.A_stc * self.U * (self.T_stc - self.T0)
         
         self.E_NG     = c_w * rho_w * self.dV_w_sup * (self.T_w_comb - self.T_w_stc_out) / self.eta_comb
         self.Q_exh    = (1 - self.eta_comb) * self.E_NG  # Heat loss from exhaust gases
@@ -1306,7 +1306,7 @@ class SolarAssistedGasBoiler:
         self.S_dH = k_d * self.I_dH**(0.9)
         self.S_sol = self.S_DN + self.S_dH
         self.S_w_stp_out = c_w * rho_w * self.dV_w_sup * math.log(self.T_w_stc_out / self.T0)       
-        self.S_l = (1 / self.T_stc) * self.A_stp * self.U * (self.T_stc - self.T0)
+        self.S_l = (1 / self.T_stc) * self.A_stc * self.U * (self.T_stc - self.T0)
         self.S_g_stp = self.S_w_stp_out + self.S_l - (self.S_sol + self.S_w_sup)
         
         self.S_NG = (1 / self.T_NG) * self.E_NG
@@ -1591,12 +1591,12 @@ class GroundSourceHeatPumpBoiler:
 
         for _ in range(max_iter):
             self.T_r_exch = self.T_f_in + self.dT_r_exch  # 5 K 높게 설정
-            self.COP_hp = calculate_GSHP_COP(Tg = self.T_g,
+            self.COP = calculate_GSHP_COP(Tg = self.T_g,
                                          T_cond = self.T_r_tank,
                                          T_evap = self.T_r_exch,
                                          theta_hat = 0.3)
             # Others
-            self.E_cmp = self.Q_r_tank / self.COP_hp # compressor power input [W]
+            self.E_cmp = self.Q_r_tank / self.COP # compressor power input [W]
             self.Q_r_exch = self.Q_r_tank - self.E_cmp  # changed from Q_r_ext to Q_r_exch
             # Borehole 
             self.Q_bh = (self.Q_r_exch - self.E_pmp) / self.H_b # heat flow rate from borehole to ground per unit length [W/m]
@@ -2084,11 +2084,11 @@ class GroundSourceHeatPump_cooling:
 
         for _ in range(max_iter):
             self.T_r_exch = self.T_f_in + self.dT_r_exch  # 5 K 높게 설정
-            self.COP_hp = calculate_GSHP_COP(Tg = self.T_g,
+            self.COP = calculate_GSHP_COP(Tg = self.T_g,
                                          T_cond = self.T_r_exch,
                                          T_evap = self.T_r_int,
                                          theta_hat = 0.3)
-            self.E_cmp = self.Q_r_int / self.COP_hp # compressor power input [W]
+            self.E_cmp = self.Q_r_int / self.COP # compressor power input [W]
             self.Q_r_exch = self.Q_r_int + self.E_cmp
             self.Q_bh = (self.Q_r_exch + self.E_pmp) / self.H_b 
             T_f_in_old = self.T_f_in
@@ -2291,12 +2291,12 @@ class GroundSourceHeatPump_heating:
 
         for _ in range(max_iter):
             self.T_r_exch = self.T_f_in + self.dT_r_exch  # 5 K 높게 설정
-            self.COP_hp = calculate_GSHP_COP(Tg = self.T_g,
+            self.COP = calculate_GSHP_COP(Tg = self.T_g,
                                          T_cond = self.T_r_int,
                                          T_evap = self.T_r_exch,
                                          theta_hat = 0.3)
             # Others
-            self.E_cmp = self.Q_r_int / self.COP_hp # compressor power input [W]
+            self.E_cmp = self.Q_r_int / self.COP # compressor power input [W]
             self.Q_r_exch = self.Q_r_int - self.E_cmp  # changed from Q_r_ext to Q_r_exch
             # Borehole 
             self.Q_bh = (self.Q_r_exch - self.E_pmp) / self.H_b # heat flow rate from borehole to ground per unit length [W/m]
