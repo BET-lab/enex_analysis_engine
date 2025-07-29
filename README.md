@@ -38,7 +38,7 @@ import enex_analysis as enex
 ```python
 EB = enex.ElectricBoiler()
 EB.T0 = 10
-EB.system_update
+EB.system_update()
 enex.print_balance(EB.exergy_balance)
 ```
 
