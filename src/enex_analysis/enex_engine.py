@@ -888,12 +888,12 @@ class HeatPumpBoiler:
 
         # Temperature [K]
         self.T0          = 0
-        self.T_a_ext_out = -5
-        
-        self.T_r_ext     = -10
-        self.T_r_tank    = 65
+        self.T_a_ext_out = self.T0 - 5
+        self.T_r_ext     = self.T0 - 10
         
         self.T_w_tank    = 60
+        self.T_r_tank    = self.T_w_tank + 5
+        
         self.T_w_serv    = 45
         self.T_w_sup     = 10
 
@@ -1472,9 +1472,8 @@ class GroundSourceHeatPumpBoiler:
         self.T_w_sup  = 10
         
         self.T_g      = 11
-        self.T_r_tank = 65
-        if self.T_r_tank < self.T_w_tank:
-            raise ValueError("T_r_tank cannot be smaller than T_w_tank")
+        self.T_r_tank = self.T_w_tank + 5
+
         self.dT_r_exch = -5  # 예시: 열교환기의 온도 - 열교환후 지중순환수 온도 [K]
         
         # Tank water use [L/min]
@@ -1513,6 +1512,9 @@ class GroundSourceHeatPumpBoiler:
         self.E_pmp = 200
 
     def system_update(self):
+        
+        if self.T_r_tank < self.T_w_tank:
+            raise ValueError("T_r_tank cannot be smaller than T_w_tank")
         
         # L/min to m³/s
         self.dV_w_serv = self.dV_w_serv / 60 / 1000 # L/min to m³/s
@@ -1766,11 +1768,11 @@ class AirSourceHeatPump_cooling:
         self.T0      = 32 # environmental temperature [°C]
         self.T_a_room = 20 # room air temperature [°C]
         
-        self.T_r_int     = 5 # internal unit refrigerant temperature [°C]
-        self.T_a_int_out = 10 # internal unit air outlet temperature [°C]
+        self.T_r_int     = self.T_a_room - 10 # internal unit refrigerant temperature [°C]
+        self.T_a_int_out = self.T_a_room - 5 # internal unit air outlet temperature [°C]
         
-        self.T_a_ext_out = 40 # external unit air outlet temperature [°C]
-        self.T_r_ext     = 45 # external unit refrigerant temperature [°C]
+        self.T_a_ext_out = self.T0 + 10 # external unit air outlet temperature [°C]
+        self.T_r_ext     = self.T0 + 15 # external unit refrigerant temperature [°C]
         
         # load
         self.Q_r_int = 6000 # [W]
@@ -1897,11 +1899,12 @@ class AirSourceHeatPump_heating:
         self.T0      = 0 # environmental temperature [°C]
         self.T_a_room = 20 # room air temperature [°C]
         
-        self.T_r_int = 35 # internal unit refrigerant temperature [°C]
-        self.T_a_int_out = 30 # internal unit air outlet temperature [°C]
-        self.T_a_ext_out = -10 # external unit air outlet temperature [°C]
-        self.T_r_ext = -15 # external unit refrigerant temperature [°C]
+        self.T_r_int = self.T_a_room + 15 # internal unit refrigerant temperature [°C]
+        self.T_a_int_out = self.T_a_room + 10 # internal unit air outlet temperature [°C]
         
+        self.T_a_ext_out = self.T0 - 5 # external unit air outlet temperature [°C]
+        self.T_r_ext = self.T0 - 10 # external unit refrigerant temperature [°C]
+
         # load
         self.Q_r_int = 6000 # [W]
 
@@ -2044,10 +2047,10 @@ class GroundSourceHeatPump_cooling:
         self.T0 = 32 # environmental temperature [°C]
         self.T_g = 15 # initial ground temperature [°C]
         self.T_a_room = 20 # room air temperature [°C]
-        self.T_a_int_out = 10 # internal unit air outlet temperature [°C]
-        self.T_r_int = 5 # internal unit side refrigerant temperature [°C]
         self.T_r_exch = 25 # heat exchanger side refrigerant temperature [°C]
-
+        
+        self.T_r_int     = self.T_a_room - 10 # internal unit refrigerant temperature [°C]
+        self.T_a_int_out = self.T_a_room - 5 # internal unit air outlet temperature [°C]
         # Load
         self.Q_r_int = 6000 # W
     
@@ -2255,9 +2258,10 @@ class GroundSourceHeatPump_heating:
         self.T0 = 0 # environmental temperature [°C]
         self.T_g = 15 # initial ground temperature [°C]
         self.T_a_room = 20 # room air temperature [°C]
-        self.T_a_int_out = 30 # internal unit air outlet temperature [°C]
-        self.T_r_int = 35 # internal unit side refrigerant temperature [°C]
         self.T_r_exch = 5 # heat exchanger side refrigerant temperature [°C]
+        
+        self.T_r_int = self.T_a_room + 15 # internal unit refrigerant temperature [°C]
+        self.T_a_int_out = self.T_a_room + 10 # internal unit air outlet temperature [°C]
 
         # Load
         self.Q_r_int = 6000 # W
