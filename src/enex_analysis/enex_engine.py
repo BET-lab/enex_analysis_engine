@@ -1290,7 +1290,7 @@ class SolarAssistedGasBoiler:
         self.T_w_stc_out = T_w_stc_out_numerator / T_w_stc_out_denominator
         self.T_stc = 1/(1-self.ksi_stc)*self.T_w_stc_out - self.ksi_stc/(1-self.ksi_stc)*self.T_w_sup
 
-        self.Q_w_stp_out = c_w * rho_w * self.dV_w_sup * (self.T_w_stc_out - self.T0)
+        self.Q_w_stc_out = c_w * rho_w * self.dV_w_sup * (self.T_w_stc_out - self.T0)
         self.Q_l         = self.A_stc * self.U * (self.T_stc - self.T0)
         
         self.E_NG     = c_w * rho_w * self.dV_w_sup * (self.T_w_comb - self.T_w_stc_out) / self.eta_comb
@@ -1305,14 +1305,14 @@ class SolarAssistedGasBoiler:
         self.S_DN = k_D * self.I_DN**(0.9)
         self.S_dH = k_d * self.I_dH**(0.9)
         self.S_sol = self.S_DN + self.S_dH
-        self.S_w_stp_out = c_w * rho_w * self.dV_w_sup * math.log(self.T_w_stc_out / self.T0)       
+        self.S_w_stc_out = c_w * rho_w * self.dV_w_sup * math.log(self.T_w_stc_out / self.T0)       
         self.S_l = (1 / self.T_stc) * self.A_stc * self.U * (self.T_stc - self.T0)
-        self.S_g_stp = self.S_w_stp_out + self.S_l - (self.S_sol + self.S_w_sup)
+        self.S_g_stc = self.S_w_stc_out + self.S_l - (self.S_sol + self.S_w_sup)
         
         self.S_NG = (1 / self.T_NG) * self.E_NG
         self.S_exh = (1 / self.T_exh) * self.Q_exh
         self.S_w_comb = c_w * rho_w * self.dV_w_sup * math.log(self.T_w_comb / self.T0)
-        self.S_g_comb = (self.S_w_comb + self.S_exh) - (self.S_NG + self.S_w_stp_out)
+        self.S_g_comb = (self.S_w_comb + self.S_exh) - (self.S_NG + self.S_w_stc_out)
         
         self.S_w_sup_mix = c_w * rho_w * self.dV_w_sup_mix * math.log(self.T_w_sup / self.T0)
         self.S_w_serv = c_w * rho_w * self.dV_w_serv * math.log(self.T_w_serv / self.T0)
@@ -1321,9 +1321,9 @@ class SolarAssistedGasBoiler:
         # Exergy balance
         self.X_w_sup = self.Q_w_sup - self.S_w_sup * self.T0
         self.X_sol = self.Q_sol - self.S_sol * self.T0
-        self.X_w_stp_out = self.Q_w_stp_out - self.S_w_stp_out * self.T0
+        self.X_w_stc_out = self.Q_w_stc_out - self.S_w_stc_out * self.T0
         self.X_l = self.Q_l - self.S_l * self.T0
-        self.X_c_stp = self.S_g_stp * self.T0
+        self.X_c_stc = self.S_g_stc * self.T0
 
         self.X_NG = ex_eff_NG * self.E_NG
         self.X_exh = (1 - self.T0 / self.T_exh) * self.Q_exh
@@ -1343,14 +1343,14 @@ class SolarAssistedGasBoiler:
             "Q_w_sup": self.Q_w_sup
             },
             "out": {
-            "Q_w_stp_out": self.Q_w_stp_out,
+            "Q_w_stc_out": self.Q_w_stc_out,
             "Q_l": self.Q_l
             }
         }
 
         self.energy_balance["combustion chamber"] = {
             "in": {
-            "Q_w_stp_out": self.Q_w_stp_out,
+            "Q_w_stc_out": self.Q_w_stc_out,
             "E_NG": self.E_NG,
             },
             "out": {
@@ -1378,17 +1378,17 @@ class SolarAssistedGasBoiler:
             "S_w_sup": self.S_w_sup
             },
             "gen": {
-            "S_g_stp": self.S_g_stp
+            "S_g_stc": self.S_g_stc
             },
             "out": {
-            "S_w_stp_out": self.S_w_stp_out,
+            "S_w_stc_out": self.S_w_stc_out,
             "S_l": self.S_l
             }
         }
 
         self.entropy_balance["combustion chamber"] = {
             "in": {
-            "S_w_stp_out": self.S_w_stp_out,
+            "S_w_stc_out": self.S_w_stc_out,
             "S_NG": self.S_NG,
             },
             "gen": {
@@ -1423,17 +1423,17 @@ class SolarAssistedGasBoiler:
             "X_w_sup": self.X_w_sup
             },
             "con": {
-            "X_c_stp": self.X_c_stp
+            "X_c_stc": self.X_c_stc
             },
             "out": {
-            "X_w_stp_out": self.X_w_stp_out,
+            "X_w_stc_out": self.X_w_stc_out,
             "X_l": self.X_l
             }
         }
 
         self.exergy_balance["combustion chamber"] = {
             "in": {
-            "X_w_stp_out": self.X_w_stp_out,
+            "X_w_stc_out": self.X_w_stc_out,
             "X_NG": self.X_NG,
             },
             "con": {
