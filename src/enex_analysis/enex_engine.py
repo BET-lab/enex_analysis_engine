@@ -171,7 +171,21 @@ def print_balance(balance, decimal=2):
                 print(f"{symbol}: {round(value, decimal)} {unit}")
 
 def calculate_ASHP_cooling_COP(T_a_int_out, T_a_ext_in, Q_r_int, Q_r_max, COP_ref):
-    # link
+    '''
+    https://publications.ibpsa.org/proceedings/bs/2023/papers/bs2023_1118.pdf
+    Calculate the Coefficient of Performance (COP) for an Air Source Heat Pump (ASHP) in cooling mode.
+
+    Parameters:
+    - T_a_int_out : Indoor air temperature [K]
+    - T_a_ext_in  : Outdoor air temperature [K]
+    - Q_r_int     : Indoor heat load [W]
+    - Q_r_max     : Maximum cooling capacity [W]
+
+    Defines the COP based on the following parameters:
+    - PLR : Part Load Ratio
+    - EIR : Energy input to cooling output ratio
+    - COP_ref : the reference COP at the standard conditions
+    '''
     PLR = Q_r_int / Q_r_max
     EIR_by_T = 0.38 + 0.02 * cu.K2C(T_a_int_out) + 0.01 * cu.K2C(T_a_ext_in)
     EIR_by_PLR = 0.22 + 0.50 * PLR + 0.26 * PLR**2
@@ -179,7 +193,18 @@ def calculate_ASHP_cooling_COP(T_a_int_out, T_a_ext_in, Q_r_int, Q_r_max, COP_re
     return COP
 
 def calculate_ASHP_heating_COP(T0, Q_r_int, Q_r_max):
-    # link
+    '''
+    https://www.mdpi.com/2071-1050/15/3/1880
+    Calculate the Coefficient of Performance (COP) for an Air Source Heat Pump (ASHP) in heating mode.
+
+    Parameters:
+    - T0 : Enviromnetal temperature [K]
+    - Q_r_int : Indoor heat load [W]
+    - Q_r_max : Maximum heating capacity [W]
+
+    Defines the COP based on the following parameters:
+    - PLR : Part Load Ratio
+    '''
     PLR = Q_r_int / Q_r_max
     COP = -7.46 * (PLR - 0.0047 * cu.K2C(T0) - 0.477)**2 + 0.0941 * cu.K2C(T0) + 4.34
     return COP
@@ -267,7 +292,7 @@ def G_FLS(t, ks, as_, rb, H):
 @dataclass
 class Fan:
     def __post_init__(self): 
-        # Parameters
+        # Fan reference: https://www.krugerfan.com/public/uploads/KATCAT006.pdf
         self.fan1 = {
             'flow rate'  : [0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.5, 3.0], # [m3/s]
             'pressure'   : [140, 136, 137, 147, 163, 178, 182, 190, 198, 181], # [Pa]
