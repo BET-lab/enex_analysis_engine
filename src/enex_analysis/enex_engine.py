@@ -906,7 +906,6 @@ class HeatPumpBoiler:
         
         # Efficiency [-]
         self.eta_fan = 0.6
-        self.COP   = 2.5
                 
         # Pressure [Pa]
         self.dP = 200 
@@ -939,7 +938,10 @@ class HeatPumpBoiler:
 
         # Overall heat transfer coefficient [W/m²K]
         self.h_o = 15 
-        
+
+        # Maximum heat transfer from refrigerant to tank water [W]
+        self.Q_r_max = 4000
+
     def system_update(self):
         
         # Celcius to Kelvin
@@ -1002,6 +1004,7 @@ class HeatPumpBoiler:
         self.Q_w_sup_tank  = c_w * rho_w * self.dV_w_sup_tank * (self.T_w_sup - self.T0) # Heat transfer from supply water to tank water
 
         self.Q_r_tank = self.Q_l_tank + (self.Q_w_tank - self.Q_w_sup_tank) # Heat transfer from refrigerant to tank water
+        self.COP = calculate_ASHP_heating_COP(T0 = self.T0, Q_r_int=self.Q_r_tank, Q_r_max = self.Q_r_max)
         self.E_cmp    = self.Q_r_tank/self.COP  # E_cmp [W]
         self.Q_r_ext  = self.Q_r_tank - self.E_cmp # Heat transfer from external unit to refrigerant
 
