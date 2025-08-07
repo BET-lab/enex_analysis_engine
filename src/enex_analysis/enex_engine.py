@@ -91,13 +91,13 @@ def calc_h_vertical_plate(T_s, T_inf, L):
 def linear_function(x, a, b):
     return a * x + b
 
-def quadratic_wunction(x, a, b, c):
+def quadratic_function(x, a, b, c):
     return a * x ** 2 + b * x + c
 
-def cubic_wunction(x, a, b, c, d):
+def cubic_function(x, a, b, c, d):
     return a * x ** 3 + b * x ** 2 + c * x + d
 
-def quartic_wunction(x, a, b, c, d, e):
+def quartic_function(x, a, b, c, d, e):
     return a * x ** 4 + b * x ** 3 + c * x ** 2 + d * x + e
 
 def print_balance(balance, decimal=2):
@@ -281,13 +281,13 @@ class Fan:
         self.fan_list = [self.fan1, self.fan2]
 
     def get_effieciency(self, fan, dV_fan):
-        self.efficiency_coeffs, _ = curve_fit(cubic_wunction, fan['flow rate'], fan['efficiency'])
-        eff = cubic_wunction(dV_fan, *self.efficiency_coeffs)
+        self.efficiency_coeffs, _ = curve_fit(cubic_function, fan['flow rate'], fan['efficiency'])
+        eff = cubic_function(dV_fan, *self.efficiency_coeffs)
         return eff
     
     def get_pressure(self, fan, dV_fan):
-        self.pressure_coeffs, _ = curve_fit(cubic_wunction, fan['flow rate'], fan['pressure'])
-        pressure = cubic_wunction(dV_fan, *self.pressure_coeffs)
+        self.pressure_coeffs, _ = curve_fit(cubic_function, fan['flow rate'], fan['pressure'])
+        pressure = cubic_function(dV_fan, *self.pressure_coeffs)
         return pressure
     
     def get_power(self, fan, dV_fan):
@@ -320,9 +320,9 @@ class Fan:
                 ax.scatter(fan['flow rate'], fan[key], label=f'Fan {i+1} Data', color=scatter_colors[i], s=2)
 
                 # 곡선 피팅 수행
-                coeffs, _ = curve_fit(cubic_wunction, fan['flow rate'], fan[key])
+                coeffs, _ = curve_fit(cubic_function, fan['flow rate'], fan[key])
                 flow_range = np.linspace(min(fan['flow rate']), max(fan['flow rate']), 100)
-                fitted_values = cubic_wunction(flow_range, *coeffs)
+                fitted_values = cubic_function(flow_range, *coeffs)
 
                 # 피팅된 곡선 (line 형태)
                 ax.plot(flow_range, fitted_values, label=f'Fan {i+1} Fit', color=plot_colors[i], linestyle='-')
@@ -371,8 +371,8 @@ class Pump:
         :param V_pmp: 유량 (m3/h)
         :return: 예측된 펌프 효율
         """
-        self.efficiency_coeffs, _ = curve_fit(cubic_wunction, pump['flow rate'], pump['efficiency'])
-        eff = cubic_wunction(dV_pmp, *self.efficiency_coeffs)
+        self.efficiency_coeffs, _ = curve_fit(cubic_function, pump['flow rate'], pump['efficiency'])
+        eff = cubic_function(dV_pmp, *self.efficiency_coeffs)
         return eff
 
     def get_power(self, pump, V_pmp, dP_pmp):
@@ -405,9 +405,9 @@ class Pump:
             ax.scatter(pump['flow rate']*cu.h2s, pump['efficiency'], label=f'Pump {i+1} Data', color=scatter_colors[i], s=2)
 
             # 곡선 피팅 수행
-            coeffs, _ = curve_fit(cubic_wunction, pump['flow rate']*cu.h2s, pump['efficiency'])
+            coeffs, _ = curve_fit(cubic_function, pump['flow rate']*cu.h2s, pump['efficiency'])
             flow_range = np.linspace(min(pump['flow rate']), max(pump['flow rate']), 100)*cu.h2s
-            fitted_values = cubic_wunction(flow_range, *coeffs)
+            fitted_values = cubic_function(flow_range, *coeffs)
 
             # 피팅된 곡선 (line 형태)
             a,b,c,d = coeffs
@@ -881,7 +881,6 @@ class HeatPumpBoiler:
         
         # Efficiency [-]
         self.eta_fan = 0.6
-        self.COP   = 2.5
                 
         # Pressure [Pa]
         self.dP = 200 
@@ -914,7 +913,10 @@ class HeatPumpBoiler:
 
         # Overall heat transfer coefficient [W/m²K]
         self.h_o = 15 
-        
+
+        # Maximum heat transfer from refrigerant to tank water [W]
+        self.Q_r_max = 4000
+
     def system_update(self):
         
         # Celcius to Kelvin
@@ -977,6 +979,7 @@ class HeatPumpBoiler:
         self.Q_w_sup_tank  = c_w * rho_w * self.dV_w_sup_tank * (self.T_w_sup - self.T0) # Heat transfer from supply water to tank water
 
         self.Q_r_tank = self.Q_l_tank + (self.Q_w_tank - self.Q_w_sup_tank) # Heat transfer from refrigerant to tank water
+        self.COP = calculate_ASHP_heating_COP(T0 = self.T0, Q_r_int=self.Q_r_tank, Q_r_max = self.Q_r_max)
         self.E_cmp    = self.Q_r_tank/self.COP  # E_cmp [W]
         self.Q_r_ext  = self.Q_r_tank - self.E_cmp # Heat transfer from external unit to refrigerant
 
