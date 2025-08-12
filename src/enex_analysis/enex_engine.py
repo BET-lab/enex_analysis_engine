@@ -286,6 +286,47 @@ def G_FLS(t, ks, as_, rb, H):
     _g_func_cache[key] = result
     return result
 
+def generate_balance_dict(subsystem_category):
+    energy_balance = {}; entropy_balance = {}; exergy_balance = {}
+    energy_balance_category = ['in', 'out']
+    entropy_balance_category = ['in', 'gen','out']
+    exergy_balance_category = ['in', 'con','out']
+   
+    for subsystem in subsystem_category:
+        energy_balance[subsystem] = {}
+        for category in energy_balance_category:
+            energy_balance[subsystem][category] = {}
+
+    for subsystem in subsystem_category:
+        entropy_balance[subsystem] = {}
+        for category in entropy_balance_category:
+            entropy_balance[subsystem][category] = {}
+            
+    for subsystem in subsystem_category:
+        exergy_balance[subsystem] = {}
+        for category in exergy_balance_category:
+            exergy_balance[subsystem][category] = {}
+            
+    return energy_balance, entropy_balance, exergy_balance
+
+def generate_entropy_exergy_term(energy_term, Tsys, T0, fluid = None):
+    """
+    Calculates the entropy and exergy terms based on the provided energy term and temperatures.
+    Parameters:
+        energy_term (float): The energy value for which entropy and exergy are to be calculated.
+        Tsys (float): The system temperature [K].
+        T0 (float): The reference (environment) temperature [K].
+        fluid (optional): If provided, modifies the entropy calculation using a logarithmic relation.
+    Returns:
+        tuple:
+            entropy_term (float): The calculated entropy term.
+            exergy_term (float): The calculated exergy term.
+    """
+    entropy_term = energy_term / Tsys
+    if fluid:
+        entropy_term = energy_term *math.log(Tsys/T0)/(Tsys - T0)
+    exergy_term = energy_term - T0 * entropy_term
+    return entropy_term, exergy_term
 
 #%%
 # class - Fan & Pump
@@ -1224,7 +1265,9 @@ class HeatPumpBoiler:
 class HeatPumpBoiler_without_tank:
 
     def __post_init__(self): 
-        
+
+        self.energy_balance, self.entropy_balance, self.exergy_balance = generate_balance_dict()
+
         # Efficiency [-]
         self.eta_fan = 0.6
                 
@@ -1236,11 +1279,12 @@ class HeatPumpBoiler_without_tank:
         self.T_a_ext_out = self.T0 - 5
         self.T_r_ext     = self.T0 - 10
         
-        self.T_w_serv    = 45
-        self.T_r_exch    = self.T_w_serv + 5
-        self.T_w_sup     = 10
+        self.T_w_serv = 45
+        self.T_w_exch = self.T_w_serv + 5
+        self.T_r_exch = self.T_w_serv + 10
+        self.T_w_sup  = 10
 
-        self.dV_w_serv  = 1.2
+        self.dV_w_serv = 1.2
 
         # Overall heat transfer coefficient [W/m²K]
         self.h_o = 15 
@@ -1255,27 +1299,33 @@ class HeatPumpBoiler_without_tank:
         self.T_a_ext_out = cu.C2K(self.T_a_ext_out)
         self.T_r_ext     = cu.C2K(self.T_r_ext)
         self.T_r_exch    = cu.C2K(self.T_r_exch)
-        self.T_w_serv     = cu.C2K(self.T_w_serv)
+        self.T_w_serv    = cu.C2K(self.T_w_serv)
         self.T_w_sup     = cu.C2K(self.T_w_sup)
         
         # L/min to m³/s
         self.dV_w_serv = self.dV_w_serv / 60 / 1000 # L/min to m³/s
         
+        # Volumetric flow rate ratio [-]
+        self.alp = (self.T_w_serv - self.T_w_sup)/(self.T_w_exch - self.T_w_sup)
+        self.alp = print("alp is negative") if self.alp < 0 else self.alp
+        
+        # Volumetric flow rates [m³/s]
+        self.dV_w_sup_exch = self.alp * self.dV_w_serv
+        self.dV_w_sup_mix  = (1-self.alp)*self.dV_w_serv
+        
         # Temperature [K]
         self.T_a_ext_in = self.T0  # External unit inlet air temperature [K]
 
-        self.Q_w_sup_exch = c_w * rho_w * self.dV_w_serv * (self.T_w_sup - self.T0)
+        self.Q_w_sup_exch = c_w * rho_w * self.dV_w_sup_exch * (self.T_w_sup - self.T0)
+        self.Q_w_sup_mix  = c_w * rho_w * self.dV_w_sup_mix * (self.T_w_sup - self.T0)
+        self.Q_w_exch     = c_w * rho_w * self.dV_w_sup_exch * (self.T_w_exch - self.T0)
         self.Q_w_serv     = c_w * rho_w * self.dV_w_serv * (self.T_w_serv - self.T0)
-        self.Q_r_exch = self.Q_w_serv - self.Q_w_sup_exch # Heat transfer from refrigerant to tank water
+        self.Q_r_exch     = self.Q_w_exch - self.Q_w_sup_exch # Heat transfer from refrigerant to tank water
         
         self.COP = calculate_ASHP_heating_COP(T0 = self.T0, Q_r_int=self.Q_r_exch, Q_r_max = self.Q_r_max)
         self.E_cmp    = self.Q_r_exch/self.COP  # E_cmp [W]
         self.Q_r_ext  = self.Q_r_exch - self.E_cmp # Heat transfer from external unit to refrigerant
 
-        # V_a_ext에 대해 직접 계산 (fan_equation을 풀어서)
-        # self.Q_r_ext = self.dP * V_a_ext / self.eta_fan + c_a * rho_a * V_a_ext * (self.T_a_ext_in - self.T_a_ext_out)
-        # => self.Q_r_ext = V_a_ext * [self.dP / self.eta_fan + c_a * rho_a * (self.T_a_ext_in - self.T_a_ext_out)]
-        # => V_a_ext = self.Q_r_ext / [self.dP / self.eta_fan + c_a * rho_a * (self.T_a_ext_in - self.T_a_ext_out)]
         self.dV_a_ext = self.Q_r_ext / (self.dP / self.eta_fan + c_a * rho_a * (self.T_a_ext_in - self.T_a_ext_out))
         if self.dV_a_ext < 0: 
             print("Negative air flow rate, check the input temperatures and heat transfer values.")
@@ -1283,154 +1333,82 @@ class HeatPumpBoiler_without_tank:
 
         self.Q_a_ext_in   = c_a * rho_a * self.dV_a_ext * (self.T_a_ext_in - self.T0)
         self.Q_a_ext_out  = c_a * rho_a * self.dV_a_ext * (self.T_a_ext_out - self.T0)
-
-        self.S_fan        = (1 / float('inf')) * self.E_fan
-        self.S_a_ext_in   = c_a * rho_a * self.dV_a_ext * math.log(self.T_a_ext_in / self.T0)
-        self.S_a_ext_out  = c_a * rho_a * self.dV_a_ext * math.log(self.T_a_ext_out / self.T0)
-        self.S_r_ext      = (1 / self.T_r_ext) * self.Q_r_ext
-        self.S_cmp        = (1 / float('inf')) * self.E_cmp
-        self.S_r_exch     = (1 / self.T_r_exch) * self.Q_r_exch
-        self.S_w_sup_exch = c_w * rho_w * self.dV_w_serv * math.log(self.T_w_sup / self.T0)
-        self.S_w_serv     = c_w * rho_w * self.dV_w_serv * math.log(self.T_w_serv / self.T0)
-
-        self.S_g_ext = self.S_a_ext_out + self.S_r_ext - (self.S_fan + self.S_a_ext_in)
-        self.S_g_r = self.S_r_exch - (self.S_cmp + self.S_r_ext)
-        self.S_g_exch = self.S_w_serv - (self.S_r_exch + self.S_w_sup_exch)
-
-        self.X_fan = self.E_fan - self.S_fan * self.T0
-        self.X_a_ext_in = c_a * rho_a * self.dV_a_ext * ((self.T_a_ext_in - self.T0) - self.T0 * math.log(self.T_a_ext_in / self.T0))
-        self.X_a_ext_out = c_a * rho_a * self.dV_a_ext * ((self.T_a_ext_out - self.T0) - self.T0 * math.log(self.T_a_ext_out / self.T0))
-        self.X_cmp = self.E_cmp - self.S_cmp * self.T0
-        self.X_r_ext  = -(1 - self.T0 / self.T_r_ext) * self.Q_r_ext
-        self.X_r_exch = (1 - self.T0 / self.T_r_exch) * self.Q_r_exch
-        self.X_w_sup_exch = c_w * rho_w * self.dV_w_serv * ((self.T_w_sup - self.T0) - self.T0 * math.log(self.T_w_sup / self.T0))
-        self.X_w_serv = c_w * rho_w * self.dV_w_serv * ((self.T_w_serv - self.T0) - self.T0 * math.log(self.T_w_serv / self.T0))
         
-        self.X_c_ext = self.S_g_ext * self.T0
-        self.X_c_r = self.S_g_r * self.T0
+        # External unit
+        self.S_fan, self.X_fan               = generate_entropy_exergy_term(self.E_fan, float('inf'), self.T0)
+        self.S_a_ext_in  , self.X_a_ext_in   = generate_entropy_exergy_term(self.Q_a_ext_in, self.T_a_ext_in, self.T0, fluid=True)
+        self.S_a_ext_out , self.X_a_ext_out  = generate_entropy_exergy_term(self.Q_a_ext_out, self.T_a_ext_out, self.T0, fluid=True)
+
+        # Refrigerant
+        self.S_r_ext, self.X_r_ext   = generate_entropy_exergy_term(self.Q_r_ext, self.T_r_ext, self.T0, fluid=True)
+        self.S_cmp, self.X_cmp       = generate_entropy_exergy_term(self.E_cmp, float('inf'), self.T0)
+        self.S_r_exch, self.X_r_exch = generate_entropy_exergy_term(self.Q_r_exch, self.T_r_exch, self.T0)
+        
+        # Heat exchanger
+        self.S_w_exch    , self.X_w_exch     = generate_entropy_exergy_term(self.Q_w_exch, self.T_w_exch, self.T0, fluid=True)
+        self.S_w_sup_exch, self.X_w_sup_exch = generate_entropy_exergy_term(self.Q_w_sup_exch, self.T_w_sup, self.T0, fluid=True)
+        self.S_w_sup_mix , self.X_w_sup_mix  = generate_entropy_exergy_term(self.Q_w_sup_mix, self.T_w_sup, self.T0, fluid=True)
+        self.S_w_serv    , self.X_w_serv     = generate_entropy_exergy_term(self.Q_w_serv, self.T_w_serv, self.T0, fluid=True)
+
+        self.S_g_ext  = self.S_a_ext_out + self.S_r_ext - (self.S_fan + self.S_a_ext_in)
+        self.S_g_r    = self.S_r_exch - (self.S_cmp + self.S_r_ext)
+        self.S_g_exch = self.S_w_exch - (self.S_r_exch + self.S_w_sup_exch)
+        self.S_g_mix  = self.S_w_serv - (self.S_w_sup_exch + self.S_w_sup_mix)
+
+        self.X_c_ext  = self.S_g_ext * self.T0
+        self.X_c_r    = self.S_g_r * self.T0
         self.X_c_exch = self.S_g_exch * self.T0
+        self.X_c_mix  = self.S_g_mix * self.T0
         
-        # total
         self.X_eff = self.X_w_serv / (self.X_fan + self.X_cmp)
 
-        self.energy_balance = {}
-        self.energy_balance["external unit"] = {
-            "in": {
-            "E_fan": self.E_fan,
-            "Q_a_ext_in": self.Q_a_ext_in,
-            },
-            "out": {
-            "Q_a_ext_out": self.Q_a_ext_out,
-            "Q_r_ext": self.Q_r_ext,
-            }
-        }
+        # Energy Balance
+        self.energy_balance["external unit"]["in"]["E_fan"] = self.E_fan
+        self.energy_balance["external unit"]["in"]["Q_a_ext_in"] = self.Q_a_ext_in
+        self.energy_balance["external unit"]["out"]["Q_a_ext_out"] = self.Q_a_ext_out
+        self.energy_balance["external unit"]["out"]["Q_r_ext"] = self.Q_r_ext
 
-        self.energy_balance["refrigerant loop"] = {
-            "in": {
-            "E_cmp": self.E_cmp,
-            "Q_r_ext": self.Q_r_ext
-            },
-            "out": {
-            "Q_r_tank": self.Q_r_exch
-            }
-        }
+        self.energy_balance["refrigerant loop"]["in"]["E_cmp"] = self.E_cmp
+        self.energy_balance["refrigerant loop"]["in"]["Q_r_ext"] = self.Q_r_ext
+        self.energy_balance["refrigerant loop"]["out"]["Q_r_tank"] = self.Q_r_exch
 
-        self.energy_balance["heat exchanger"] = {
-            "in": {
-            "Q_r_exch": self.Q_r_exch,
-            "Q_w_sup_mix": self.Q_w_sup_exch
-            },
-            "out": {
-            "Q_w_serv": self.Q_w_serv
-            }
-        }
+        self.energy_balance["heat exchanger"]["in"]["Q_r_exch"] = self.Q_r_exch
+        self.energy_balance["heat exchanger"]["in"]["Q_w_sup_exch"] = self.Q_w_sup_exch 
+        self.energy_balance["heat exchanger"]["out"]["Q_w_exch"] = self.Q_w_exch
 
-        ## Entropy Balance ========================================
-        self.entropy_balance = {}
+        # Entropy Balance
+        self.entropy_balance["external unit"]["in"]["S_fan"] = self.S_fan
+        self.entropy_balance["external unit"]["in"]["S_a_ext_in"] = self.S_a_ext_in
+        self.entropy_balance["external unit"]["gen"]["S_g_ext"] = self.S_g_ext
+        self.entropy_balance["external unit"]["out"]["S_a_ext_out"] = self.S_a_ext_out
+        self.entropy_balance["external unit"]["out"]["S_r_ext"] = self.S_r_ext
 
-        self.entropy_balance["external unit"] = {
-            "in": {
-                "S_fan": self.S_fan,
-                "S_a_ext_in": self.S_a_ext_in
-            },
-            "gen": {
-                "S_g_ext": self.S_g_ext
-            },
-            "out": {
-                "S_a_ext_out": self.S_a_ext_out,
-                "S_r_ext": self.S_r_ext,
-            }
-        }
+        self.entropy_balance["refrigerant loop"]["in"]["S_cmp"] = self.S_cmp
+        self.entropy_balance["refrigerant loop"]["in"]["S_r_ext"] = self.S_r_ext
+        self.entropy_balance["refrigerant loop"]["gen"]["S_g_r"] = self.S_g_r
+        self.entropy_balance["refrigerant loop"]["out"]["S_r_exch"] = self.S_r_exch
+        
+        self.entropy_balance["heat exchanger"]["in"]["S_r_exch"] = self.S_r_exch
+        self.entropy_balance["heat exchanger"]["in"]["S_w_sup_exch"] = self.S_w_sup_exch
+        self.entropy_balance["heat exchanger"]["gen"]["S_g_exch"] = self.S_g_exch
+        self.entropy_balance["heat exchanger"]["out"]["S_w_serv"] = self.S_w_serv
 
-        self.entropy_balance["refrigerant loop"] = {
-            "in": {
-                "S_cmp": self.S_cmp,
-                "S_r_ext": self.S_r_ext
-            },
-            "gen": {
-                "S_g_r": self.S_g_r
-            },
-            "out": {
-                "S_r_exch": self.S_r_exch
-            }
-        }
+        # Exergy Balance
+        self.exergy_balance["external unit"]["in"]["X_fan"] = self.X_fan
+        self.exergy_balance["external unit"]["in"]["X_a_ext_in"] = self.X_a_ext_in
+        self.exergy_balance["external unit"]["con"]["X_c_ext"] = self.X_c_ext
+        self.exergy_balance["external unit"]["out"]["X_a_ext_out"] = self.X_a_ext_out
+        self.exergy_balance["external unit"]["out"]["X_r_ext"] = self.X_r_ext
 
-        self.entropy_balance["heat exchanger"] = {
-            "in": {
-                "S_r_exch": self.S_r_exch,
-                "S_w_sup_exch": self.S_w_sup_exch,
-              
-            },
-            "gen": {
-                "S_g_exch": self.S_g_exch
-            },
-            "out": {
-                "S_w_serv": self.S_w_serv
-            }
-        }
-
-        ## Exergy Balance ========================================
-        self.exergy_balance = {}
-
-        self.exergy_balance["external unit"] = {
-            "in": {
-                "X_fan": self.X_fan,
-                "X_a_ext_in": self.X_a_ext_in
-            },
-            "con": {
-                "X_c_ext": self.X_c_ext
-            },
-            "out": {
-                "X_a_ext_out": self.X_a_ext_out,
-                "X_r_ext": self.X_r_ext,
-            }
-        }
-
-        self.exergy_balance["refrigerant loop"] = {
-            "in": {
-                "X_cmp": self.X_cmp,
-                "X_r_ext": self.X_r_ext
-            },
-            "con": {
-                "X_c_r": self.X_c_r
-            },
-            "out": {
-                "X_r_exch": self.X_r_exch
-            }
-        }
-
-        self.entropy_balance["heat exchanger"] = {
-            "in": {
-                "X_r_exch": self.X_r_exch,
-                "X_w_sup_exch": self.X_w_sup_exch,
-            },
-            "con": {
-                "X_c_exch": self.X_c_exch
-            },
-            "out": {
-                "X_w_serv": self.X_w_serv
-            }
-        }
+        self.exergy_balance["refrigerant loop"]["in"]["X_cmp"] = self.X_cmp
+        self.exergy_balance["refrigerant loop"]["in"]["X_r_ext"] = self.X_r_ext
+        self.exergy_balance["refrigerant loop"]["con"]["X_c_r"] = self.X_c_r
+        self.exergy_balance["refrigerant loop"]["out"]["X_r_exch"] = self.X_r_exch
+        
+        self.exergy_balance["heat exchanger"]["in"]["X_r_exch"] = self.X_r_exch
+        self.exergy_balance["heat exchanger"]["in"]["X_w_sup_exch"] = self.X_w_sup_exch
+        self.exergy_balance["heat exchanger"]["con"]["X_c_exch"] = self.X_c_exch
+        self.exergy_balance["heat exchanger"]["out"]["X_w_serv"] = self.X_w_serv
 
 @dataclass
 class SolarAssistedGasBoiler:
