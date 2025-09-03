@@ -1657,34 +1657,34 @@ class GroundSourceHeatPumpBoiler:
         self.X_b = (1 - self.T0 / self.T_b) * (self.Q_bh * self.H_b)
 
         # Ground
-        self.Xin_g = self.X_g
-        self.Xout_g = self.X_b
-        self.Xc_g = self.Xin_g - self.Xout_g
+        self.X_in_g = self.X_g
+        self.X_out_g = self.X_b
+        self.X_c_g = self.X_in_g - self.X_out_g
 
         # Ground heat exchanger
-        self.Xin_GHE = self.E_pmp + self.Xout_g + self.X_f_in  # self.X_b 대신 self.Xout_g 사용
-        self.Xout_GHE = self.X_f_out 
-        self.Xc_GHE = self.Xin_GHE - self.Xout_GHE
+        self.X_in_GHE = self.E_pmp + self.X_out_g + self.X_f_in  # self.X_b 대신 self.X_out_g 사용
+        self.X_out_GHE = self.X_f_out 
+        self.X_c_GHE = self.X_in_GHE - self.X_out_GHE
 
         # Heat exchanger 
-        self.Xin_exch = self.Xout_GHE 
-        self.Xout_exch = self.X_r_exch + self.X_f_in
-        self.Xc_exch = self.Xin_exch - self.Xout_exch
+        self.X_in_exch = self.X_out_GHE 
+        self.X_out_exch = self.X_r_exch + self.X_f_in
+        self.X_c_exch = self.X_in_exch - self.X_out_exch
 
         # Closed refrigerant loop system
-        self.Xin_r  = self.E_cmp + self.X_r_exch
-        self.Xout_r = self.X_r_int
-        self.Xc_r   = self.Xin_r - self.Xout_r
+        self.X_in_r  = self.E_cmp + self.X_r_exch
+        self.X_out_r = self.X_r_int
+        self.X_c_r   = self.X_in_r - self.X_out_r
 
         # Tank
-        self.Xin_tank  = self.X_r_int + self.X_w_sup_tank
-        self.Xout_tank = self.X_w_tank + self.X_l_tank
-        self.Xc_tank   = self.Xin_tank - self.Xout_tank
+        self.X_in_tank  = self.X_r_int + self.X_w_sup_tank
+        self.X_out_tank = self.X_w_tank + self.X_l_tank
+        self.X_c_tank   = self.X_in_tank - self.X_out_tank
 
         # Mixing valve
-        self.Xin_mix = self.X_w_tank + self.X_w_sup_mix
-        self.Xout_mix = self.X_w_serv
-        self.Xc_mix = self.Xin_mix - self.Xout_mix
+        self.X_in_mix = self.X_w_tank + self.X_w_sup_mix
+        self.X_out_mix = self.X_w_serv
+        self.X_c_mix = self.X_in_mix - self.X_out_mix
         
         self.X_eff = self.X_w_serv / (self.X_pmp + self.X_cmp)
 
@@ -1698,7 +1698,7 @@ class GroundSourceHeatPumpBoiler:
             "$X_{w,sup,mix}$": self.X_w_sup_mix,
             },
             "con": {
-            "$X_{c,mix}$": self.Xc_mix,
+            "$X_{c,mix}$": self.X_c_mix,
             },
             "out": {
             "$X_{w,serv}$": self.X_w_serv,
@@ -1712,7 +1712,7 @@ class GroundSourceHeatPumpBoiler:
             "$X_{w,sup}$": self.X_w_sup_tank,
             },
             "con": {
-            "$X_{c,tank}$": self.Xc_tank,
+            "$X_{c,tank}$": self.X_c_tank,
             },
             "out": {
             "$X_{w,tank}$": self.X_w_tank,
@@ -1727,7 +1727,7 @@ class GroundSourceHeatPumpBoiler:
             "$X_{r,exch}$": self.X_r_exch,
             },
             "con": {
-            "$X_{c,r}$": self.Xc_r,
+            "$X_{c,r}$": self.X_c_r,
             },
             "out": {
             "$X_{r,int}$": self.X_r_int,
@@ -1740,7 +1740,7 @@ class GroundSourceHeatPumpBoiler:
             "$X_{f,out}$": self.X_f_out,
             },
             "con": {
-            "$X_{c,exch}$": self.Xc_exch,
+            "$X_{c,exch}$": self.X_c_exch,
             },
             "out": {
             "$X_{r,exch}$": self.X_r_exch,
@@ -1756,7 +1756,7 @@ class GroundSourceHeatPumpBoiler:
             "$X_{f,in}$": self.X_f_in,
             },
             "con": {
-            "$X_{c,GHE}$": self.Xc_GHE,
+            "$X_{c,GHE}$": self.X_c_GHE,
             },
             "out": {
             "$X_{f,out}$": self.X_f_out,
@@ -1769,7 +1769,7 @@ class GroundSourceHeatPumpBoiler:
             "$X_{g}$": self.X_g,
             },
             "con": {
-            "$X_{c,g}$": self.Xc_g,
+            "$X_{c,g}$": self.X_c_g,
             },
             "out": {
             "$X_{b}$": self.X_b,
@@ -1841,26 +1841,26 @@ class AirSourceHeatPump_cooling:
         self.X_r_ext   = self.Q_r_ext * (1 - self.T0 / self.T_r_ext)
 
         # Internal unit of ASHP
-        self.Xin_int  = self.E_fan_int + self.X_r_int
-        self.Xout_int = self.X_a_int_out - self.X_a_int_in
-        self.Xc_int   = self.Xin_int - self.Xout_int
+        self.X_in_int  = self.E_fan_int + self.X_r_int
+        self.X_out_int = self.X_a_int_out - self.X_a_int_in
+        self.X_c_int   = self.X_in_int - self.X_out_int
 
         # Closed refrigerant loop system of ASHP
-        self.Xin_r  = self.E_cmp
-        self.Xout_r = self.X_r_int + self.X_r_ext
-        self.Xc_r   = self.Xin_r - self.Xout_r
+        self.X_in_r  = self.E_cmp
+        self.X_out_r = self.X_r_int + self.X_r_ext
+        self.X_c_r   = self.X_in_r - self.X_out_r
 
         # External unit of ASHP
-        self.Xin_ext  = self.E_fan_ext + self.X_r_ext
-        self.Xout_ext = self.X_a_ext_out - self.X_a_ext_in
-        self.Xc_ext   = self.Xin_ext - self.Xout_ext
+        self.X_in_ext  = self.E_fan_ext + self.X_r_ext
+        self.X_out_ext = self.X_a_ext_out - self.X_a_ext_in
+        self.X_c_ext   = self.X_in_ext - self.X_out_ext
 
         # Total exergy of ASHP
-        self.Xin  = self.E_fan_int + self.E_cmp + self.E_fan_ext
-        self.Xout = self.X_a_int_out - self.X_a_int_in
-        self.Xc   = self.Xin - self.Xout
+        self.X_in  = self.E_fan_int + self.E_cmp + self.E_fan_ext
+        self.X_out = self.X_a_int_out - self.X_a_int_in
+        self.X_c   = self.X_in - self.X_out
         
-        self.X_eff = self.Xout/self.Xin
+        self.X_eff = self.X_out/self.X_in
         
         ## Exergy Balance ========================================
         self.exergy_balance = {}
@@ -1871,7 +1871,7 @@ class AirSourceHeatPump_cooling:
             "$X_{r,int}$": self.X_r_int,
             },
             "con": {
-            "$X_{c,int}$": self.Xc_int,
+            "$X_{c,int}$": self.X_c_int,
             },
             "out": {
             "$X_{a,int,out}$": self.X_a_int_out,
@@ -1885,7 +1885,7 @@ class AirSourceHeatPump_cooling:
             "$E_{cmp}$": self.E_cmp,
             },
             "con": {
-            "$X_{c,r}$": self.Xc_r,
+            "$X_{c,r}$": self.X_c_r,
             },
             "out": {
             "$X_{r,int}$": self.X_r_int,
@@ -1900,7 +1900,7 @@ class AirSourceHeatPump_cooling:
             "$X_{r,ext}$": self.X_r_ext,
             },
             "con": {
-            "$X_{c,ext}$": self.Xc_ext,
+            "$X_{c,ext}$": self.X_c_ext,
             },
             "out": {
             "$X_{a,ext,out}$": self.X_a_ext_out,
@@ -1970,26 +1970,26 @@ class AirSourceHeatPump_heating:
         self.X_r_ext   = - self.Q_r_ext * (1 - self.T0 / self.T_r_ext)
 
         # Internal unit of ASHP
-        self.Xin_int = self.E_fan_int + self.X_r_int
-        self.Xout_int = self.X_a_int_out - self.X_a_int_in
-        self.Xc_int = self.E_fan_int + self.X_r_int - (self.X_a_int_out - self.X_a_int_in)
+        self.X_in_int = self.E_fan_int + self.X_r_int
+        self.X_out_int = self.X_a_int_out - self.X_a_int_in
+        self.X_c_int = self.E_fan_int + self.X_r_int - (self.X_a_int_out - self.X_a_int_in)
 
         # Refrigerant loop of ASHP
-        self.Xin_r = self.E_cmp
-        self.Xout_r = self.X_r_int + self.X_r_ext
-        self.Xc_r = self.E_cmp - (self.X_r_int + self.X_r_ext)
+        self.X_in_r = self.E_cmp
+        self.X_out_r = self.X_r_int + self.X_r_ext
+        self.X_c_r = self.E_cmp - (self.X_r_int + self.X_r_ext)
 
         # External unit of ASHP
-        self.Xin_ext = self.E_fan_ext + self.X_r_ext
-        self.Xout_ext = self.X_a_ext_out - self.X_a_ext_in
-        self.Xc_ext = self.E_fan_ext + self.X_r_ext - (self.X_a_ext_out - self.X_a_ext_in)
+        self.X_in_ext = self.E_fan_ext + self.X_r_ext
+        self.X_out_ext = self.X_a_ext_out - self.X_a_ext_in
+        self.X_c_ext = self.E_fan_ext + self.X_r_ext - (self.X_a_ext_out - self.X_a_ext_in)
         
         # Total exergy of ASHP
-        self.Xin  = self.E_fan_int + self.E_cmp + self.E_fan_ext
-        self.Xout = self.X_a_int_out - self.X_a_int_in
-        self.Xc   = self.Xin - self.Xout
+        self.X_in  = self.E_fan_int + self.E_cmp + self.E_fan_ext
+        self.X_out = self.X_a_int_out - self.X_a_int_in
+        self.X_c   = self.X_in - self.X_out
         
-        self.X_eff = self.Xout/self.Xin
+        self.X_eff = self.X_out/self.X_in
         
         ## Exergy Balance ========================================
         self.exergy_balance = {}
@@ -2001,7 +2001,7 @@ class AirSourceHeatPump_heating:
             "$X_{r,int}$": self.X_r_int,
             },
             "con": {
-            "$X_{c,int}$": self.Xc_int,
+            "$X_{c,int}$": self.X_c_int,
             },
             "out": {
             "$X_{a,int,out}$": self.X_a_int_out,
@@ -2015,7 +2015,7 @@ class AirSourceHeatPump_heating:
             "$E_{cmp}$": self.E_cmp,
             },
             "con": {
-            "$X_{c,r}$": self.Xc_r,
+            "$X_{c,r}$": self.X_c_r,
             },
             "out": {
             "$X_{r,int}$": self.X_r_int,
@@ -2030,7 +2030,7 @@ class AirSourceHeatPump_heating:
             "$X_{r,ext}$": self.X_r_ext,
             },
             "con": {
-            "$X_{c,ext}$": self.Xc_ext,
+            "$X_{c,ext}$": self.X_c_ext,
             },
             "out": {
             "$X_{a,ext,out}$": self.X_a_ext_out,
@@ -2151,29 +2151,29 @@ class GroundSourceHeatPump_cooling:
         self.X_b = (1 - self.T0 / self.T_b) * (- self.Q_bh * self.H_b)
 
         # Ground
-        self.Xin_g = self.X_g
-        self.Xout_g = self.X_b
-        self.Xc_g = self.Xin_g - self.Xout_g
+        self.X_in_g = self.X_g
+        self.X_out_g = self.X_b
+        self.X_c_g = self.X_in_g - self.X_out_g
 
         # Ground heat exchanger
-        self.Xin_GHE = self.E_pmp + self.Xout_g + self.X_f_in
-        self.Xout_GHE = self.X_f_out 
-        self.Xc_GHE = self.Xin_GHE - self.Xout_GHE
+        self.X_in_GHE = self.E_pmp + self.X_out_g + self.X_f_in
+        self.X_out_GHE = self.X_f_out 
+        self.X_c_GHE = self.X_in_GHE - self.X_out_GHE
 
         # Heat exchanger
-        self.Xin_exch = self.Xout_GHE 
-        self.Xout_exch = self.X_r_exch + self.X_f_in
-        self.Xc_exch = self.Xin_exch - self.Xout_exch
+        self.X_in_exch = self.X_out_GHE 
+        self.X_out_exch = self.X_r_exch + self.X_f_in
+        self.X_c_exch = self.X_in_exch - self.X_out_exch
 
         # Closed refrigerant loop system
-        self.Xin_r = self.E_cmp + self.X_r_exch
-        self.Xout_r = self.X_r_int
-        self.Xc_r = self.Xin_r - self.Xout_r
+        self.X_in_r = self.E_cmp + self.X_r_exch
+        self.X_out_r = self.X_r_int
+        self.X_c_r = self.X_in_r - self.X_out_r
 
         # Internal unit
-        self.Xin_int = self.E_fan_int + self.X_r_int + self.X_a_int_in
-        self.Xout_int = self.X_a_int_out
-        self.Xc_int = self.Xin_int - self.Xout_int
+        self.X_in_int = self.E_fan_int + self.X_r_int + self.X_a_int_in
+        self.X_out_int = self.X_a_int_out
+        self.X_c_int = self.X_in_int - self.X_out_int
 
         # Exergy efficiency
         self.X_eff = (self.X_a_int_out - self.X_a_int_in) / (self.E_fan_int + self.E_cmp + self.E_pmp)
@@ -2189,7 +2189,7 @@ class GroundSourceHeatPump_cooling:
                 "$X_{a,int,in}$": self.X_a_int_in,
             },
             "con": {
-                "$X_{c,int}$": self.Xc_int,
+                "$X_{c,int}$": self.X_c_int,
             },
             "out": {
                 "$X_{a,int,out}$": self.X_a_int_out,
@@ -2203,7 +2203,7 @@ class GroundSourceHeatPump_cooling:
                 "$X_{r,exch}$": self.X_r_exch,
             },
             "con": {
-                "$X_{c,r}$": self.Xc_r,
+                "$X_{c,r}$": self.X_c_r,
             },
             "out": {
                 "$X_{r,int}$": self.X_r_int,
@@ -2216,7 +2216,7 @@ class GroundSourceHeatPump_cooling:
                 "$X_{f,out}$": self.X_f_out,
             },
             "con": {
-                "$X_{c,exch}$": self.Xc_exch,
+                "$X_{c,exch}$": self.X_c_exch,
             },
             "out": {
                 "$X_{r,exch}$": self.X_r_exch,
@@ -2232,7 +2232,7 @@ class GroundSourceHeatPump_cooling:
                 "$X_{f,in}$": self.X_f_in,
             },
             "con": {
-                "$X_{c,GHE}$": self.Xc_GHE,
+                "$X_{c,GHE}$": self.X_c_GHE,
             },
             "out": {
                 "$X_{f,out}$": self.X_f_out,
@@ -2245,7 +2245,7 @@ class GroundSourceHeatPump_cooling:
                 "$X_{g}$": self.X_g,
             },
             "con": {
-                "$X_{c,g}$": self.Xc_g,
+                "$X_{c,g}$": self.X_c_g,
             },
             "out": {
                 "$X_{b}$": self.X_b,
@@ -2362,29 +2362,29 @@ class GroundSourceHeatPump_heating:
         self.X_b = (1 - self.T0 / self.T_b) * (self.Q_bh * self.H_b)
 
         # Internal unit
-        self.Xin_int = self.E_fan_int + self.X_r_int + self.X_a_int_in
-        self.Xout_int = self.X_a_int_out
-        self.Xc_int = self.Xin_int - self.Xout_int
+        self.X_in_int = self.E_fan_int + self.X_r_int + self.X_a_int_in
+        self.X_out_int = self.X_a_int_out
+        self.X_c_int = self.X_in_int - self.X_out_int
 
         # Closed refrigerant loop system
-        self.Xin_r = self.E_cmp + self.X_r_exch
-        self.Xout_r = self.X_r_int
-        self.Xc_r = self.Xin_r - self.Xout_r
+        self.X_in_r = self.E_cmp + self.X_r_exch
+        self.X_out_r = self.X_r_int
+        self.X_c_r = self.X_in_r - self.X_out_r
 
         # Heat exchanger
-        self.Xin_exch = self.X_f_out
-        self.Xout_exch = self.X_r_exch + self.X_f_in
-        self.Xc_exch = self.Xin_exch - self.Xout_exch
+        self.X_in_exch = self.X_f_out
+        self.X_out_exch = self.X_r_exch + self.X_f_in
+        self.X_c_exch = self.X_in_exch - self.X_out_exch
 
         # Ground heat exchanger
-        self.Xin_GHE = self.E_pmp + self.X_b + self.X_f_in
-        self.Xout_GHE = self.X_f_out 
-        self.Xc_GHE = self.Xin_GHE - self.Xout_GHE
+        self.X_in_GHE = self.E_pmp + self.X_b + self.X_f_in
+        self.X_out_GHE = self.X_f_out 
+        self.X_c_GHE = self.X_in_GHE - self.X_out_GHE
 
         # Ground
-        self.Xin_g = self.X_g
-        self.Xout_g = self.X_b
-        self.Xc_g = self.Xin_g - self.Xout_g
+        self.X_in_g = self.X_g
+        self.X_out_g = self.X_b
+        self.X_c_g = self.X_in_g - self.X_out_g
         
         # Exergy efficiency
         self.X_eff = (self.X_a_int_out - self.X_a_int_in) / (self.E_fan_int + self.E_cmp + self.E_pmp)
@@ -2400,7 +2400,7 @@ class GroundSourceHeatPump_heating:
                 "$X_{a,int,in}$": self.X_a_int_in,
             },
             "con": {
-                "$X_{c,int}$": self.Xc_int,
+                "$X_{c,int}$": self.X_c_int,
             },
             "out": {
                 "$X_{a,int,out}$": self.X_a_int_out,
@@ -2414,7 +2414,7 @@ class GroundSourceHeatPump_heating:
                 "$X_{r,exch}$": self.X_r_exch,
             },
             "con": {
-                "$X_{c,r}$": self.Xc_r,
+                "$X_{c,r}$": self.X_c_r,
             },
             "out": {
                 "$X_{r,int}$": self.X_r_int,
@@ -2427,7 +2427,7 @@ class GroundSourceHeatPump_heating:
                 "$X_{f,out}$": self.X_f_out,
             },
             "con": {
-                "$X_{c,exch}$": self.Xc_exch,
+                "$X_{c,exch}$": self.X_c_exch,
             },
             "out": {
                 "$X_{r,exch}$": self.X_r_exch,
@@ -2443,7 +2443,7 @@ class GroundSourceHeatPump_heating:
                 "$X_{f,in}$": self.X_f_in,
             },
             "con": {
-                "$X_{c,GHE}$": self.Xc_GHE,
+                "$X_{c,GHE}$": self.X_c_GHE,
             },
             "out": {
                 "$X_{f,out}$": self.X_f_out,
@@ -2456,7 +2456,7 @@ class GroundSourceHeatPump_heating:
                 "$X_{g}$": self.X_g,
             },
             "con": {
-                "$X_{c,g}$": self.Xc_g,
+                "$X_{c,g}$": self.X_c_g,
             },
             "out": {
                 "$X_{b}$": self.X_b,
