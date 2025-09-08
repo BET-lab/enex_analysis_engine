@@ -1,7 +1,7 @@
 import numpy as np
 import math
-from . import calc_util as cu
-# import calc_util as cu
+# from . import calc_util as cu
+import calc_util as cu
 from dataclasses import dataclass
 import dartwork_mpl as dm
 import matplotlib.pyplot as plt
@@ -286,186 +286,104 @@ def G_FLS(t, ks, as_, rb, H):
     _g_func_cache[key] = result
     return result
 
-
-@dataclass
-class DynamicWaterHeater:
-    """
-    @dataclass를 사용하여 전기 온수기 저탕조의 동적 에너지 모델을 재구성한 클래스.
-    이전 ElectricBoiler의 단위 및 변수 체계를 따릅니다.
-    """
-    # --- 입력 속성 (Input Attributes) ---
-    # 탱크 기하학 및 단열 정보
-    tank_diameter: float
-    tank_height: float
-    insulation_conductivity: float
-    insulation_thickness: float
+def U_tank_calc(r0, x_shell, x_ins, k_shell, k_ins, H, h_o):
+    r1 = r0 + x_shell
+    r2 = r1 + x_ins
     
-    # 히터 및 초기 조건
-    heater_max_capacity: float
-    initial_T_st: float
+    A_side = 2 * math.pi * r2 * H
+    A_base = math.pi * r0**2
+    
+    R_base_unit = x_shell / k_shell + x_ins / k_ins # [m2K/W]
+    R_side_unit = math.log(r1 / r0) / (2 * math.pi * k_shell) + math.log(r2 / r1) / (2 * math.pi * k_ins) # [mK/W]
+    
+    R_base = R_base_unit / A_base # [K/W]
+    R_side = R_side_unit / H # [K/W]
+    
+    R_base_ext = 1 / (h_o * A_base)
+    R_side_ext = 1 / (h_o * A_side)
 
-    # --- 계산된 속성 (Calculated Attributes) ---
-    V_st: float = field(init=False)      # 탱크 용적 (Storage tank volume) [m³]
-    UA_loss: float = field(init=False)   # 총괄열전달계수 (Overall heat transfer coefficient) [W/K]
-    C_st: float = field(init=False)      # 탱크 열용량 (Heat capacity of the tank) [J/K]
-    results: dict = field(default_factory=dict, init=False)
+    R_base_tot = R_base + R_base_ext
+    R_side_tot = R_side + R_side_ext
+
+    U_tank = 2/R_base_tot + 1/R_side_tot
+    
+    return U_tank
+
+#%%
+@dataclass
+class ElectricBoiler_Dynamic:
 
     def __post_init__(self):
-        """초기화 후 파생 변수들을 계산합니다."""
-        # 탱크 용적 계산
-        self.V_st = np.pi * (self.tank_diameter / 2)**2 * self.tank_height
-        # 탱크 열용량 계산
-        self.C_st = self.V_st * rho_w * c_w
-        # 총괄열전달계수 계산
-        self.UA_loss = self._calculate_ua_loss()
+        
+        # Time step [s]
+        self.dt = 60 # time step [s]
+        self.Sim_time = 24*3600 # simulation time [s]
+        self.time = np.arange(0, self.Sim_time+self.dt, self.dt)
+        
+        # Temperature [K]
+        self.T_w_tank = 60
+        self.T_w_sup  = 10
+        self.T_w_serv = 45
+        self.T0       = 0
 
-    def _calculate_ua_loss(self) -> float:
-        """탱크의 기하학적 정보를 바탕으로 총괄열전달계수(UA_loss)를 계산합니다."""
-        # 표면적 계산
-        A_side = np.pi * self.tank_diameter * self.tank_height
-        A_tb = np.pi * (self.tank_diameter / 2)**2  # Top/Bottom area
+        # Tank water use [L/min]
+        self.dV_w_serv  = 1.2
 
-        # 단열재의 열 저항이 열 손실을 지배한다고 가정하여 U-value 계산
-        U_value = self.insulation_conductivity / self.insulation_thickness
+        # Tank size [m]
+        self.r0 = 0.2
+        self.H = 0.8
+        
+        # Tank layer thickness [m]
+        self.x_shell = 0.01 
+        self.x_ins   = 0.10 
+        
+        # Tank thermal conductivity [W/mK]
+        self.k_shell = 25   
+        self.k_ins   = 0.03 
 
-        # 각 부위의 UA 값 계산
-        UA_side = U_value * A_side
-        UA_tb = U_value * A_tb
+        # Overall heat transfer coefficient [W/m²K]
+        self.h_o = 15 
+        
+    def system_update(self):
+        # Update system states
+        self.T_w_tank = cu.C2K(self.T_w_tank) # tank water temperature [K]
+        self.T_w_sup  = cu.C2K(self.T_w_sup)  # supply water temperature [K]
+        self.T_w_serv  = cu.C2K(self.T_w_serv)  # tap water temperature [K]
+        self.T0       = cu.C2K(self.T0)       # reference temperature [K]
+        
+        # L/min to m³/s
+        self.dV_w_serv = self.dV_w_serv / 60 / 1000
+        
+        # Temperature [K]
+        self.T_tank_is = self.T_w_tank # inner surface temperature of tank [K]
 
-        # 위, 아래, 옆면의 UA 값을 모두 더함
-        return UA_side + 2 * UA_tb
+        # Surface areas
+        self.r1 = self.r0 + self.x_shell
+        self.r2 = self.r1 + self.x_ins
+        
+        
+        # Total tank volume [m³]
+        self.V_tank = self.A_base * self.H
 
-    def run_simulation(self,
-                       T_set_sch: np.ndarray,
-                       T_out_sch: np.ndarray,
-                       V_hw_sch: np.ndarray,
-                       T_su: float,
-                       timestep_duration: int):
-        """
-        주어진 스케줄에 따라 동적 시뮬레이션을 실행합니다.
+        # Volumetric flow rate ratio [-]
+        self.alp = (self.T_w_serv - self.T_w_sup)/(self.T_w_tank - self.T_w_sup)
+        self.alp = print("alp is negative") if self.alp < 0 else self.alp
+        
+        # Volumetric flow rates [m³/s]
+        self.dV_w_sup_tank = self.alp * self.dV_w_serv
+        self.dV_w_sup_mix  = (1-self.alp)*self.dV_w_serv
 
-        Args:
-            T_set_sch (np.ndarray): 타임스텝별 탱크 목표 온도 스케줄 [°C]
-            T_out_sch (np.ndarray): 타임스텝별 외기 온도 스케줄 [°C]
-            V_hw_sch (np.ndarray): 타임스텝별 온수 사용 체적 유량 스케줄 [L/min]
-            T_su (float): 탱크로 공급되는 상수도의 온도 (일정하다고 가정) [°C]
-            timestep_duration (int): 각 타임스텝의 시간 간격 [seconds]
-        """
-        num_timesteps = len(T_set_sch)
-        self._initialize_results(num_timesteps)
-        self.results["T_st"][0] = self.initial_T_st
+        # Overall heat transfer coefficient [W/m²K]
+        self.U_tank = U_tank_calc(self.r0, self.x_shell, self.x_ins, self.k_shell, self.k_ins, self.H, self.h_o)
 
-        for t in range(1, num_timesteps):
-            prev_T_st = self.results["T_st"][t-1]
+        # Heat Transfer Rates
+        self.Q_w_tank = c_w * rho_w * self.dV_w_sup_tank * (self.T_w_tank - self.T0)
+        self.Q_w_sup  = c_w * rho_w * self.dV_w_sup_tank * (self.T_w_sup - self.T0)
+        self.Q_l_tank = self.U_tank * (self.T_tank_is - self.T0)
+        self.E_heater = self.Q_w_tank + self.Q_l_tank - self.Q_w_sup # Electric Power input [W]
 
-            T_set = T_set_sch[t]
-            Q_heater = 0.0
-            if prev_T_st < T_set:
-                q_required = self.C_st * (T_set - prev_T_st) / timestep_duration
-                Q_heater = min(q_required, self.heater_max_capacity)
-            self.results["Q_heater"][t] = Q_heater
-
-            T_out = T_out_sch[t]
-            Q_loss = self.UA_loss * (prev_T_st - T_out)
-            self.results["Q_loss"][t] = Q_loss
-            
-            # 체적유량(L/min)을 질량유량(kg/s)으로 변환
-            V_hw_lpm = V_hw_sch[t]
-            V_hw_mps = V_hw_lpm / (60 * 1000) # L/min -> m³/s
-            m_dot = V_hw_mps * rho_w
-            
-            Q_use_out = m_dot * c_w * prev_T_st
-            Q_supply_in = m_dot * c_w * T_su
-
-            delta_energy = (Q_heater - Q_loss - Q_use_out + Q_supply_in) * timestep_duration
-            new_tank_energy = self.C_st * prev_T_st + delta_energy
-            current_T_st = new_tank_energy / self.C_st
-            self.results["T_st"][t] = current_T_st
-
-    def _initialize_results(self, num_timesteps: int):
-        self.results["T_st"] = np.zeros(num_timesteps)
-        self.results["Q_heater"] = np.zeros(num_timesteps)
-        self.results["Q_loss"] = np.zeros(num_timesteps)
-
-    def print_results_summary(self, num_steps_to_print: int = 10):
-        print("-" * 80)
-        print(f"{'Time (min)':>12} | {'Setpoint (°C)':>15} | {'Tank Temp (°C)':>15} | {'Heater (W)':>12} | {'Heat Loss (W)':>15}")
-        print("-" * 80)
-        for t in range(num_steps_to_print):
-            time_min = t * timestep_duration / 60
-            setpoint = T_set_sch[t]
-            tank_temp = self.results["T_st"][t]
-            heater_w = self.results["Q_heater"][t]
-            loss_w = self.results["Q_loss"][t]
-            print(f"{time_min:12.1f} | {setpoint:15.2f} | {tank_temp:15.2f} | {heater_w:12.1f} | {loss_w:15.2f}")
-        print("-" * 80)
-
-    def plot_results(self):
-        num_timesteps = len(self.results["T_st"])
-        time_hours = np.arange(num_timesteps) * timestep_duration / 3600
-
-        fig, ax1 = plt.subplots(figsize=(12, 6))
-
-        ax1.plot(time_hours, self.results["T_st"], 'b-', label="Tank Temperature (T_st)")
-        ax1.plot(time_hours, T_set_sch, 'r--', label="Setpoint Temperature (T_set)")
-        ax1.plot(time_hours, T_out_sch, 'g:', label="Ambient Temperature (T_out)")
-        ax1.set_xlabel("Time (hours)")
-        ax1.set_ylabel("Temperature (°C)", color='b')
-        ax1.grid(True)
-        ax1.legend(loc='upper left')
-
-        ax2 = ax1.twinx()
-        ax2.plot(time_hours, self.results["Q_heater"], 'm-.', label="Heater Output (Q_heater)")
-        ax2.plot(time_hours, V_hw_sch, 'k:', label="Hot Water Usage (V_hw)")
-        ax2.set_ylabel("Power (W) / Flow (L/min)", color='m')
-        ax2.legend(loc='upper right')
-
-        fig.tight_layout()
-        plt.title("Dynamic Water Heater Simulation")
-        plt.show()
-
-# ==============================================================================
-# --- 예제 코드: 모델 사용법 (EXAMPLE: How to use the model) ---
-# ==============================================================================
-if __name__ == '__main__':
-    total_sim_hours = 24
-    timestep_duration = 60
-    num_timesteps = int(total_sim_hours * 3600 / timestep_duration)
-    
-    my_heater = DynamicWaterHeater(
-        tank_diameter=0.5,           # 50 cm
-        tank_height=1.0,             # 1 m
-        insulation_conductivity=0.04,# 0.04 W/mK
-        insulation_thickness=0.05,   # 5 cm
-        heater_max_capacity=3000,    # 3 kW heater
-        initial_T_st=50.0
-    )
-    # 초기화 후 계산된 값 확인
-    print(f"Calculated Tank Volume (V_st): {my_heater.V_st:.3f} m³")
-    print(f"Calculated UA_loss: {my_heater.UA_loss:.3f} W/K")
-
-    T_set_sch = np.full(num_timesteps, 60.0)
-    T_out_sch = 20 - 5 * np.cos(2 * np.pi * np.arange(num_timesteps) / num_timesteps)
-    T_su = 10.0
-    
-    V_hw_sch = np.zeros(num_timesteps) # Unit: L/min
-    liters_per_minute = 8
-    
-    start_idx_morning = int(7 * 3600 / timestep_duration)
-    end_idx_morning = int(8 * 3600 / timestep_duration)
-    V_hw_sch[start_idx_morning:end_idx_morning] = liters_per_minute
-    
-    start_idx_evening = int(20 * 3600 / timestep_duration)
-    end_idx_evening = int(21 * 3600 / timestep_duration)
-    V_hw_sch[start_idx_evening:end_idx_evening] = liters_per_minute
-
-    my_heater.run_simulation(
-        T_set_sch,
-        T_out_sch,
-        V_hw_sch,
-        T_su,
-        timestep_duration
-    )
-    
-    my_heater.print_results_summary(num_steps_to_print=15)
-    my_heater.plot_results()
+        # Pre-calculate Energy values
+        self.Q_w_sup_tank = c_w * rho_w * self.dV_w_sup_tank * (self.T_w_sup - self.T0)
+        self.Q_w_tank     = c_w * rho_w * self.dV_w_sup_tank * (self.T_w_tank - self.T0)
+        self.Q_w_sup_mix = c_w * rho_w * self.dV_w_sup_mix * (self.T_w_sup - self.T0)
+        self.Q_w_serv     = c_w * rho_w * self.dV_w_serv * (self.T_w_serv - self.T0)
