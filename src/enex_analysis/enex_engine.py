@@ -306,8 +306,8 @@ class Fan:
             'fan type' : 'centrifugal',
         },
         self.fan3 = { # https://ventilatorry.ru/downloads/ebmpapst/datasheet/w3g710-go81-01-en-datasheet-ebmpapst.pdf
-            'flow rate' : [6245/cu.h2s, 8330/cu.h2s, 10410/cu.h2s, 12610/cu.h2s], # [m3/s]
-            'power' : [100, 238, 465, 827], # [-]
+            'flow rate' : [0/cu.h2s, 6245/cu.h2s, 8330/cu.h2s, 10410/cu.h2s, 12610/cu.h2s], # [m3/s]
+            'power' : [0, 100, 238, 465, 827], # [-]
             'fan type' : 'axial',
         }
         self.fan_list = [self.fan1, self.fan2, self.fan3]
@@ -332,8 +332,8 @@ class Fan:
             pressure = self.get_pressure(fan, dV_fan)
             power = pressure * dV_fan / eff
         elif 'power' in fan:
-            self.power_coeffs, _ = curve_fit(quadratic_function, fan['flow rate'], fan['power'])
-            power = quadratic_function(dV_fan, *self.power_coeffs)
+            self.power_coeffs, _ = curve_fit(quartic_function, fan['flow rate'], fan['power'])
+            power = quartic_function(dV_fan, *self.power_coeffs)
         return power
 
     def show_graph(self):
