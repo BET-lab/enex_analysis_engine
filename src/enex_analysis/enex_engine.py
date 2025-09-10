@@ -339,6 +339,7 @@ def generate_entropy_exergy_term(energy_term, Tsys, T0, fluid = None):
 #%%
 # class - Fan & Pump
 @dataclass
+@dataclass
 class Fan:
     def __post_init__(self): 
         # Fan reference: https://www.krugerfan.com/public/uploads/KATCAT006.pdf
@@ -346,29 +347,86 @@ class Fan:
             'flow rate'  : [0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.5, 3.0], # [m3/s]
             'pressure'   : [140, 136, 137, 147, 163, 178, 182, 190, 198, 181], # [Pa]
             'efficiency' : [0.43, 0.48, 0.52, 0.55, 0.60, 0.65, 0.68, 0.66, 0.63, 0.52], # [-]
+            'fan type' : 'centrifugal',
         }
         self.fan2 = {
             'flow rate'  : [0.5, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.5], # [m3/s]
             'pressure'   : [137, 138, 143, 168, 182, 191, 198, 200, 201, 170], # [Pa]
             'efficiency' : [0.45, 0.49, 0.57, 0.62, 0.67, 0.69, 0.68, 0.67, 0.63, 0.40], # [-]
+            'fan type' : 'centrifugal',
+        },
+        self.fan3 = { # https://ventilatorry.ru/downloads/ebmpapst/datasheet/w3g710-go81-01-en-datasheet-ebmpapst.pdf
+            'flow rate' : [0, 6245/cu.h2s, 8330/cu.h2s, 10410/cu.h2s, 12610/cu.h2s], # [m3/s]
+            'power' : [0, 100, 238, 465, 827], # [-]
+            'fan type' : 'axial',
         }
-        self.fan_list = [self.fan1, self.fan2]
+        self.fan_list = [self.fan1, self.fan2, self.fan3]
 
-    def get_effieciency(self, fan, dV_fan):
+    def get_efficiency(self, fan, dV_fan):
+        if 'efficiency' not in fan:
+            raise ValueError("Selected fan does not have efficiency data.")
         self.efficiency_coeffs, _ = curve_fit(cubic_function, fan['flow rate'], fan['efficiency'])
         eff = cubic_function(dV_fan, *self.efficiency_coeffs)
         return eff
     
     def get_pressure(self, fan, dV_fan):
+        if 'pressure' not in fan:
+            raise ValueError("Selected fan does not have pressure data.")
         self.pressure_coeffs, _ = curve_fit(cubic_function, fan['flow rate'], fan['pressure'])
         pressure = cubic_function(dV_fan, *self.pressure_coeffs)
         return pressure
     
     def get_power(self, fan, dV_fan):
-        eff = self.get_effieciency(fan, dV_fan)
-        pressure = self.get_pressure(fan, dV_fan)
-        power = pressure * dV_fan / eff
+        if 'efficiency' in fan and 'pressure' in fan:
+            eff = self.get_efficiency(fan, dV_fan)
+            pressure = self.get_pressure(fan, dV_fan)
+            power = pressure * dV_fan / eff
+        elif 'power' in fan:
+            self.power_coeffs, _ = curve_fit(quartic_function, fan['flow rate'], fan['power'])
+            power = quartic_function(dV_fan, *self.power_coeffs)
         return power
+
+    def show_graph(self):
+        """
+        유량(flow rate) 대비 압력(pressure) 및 효율(efficiency) 그래프를 출력.
+        - 원본 데이터는 점(dot)으로 표시.
+        - 커브 피팅된 곡선은 선(line)으로 표시.
+        """
+        fig, axes = plt.subplots(1, 2, figsize=(dm.cm2in(15), dm.cm2in(5)))
+
+        # 그래프 색상 설정
+        scatter_colors = ['dm.red3', 'dm.blue3', 'dm.green3', 'dm.orange3']
+        plot_colors = ['dm.red6', 'dm.blue6', 'dm.green6', 'dm.orange6']
+
+        data_pairs = [
+            ("pressure", "Pressure [Pa]", "Flow Rate vs Pressure"),
+            ("efficiency", "Efficiency [-]", "Flow Rate vs Efficiency"),
+        ]
+
+        for ax, (key, ylabel, title) in zip(axes, data_pairs):
+            print(f"\n{'='*10} {title} {'='*10}")
+            for i, fan in enumerate(self.fan_list):
+                # 원본 데이터 (dot 형태)
+                ax.scatter(fan['flow rate'], fan[key], label=f'Fan {i+1} Data', color=scatter_colors[i], s=2)
+
+                # 곡선 피팅 수행
+                coeffs, _ = curve_fit(cubic_function, fan['flow rate'], fan[key])
+                flow_range = np.linspace(min(fan['flow rate']), max(fan['flow rate']), 100)
+                fitted_values = cubic_function(flow_range, *coeffs)
+
+                # 피팅된 곡선 (line 형태)
+                ax.plot(flow_range, fitted_values, label=f'Fan {i+1} Fit', color=plot_colors[i], linestyle='-')
+                a,b,c,d = coeffs
+                print(f"fan {i+1}: {a:.4f}x³ + {b:.4f}x² + {c:.4f}x + {d:.4f}")
+
+            ax.set_xlabel('Flow Rate [m$^3$/s]', fontsize=dm.fs(0.5))
+            ax.set_ylabel(ylabel, fontsize=dm.fs(0.5))
+            ax.set_title(title, fontsize=dm.fs(0.5))
+            ax.legend()
+
+        plt.subplots_adjust(wspace=0.3)
+        dm.simple_layout(fig, margins=(0.05, 0.05, 0.05, 0.05), bbox=(0, 1, 0, 1), verbose=False)
+        dm.save_and_show(fig)
 
     def show_graph(self):
         """
@@ -1372,8 +1430,7 @@ class HeatPumpBoiler_without_tank:
         self.energy_balance, self.entropy_balance, self.exergy_balance = generate_balance_dict(['external unit', 'refrigerant', 'heat exchanger', 'mixing valve'])
 
         # Efficiency [-]
-        self.eta_fan = 0.6
-        self.zeta_fan = 0.3 # 팬 열 회수율
+        self.fan_ext = Fan().fan3        
                 
         # Pressure [Pa]
         self.dP = 200 
@@ -2090,7 +2147,7 @@ class AirSourceHeatPump_cooling:
     def __post_init__(self):
         # fan
         self.fan_int = Fan().fan1
-        self.fan_ext = Fan().fan2
+        self.fan_ext = Fan().fan3
 
         # COP
         self.Q_r_max = 9000 # [W]
@@ -2221,7 +2278,7 @@ class AirSourceHeatPump_heating:
 
         # fan
         self.fan_int = Fan().fan1
-        self.fan_ext = Fan().fan2
+        self.fan_ext = Fan().fan3
 
         # COP
         self.Q_r_max = 9000 # maximum heating capacity [W]
