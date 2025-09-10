@@ -297,28 +297,43 @@ class Fan:
             'flow rate'  : [0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.5, 3.0], # [m3/s]
             'pressure'   : [140, 136, 137, 147, 163, 178, 182, 190, 198, 181], # [Pa]
             'efficiency' : [0.43, 0.48, 0.52, 0.55, 0.60, 0.65, 0.68, 0.66, 0.63, 0.52], # [-]
+            'fan type' : 'centrifugal',
         }
         self.fan2 = {
             'flow rate'  : [0.5, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.5], # [m3/s]
             'pressure'   : [137, 138, 143, 168, 182, 191, 198, 200, 201, 170], # [Pa]
             'efficiency' : [0.45, 0.49, 0.57, 0.62, 0.67, 0.69, 0.68, 0.67, 0.63, 0.40], # [-]
+            'fan type' : 'centrifugal',
+        },
+        self.fan3 = { # https://ventilatorry.ru/downloads/ebmpapst/datasheet/w3g710-go81-01-en-datasheet-ebmpapst.pdf
+            'flow rate' : [6245/cu.h2s, 8330/cu.h2s, 10410/cu.h2s, 12610/cu.h2s], # [m3/s]
+            'power' : [100, 238, 465, 827], # [-]
+            'fan type' : 'axial',
         }
-        self.fan_list = [self.fan1, self.fan2]
+        self.fan_list = [self.fan1, self.fan2, self.fan3]
 
-    def get_effieciency(self, fan, dV_fan):
+    def get_efficiency(self, fan, dV_fan):
+        if 'efficiency' not in fan:
+            raise ValueError("Selected fan does not have efficiency data.")
         self.efficiency_coeffs, _ = curve_fit(cubic_function, fan['flow rate'], fan['efficiency'])
         eff = cubic_function(dV_fan, *self.efficiency_coeffs)
         return eff
     
     def get_pressure(self, fan, dV_fan):
+        if 'pressure' not in fan:
+            raise ValueError("Selected fan does not have pressure data.")
         self.pressure_coeffs, _ = curve_fit(cubic_function, fan['flow rate'], fan['pressure'])
         pressure = cubic_function(dV_fan, *self.pressure_coeffs)
         return pressure
     
     def get_power(self, fan, dV_fan):
-        eff = self.get_effieciency(fan, dV_fan)
-        pressure = self.get_pressure(fan, dV_fan)
-        power = pressure * dV_fan / eff
+        if 'efficiency' in fan and 'pressure' in fan:
+            eff = self.get_efficiency(fan, dV_fan)
+            pressure = self.get_pressure(fan, dV_fan)
+            power = pressure * dV_fan / eff
+        elif 'power' in fan:
+            self.power_coeffs, _ = curve_fit(quadratic_function, fan['flow rate'], fan['power'])
+            power = quadratic_function(dV_fan, *self.power_coeffs)
         return power
 
     def show_graph(self):
@@ -1784,7 +1799,7 @@ class AirSourceHeatPump_cooling:
     def __post_init__(self):
         # fan
         self.fan_int = Fan().fan1
-        self.fan_ext = Fan().fan2
+        self.fan_ext = Fan().fan3
 
         # COP
         self.Q_r_max = 9000 # [W]
@@ -1915,7 +1930,7 @@ class AirSourceHeatPump_heating:
 
         # fan
         self.fan_int = Fan().fan1
-        self.fan_ext = Fan().fan2
+        self.fan_ext = Fan().fan3
 
         # COP
         self.Q_r_max = 9000 # maximum heating capacity [W]
