@@ -1274,6 +1274,98 @@ class HeatPumpBoiler:
 
 @dataclass
 class HeatPumpBoiler_without_tank:
+    """
+    좋습니다 👍. 모든 하첨자를 `{}`로 묶은 버전을 정리해 드릴게요. 이러면 노션에 붙여넣어도 수식 구조가 무너지지 않고 직관적으로 읽을 수 있습니다.
+
+---
+
+# ASHP 팬 전력 “역직관” 현상 정리
+
+**3줄 요약**
+
+* 에너지수지: Q\_{load} = W\_{comp} + Q\_{evap} 은 맞음
+* 외기 ↓ → COP ↓ → W\_{comp} ↑ → 같은 부하라면 Q\_{evap} ↓
+* 하지만 (ΔT\_{air} 고정 + ΔP 고정 + 팬 전력 100% 회수) 가정 때문에 모델상 "추울수록 P\_{fan} ↓" 현상이 나타남. 실제 장치에서는 보통 유지되거나 증가.
+
+---
+
+## 결론
+
+* 같은 급탕 부하에서 외기온이 낮아지면 **컴프레서 전력 증가**, **증발기 흡열 감소**는 타당.
+* 현재 가정하에서
+
+  V\_{air} = Q\_{evap} / (ρ \* c\_{p} \* ΔT\_{air} + ΔP / η\_{fan})
+  P\_{fan} = ΔP \* V\_{air} / η\_{fan}
+
+  이므로 Q\_{evap} ↓ → V\_{air} ↓ → P\_{fan} ↓.
+* 물리적으로 불가능한 건 아니지만, 실제 장치와는 대체로 다름.
+
+---
+
+## 현실과 어긋나는 이유
+
+1. **ΔT\_{air} 고정 가정**
+   외기 ↓ → 증발기 포화온도 ↓ → LMTD 감소. 보통은 유량을 늘리거나 ΔT\_{air} 를 키워 대응.
+
+2. **공기 밀도 효과**
+   추울수록 ρ\_{air} ↑. 압력강하는 ΔP \~ ρ \* V², 팬 전력은 P\_{fan} \~ ρ \* V³.
+   따라서 밀도가 커질수록 팬 전력이 오히려 커지는 경향.
+
+3. **서리·디프로스트**
+   서리 발생 → ΔP 급증, 전열 성능 저하. 이를 상쇄하기 위해 팬 속도 ↑ 또는 디프로스트 주기 삽입 → 평균 전력 증가.
+
+4. **제어 전략**
+   상용기는 보통 정유량/정정압/최저 회전수 등을 유지. Q\_{evap} 비례 제어를 쓰지 않음 → 추울수록 팬 전력은 유지되거나 증가.
+
+5. **팬 전열 100% 회수 가정**
+   실제로는 손실 분산, 바이패스, 모터 발열 위치 등으로 완전 회수 불가. 성능평가(HSPF, SCOP)에서는 팬 전력을 기생 전력으로 본다.
+
+---
+
+## 모델 개선 체크리스트
+
+* [ ] **팬 열 회수 제거 또는 감쇠**
+  Q\_{evap} ≈ m\_{air} \* c\_{p} \* (T\_{in} - T\_{out})
+  팬 전력은 COP 계산에 소비전력으로만 반영
+  (옵션) 회수율 β (0\~0.3) 추가: Q\_{evap} = m \* c\_{p} \* ΔT + β \* P\_{fan}
+
+* [ ] **ΔT\_{air} 고정 해제, ε–NTU/UA 모델 적용**
+  Q\_{evap} = UA(V) \* LMTD(T\_{air}, T\_{evap})
+  UA(V) ≈ a + b \* V^{n} (n ≈ 0.6\~0.8)
+
+* [ ] **팬 법칙·압력강하 반영**
+  ΔP ≈ K \* ρ \* V²
+  P\_{fan} = ΔP \* V / η
+
+* [ ] **최소/최대 팬 속도·제어 목표 도입**
+  예: V ≥ V\_{min}, 또는 T\_{evap} 목표를 유지하기 위해 V 조절
+
+* [ ] **서리·디프로스트 평균 효과 반영**
+  외기온/습도 기반 ΔP 증가, UA 감소, 디프로스트 주기와 소비 전력 평균 반영
+
+---
+
+## 질문에 대한 답
+
+> “추워지면 COP가 떨어져서 컴프레서 전력은 늘고, 팬은 덜 일하는 게 실제로 가능한가?”
+
+* **모델 가정하에서는 가능** (필연적인 결과)
+* **현실 장치에서는 드묾**. 공기 밀도, 서리, 제어 전략, 최소 팬속 조건 때문에 팬 전력은 대체로 유지되거나 오히려 증가
+
+---
+
+## 빠른 적용 팁
+
+* 팬 열 회수 제거
+* 팬 법칙·압력강하 반영
+
+이 두 가지만 적용해도 지금 겪는 “역직관” 문제는 대부분 해소되고 실제 경향과 유사해짐.
+
+---
+
+👉 혹시 이 버전을 표 형태(예: "모델 가정 vs 실제 현상")로도 정리해드릴까요?
+
+    """
 
     def __post_init__(self): 
 
@@ -1281,6 +1373,7 @@ class HeatPumpBoiler_without_tank:
 
         # Efficiency [-]
         self.eta_fan = 0.6
+        self.zeta_fan = 0.3 # 팬 열 회수율
                 
         # Pressure [Pa]
         self.dP = 200 
@@ -1291,8 +1384,8 @@ class HeatPumpBoiler_without_tank:
         self.T_r_ext     = self.T0 - 10
         
         self.T_w_serv = 45
-        self.T_w_exch = self.T_w_serv + 5
-        self.T_r_exch = self.T_w_serv + 10
+        self.T_w_HX = self.T_w_serv + 5
+        self.T_r_HX = self.T_w_serv + 10
         self.T_w_sup  = 10
 
         self.dV_w_serv = 1.2
@@ -1309,34 +1402,34 @@ class HeatPumpBoiler_without_tank:
         self.T0          = cu.C2K(self.T0)
         self.T_a_ext_out = cu.C2K(self.T_a_ext_out)
         self.T_r_ext     = cu.C2K(self.T_r_ext)
-        self.T_r_exch    = cu.C2K(self.T_r_exch)
+        self.T_r_HX    = cu.C2K(self.T_r_HX)
         self.T_w_serv    = cu.C2K(self.T_w_serv)
-        self.T_w_exch    = cu.C2K(self.T_w_exch)
+        self.T_w_HX    = cu.C2K(self.T_w_HX)
         self.T_w_sup     = cu.C2K(self.T_w_sup)
         
         # L/min to m³/s
         self.dV_w_serv = self.dV_w_serv / 60 / 1000 # L/min to m³/s
         
         # Volumetric flow rate ratio [-]
-        self.alp = (self.T_w_serv - self.T_w_sup)/(self.T_w_exch - self.T_w_sup)
+        self.alp = (self.T_w_serv - self.T_w_sup)/(self.T_w_HX - self.T_w_sup)
         self.alp = print("alp is negative") if self.alp < 0 else self.alp
         
         # Volumetric flow rates [m³/s]
-        self.dV_w_sup_exch = self.alp * self.dV_w_serv
-        self.dV_w_sup_mix  = (1-self.alp)*self.dV_w_serv
+        self.dV_w_sup_HX  = self.alp * self.dV_w_serv
+        self.dV_w_sup_mix = (1-self.alp)*self.dV_w_serv
         
         # Temperature [K]
         self.T_a_ext_in = self.T0  # External unit inlet air temperature [K]
 
-        self.Q_w_sup_exch = c_w * rho_w * self.dV_w_sup_exch * (self.T_w_sup - self.T0)
-        self.Q_w_sup_mix  = c_w * rho_w * self.dV_w_sup_mix * (self.T_w_sup - self.T0)
-        self.Q_w_exch     = c_w * rho_w * self.dV_w_sup_exch * (self.T_w_exch - self.T0)
-        self.Q_w_serv     = c_w * rho_w * self.dV_w_serv * (self.T_w_serv - self.T0)
-        self.Q_r_exch     = self.Q_w_exch - self.Q_w_sup_exch # Heat transfer from refrigerant to tank water
+        self.Q_w_sup_HX  = c_w * rho_w * self.dV_w_sup_HX * (self.T_w_sup - self.T0)
+        self.Q_w_sup_mix = c_w * rho_w * self.dV_w_sup_mix * (self.T_w_sup - self.T0)
+        self.Q_w_HX      = c_w * rho_w * self.dV_w_sup_HX * (self.T_w_HX - self.T0)
+        self.Q_w_serv    = c_w * rho_w * self.dV_w_serv * (self.T_w_serv - self.T0)
+        self.Q_r_HX      = self.Q_w_HX - self.Q_w_sup_HX # Heat transfer from refrigerant to tank water
         
-        self.COP = calculate_ASHP_heating_COP(T0 = self.T0, Q_r_int=self.Q_r_exch, Q_r_max = self.Q_r_max)
-        self.E_cmp    = self.Q_r_exch/self.COP  
-        self.Q_r_ext  = self.Q_r_exch - self.E_cmp 
+        self.COP = calculate_ASHP_heating_COP(T0 = self.T0, Q_r_int=self.Q_r_HX, Q_r_max = self.Q_r_max)
+        self.E_cmp    = self.Q_r_HX/self.COP  
+        self.Q_r_ext  = self.Q_r_HX - self.E_cmp 
 
         self.dV_a_ext = self.Q_r_ext / (self.dP / self.eta_fan + c_a * rho_a * (self.T_a_ext_in - self.T_a_ext_out))
         if self.dV_a_ext < 0: 
@@ -1352,24 +1445,24 @@ class HeatPumpBoiler_without_tank:
         self.S_a_ext_out , self.X_a_ext_out  = generate_entropy_exergy_term(self.Q_a_ext_out, self.T_a_ext_out, self.T0, fluid=True)
 
         # Refrigerant
-        self.S_r_ext, self.X_r_ext   = generate_entropy_exergy_term(self.Q_r_ext, self.T_r_ext, self.T0)
-        self.S_cmp, self.X_cmp       = generate_entropy_exergy_term(self.E_cmp, float('inf'), self.T0)
-        self.S_r_exch, self.X_r_exch = generate_entropy_exergy_term(self.Q_r_exch, self.T_r_exch, self.T0)
+        self.S_r_ext, self.X_r_ext = generate_entropy_exergy_term(self.Q_r_ext, self.T_r_ext, self.T0)
+        self.S_cmp  , self.X_cmp   = generate_entropy_exergy_term(self.E_cmp, float('inf'), self.T0)
+        self.S_r_HX , self.X_r_HX  = generate_entropy_exergy_term(self.Q_r_HX, self.T_r_HX, self.T0)
         
         # Heat exchanger
-        self.S_w_exch    , self.X_w_exch     = generate_entropy_exergy_term(self.Q_w_exch, self.T_w_exch, self.T0, fluid=True)
-        self.S_w_sup_exch, self.X_w_sup_exch = generate_entropy_exergy_term(self.Q_w_sup_exch, self.T_w_sup, self.T0, fluid=True)
+        self.S_w_HX    , self.X_w_HX     = generate_entropy_exergy_term(self.Q_w_HX, self.T_w_HX, self.T0, fluid=True)
+        self.S_w_sup_HX, self.X_w_sup_HX = generate_entropy_exergy_term(self.Q_w_sup_HX, self.T_w_sup, self.T0, fluid=True)
         self.S_w_sup_mix , self.X_w_sup_mix  = generate_entropy_exergy_term(self.Q_w_sup_mix, self.T_w_sup, self.T0, fluid=True)
         self.S_w_serv    , self.X_w_serv     = generate_entropy_exergy_term(self.Q_w_serv, self.T_w_serv, self.T0, fluid=True)
 
         self.S_g_ext  = self.S_a_ext_out + self.S_r_ext - (self.S_fan + self.S_a_ext_in)
-        self.S_g_r    = self.S_r_exch - (self.S_cmp + self.S_r_ext)
-        self.S_g_exch = self.S_w_exch - (self.S_r_exch + self.S_w_sup_exch)
-        self.S_g_mix  = self.S_w_serv - (self.S_w_exch + self.S_w_sup_mix)
+        self.S_g_r    = self.S_r_HX - (self.S_cmp + self.S_r_ext)
+        self.S_g_HX = self.S_w_HX - (self.S_r_HX + self.S_w_sup_HX)
+        self.S_g_mix  = self.S_w_serv - (self.S_w_HX + self.S_w_sup_mix)
 
         self.X_c_ext  = self.S_g_ext * self.T0
         self.X_c_r    = self.S_g_r * self.T0
-        self.X_c_exch = self.S_g_exch * self.T0
+        self.X_c_HX = self.S_g_HX * self.T0
         self.X_c_mix  = self.S_g_mix * self.T0
         
         self.X_eff = self.X_w_serv / (self.X_fan + self.X_cmp)
@@ -1382,13 +1475,13 @@ class HeatPumpBoiler_without_tank:
 
         self.energy_balance["refrigerant"]["in"]["E_cmp"] = self.E_cmp
         self.energy_balance["refrigerant"]["in"]["Q_r_ext"] = self.Q_r_ext
-        self.energy_balance["refrigerant"]["out"]["Q_r_tank"] = self.Q_r_exch
+        self.energy_balance["refrigerant"]["out"]["Q_r_tank"] = self.Q_r_HX
 
-        self.energy_balance["heat exchanger"]["in"]["Q_r_exch"] = self.Q_r_exch
-        self.energy_balance["heat exchanger"]["in"]["Q_w_sup_exch"] = self.Q_w_sup_exch 
-        self.energy_balance["heat exchanger"]["out"]["Q_w_exch"] = self.Q_w_exch
+        self.energy_balance["heat exchanger"]["in"]["Q_r_HX"] = self.Q_r_HX
+        self.energy_balance["heat exchanger"]["in"]["Q_w_sup_HX"] = self.Q_w_sup_HX 
+        self.energy_balance["heat exchanger"]["out"]["Q_w_HX"] = self.Q_w_HX
         
-        self.energy_balance["mixing valve"]["in"]["Q_w_exch"] = self.Q_w_exch
+        self.energy_balance["mixing valve"]["in"]["Q_w_HX"] = self.Q_w_HX
         self.energy_balance["mixing valve"]["in"]["Q_w_sup_mix"] = self.Q_w_sup_mix
         self.energy_balance["mixing valve"]["out"]["Q_w_serv"] = self.Q_w_serv
 
@@ -1402,11 +1495,11 @@ class HeatPumpBoiler_without_tank:
         self.entropy_balance["refrigerant"]["in"]["S_cmp"] = self.S_cmp
         self.entropy_balance["refrigerant"]["in"]["S_r_ext"] = self.S_r_ext
         self.entropy_balance["refrigerant"]["gen"]["S_g_r"] = self.S_g_r
-        self.entropy_balance["refrigerant"]["out"]["S_r_exch"] = self.S_r_exch
+        self.entropy_balance["refrigerant"]["out"]["S_r_HX"] = self.S_r_HX
         
-        self.entropy_balance["heat exchanger"]["in"]["S_r_exch"] = self.S_r_exch
-        self.entropy_balance["heat exchanger"]["in"]["S_w_sup_exch"] = self.S_w_sup_exch
-        self.entropy_balance["heat exchanger"]["gen"]["S_g_exch"] = self.S_g_exch
+        self.entropy_balance["heat exchanger"]["in"]["S_r_HX"] = self.S_r_HX
+        self.entropy_balance["heat exchanger"]["in"]["S_w_sup_HX"] = self.S_w_sup_HX
+        self.entropy_balance["heat exchanger"]["gen"]["S_g_HX"] = self.S_g_HX
         self.entropy_balance["heat exchanger"]["out"]["S_w_serv"] = self.S_w_serv
 
         self.entropy_balance["mixing valve"]["in"]["S_w_serv"] = self.S_w_serv
@@ -1423,11 +1516,11 @@ class HeatPumpBoiler_without_tank:
         self.exergy_balance["refrigerant"]["in"]["X_cmp"] = self.X_cmp
         self.exergy_balance["refrigerant"]["in"]["X_r_ext"] = self.X_r_ext
         self.exergy_balance["refrigerant"]["con"]["X_c_r"] = self.X_c_r
-        self.exergy_balance["refrigerant"]["out"]["X_r_exch"] = self.X_r_exch
+        self.exergy_balance["refrigerant"]["out"]["X_r_HX"] = self.X_r_HX
         
-        self.exergy_balance["heat exchanger"]["in"]["X_r_exch"] = self.X_r_exch
-        self.exergy_balance["heat exchanger"]["in"]["X_w_sup_exch"] = self.X_w_sup_exch
-        self.exergy_balance["heat exchanger"]["con"]["X_c_exch"] = self.X_c_exch
+        self.exergy_balance["heat exchanger"]["in"]["X_r_HX"] = self.X_r_HX
+        self.exergy_balance["heat exchanger"]["in"]["X_w_sup_HX"] = self.X_w_sup_HX
+        self.exergy_balance["heat exchanger"]["con"]["X_c_HX"] = self.X_c_HX
         self.exergy_balance["heat exchanger"]["out"]["X_w_serv"] = self.X_w_serv
         
         self.exergy_balance["mixing valve"]["in"]["X_w_serv"] = self.X_w_serv
@@ -1712,7 +1805,7 @@ class GroundSourceHeatPumpBoiler:
         self.T_g      = 11
         self.T_r_tank = self.T_w_tank + 5
 
-        self.dT_r_exch = -5  # 예시: 열교환기의 온도 - 열교환후 지중순환수 온도 [K]
+        self.dT_r_HX = -5  # 예시: 열교환기의 온도 - 열교환후 지중순환수 온도 [K]
         
         # Tank water use [L/min]
         self.dV_w_serv  = 1.2
@@ -1820,26 +1913,26 @@ class GroundSourceHeatPumpBoiler:
         # 반복 수치해법 적용
         '''
         반복 수치해법을 사용하는 이유:
-        1. 냉매 온도(T_r_exch)와 유체 입구 온도(T_f_in)가 서로 연동되어 직접 계산이 불가능함.
+        1. 냉매 온도(T_r_HX)와 유체 입구 온도(T_f_in)가 서로 연동되어 직접 계산이 불가능함.
         2. 보어홀 열저항, 유량, 토양물성 등 시스템 파라미터가 COP, 온도, 효율에 반영되도록 하기 위함.
         3. 두 온도가 수렴할 때까지 반복 계산하여 물리적으로 일관된 해를 얻기 위함.
         '''
         max_iter = 20
         tol = 1e-3
         self.T_f = self.T_g  # 초기값
-        self.T_f_in = self.T_f + self.dT_r_exch  # 초기값, 열교환기에서의 순환수 유입 온도
+        self.T_f_in = self.T_f + self.dT_r_HX  # 초기값, 열교환기에서의 순환수 유입 온도
 
         for _ in range(max_iter):
-            self.T_r_exch = self.T_f_in + self.dT_r_exch  # 5 K 높게 설정
+            self.T_r_HX = self.T_f_in + self.dT_r_HX  # 5 K 높게 설정
             self.COP = calculate_GSHP_COP(Tg = self.T_g,
                                          T_cond = self.T_r_tank,
-                                         T_evap = self.T_r_exch,
+                                         T_evap = self.T_r_HX,
                                          theta_hat = 0.3)
             # Others
             self.E_cmp = self.Q_r_tank / self.COP # compressor power input [W]
-            self.Q_r_exch = self.Q_r_tank - self.E_cmp  # changed from Q_r_ext to Q_r_exch
+            self.Q_r_HX = self.Q_r_tank - self.E_cmp  # changed from Q_r_ext to Q_r_HX
             # Borehole 
-            self.Q_bh = (self.Q_r_exch - self.E_pmp) / self.H_b # heat flow rate from borehole to ground per unit length [W/m]
+            self.Q_bh = (self.Q_r_HX - self.E_pmp) / self.H_b # heat flow rate from borehole to ground per unit length [W/m]
             self.g_i = G_FLS(t = self.time, ks = self.k_g, as_ = self.alpha, rb = self.r_b, H = self.H_b) # g-function [mK/W]
             # fluid temperature & borehole wall temperature [K]
             T_f_in_old = self.T_f_in  # 이전 유체 입구 온도 저장
@@ -1858,7 +1951,7 @@ class GroundSourceHeatPumpBoiler:
         self.X_w_serv = c_w * rho_w * self.dV_w_serv * ((self.T_w_serv - self.T0) - self.T0 * math.log(self.T_w_serv / self.T0))
 
         self.X_r_int = self.Q_r_tank * (1 - self.T0 / self.T_r_tank)
-        self.X_r_exch = self.Q_r_exch * (1 - self.T0 / self.T_r_exch)  # changed from X_r_ext to X_r_exch
+        self.X_r_HX = self.Q_r_HX * (1 - self.T0 / self.T_r_HX)  # changed from X_r_ext to X_r_HX
 
         self.X_pmp = self.E_pmp - (1 / float('inf')) * self.T0  
         self.X_cmp = self.E_cmp - (1 / float('inf')) * self.T0  
@@ -1880,12 +1973,12 @@ class GroundSourceHeatPumpBoiler:
         self.Xc_GHE = self.Xin_GHE - self.Xout_GHE
 
         # Heat exchanger 
-        self.Xin_exch = self.Xout_GHE 
-        self.Xout_exch = self.X_r_exch + self.X_f_in
-        self.Xc_exch = self.Xin_exch - self.Xout_exch
+        self.Xin_HX = self.Xout_GHE 
+        self.Xout_HX = self.X_r_HX + self.X_f_in
+        self.Xc_HX = self.Xin_HX - self.Xout_HX
 
         # Closed refrigerant system
-        self.Xin_r  = self.E_cmp + self.X_r_exch
+        self.Xin_r  = self.E_cmp + self.X_r_HX
         self.Xout_r = self.X_r_int
         self.Xc_r   = self.Xin_r - self.Xout_r
 
@@ -1937,7 +2030,7 @@ class GroundSourceHeatPumpBoiler:
         self.exergy_balance["refrigerant"] = {
             "in": {
             "$X_{cmp}$": self.X_cmp,
-            "$X_{r,exch}$": self.X_r_exch,
+            "$X_{r,exch}$": self.X_r_HX,
             },
             "con": {
             "$X_{c,r}$": self.Xc_r,
@@ -1953,10 +2046,10 @@ class GroundSourceHeatPumpBoiler:
             "$X_{f,out}$": self.X_f_out,
             },
             "con": {
-            "$X_{c,exch}$": self.Xc_exch,
+            "$X_{c,exch}$": self.Xc_HX,
             },
             "out": {
-            "$X_{r,exch}$": self.X_r_exch,
+            "$X_{r,exch}$": self.X_r_HX,
             "$X_{f,in}$": self.X_f_in,
             }
         }
@@ -2281,11 +2374,11 @@ class GroundSourceHeatPump_cooling:
         self.fan_int = Fan().fan1     
 
         # Temperature
-        self.dT_r_exch = 5  # 예시: 열교환기의 온도 - 열교환후 지중순환수 온도 [K]
+        self.dT_r_HX = 5  # 예시: 열교환기의 온도 - 열교환후 지중순환수 온도 [K]
         self.T0 = 32 # environmental temperature [°C]
         self.T_g = 15 # initial ground temperature [°C]
         self.T_a_room = 20 # room air temperature [°C]
-        self.T_r_exch = 25 # heat exchanger side refrigerant temperature [°C]
+        self.T_r_HX = 25 # heat exchanger side refrigerant temperature [°C]
         
         self.T_r_int     = self.T_a_room - 10 # internal unit refrigerant temperature [°C]
         self.T_a_int_out = self.T_a_room - 5 # internal unit air outlet temperature [°C]
@@ -2314,24 +2407,24 @@ class GroundSourceHeatPump_cooling:
         # 반복 수치해법 적용
         '''
         반복 수치해법을 사용하는 이유:
-        1. 냉매 온도(T_r_exch)와 유체 입구 온도(T_f_in)가 서로 연동되어 직접 계산이 불가능함.
+        1. 냉매 온도(T_r_HX)와 유체 입구 온도(T_f_in)가 서로 연동되어 직접 계산이 불가능함.
         2. 보어홀 열저항, 유량, 토양물성 등 시스템 파라미터가 COP, 온도, 효율에 반영되도록 하기 위함.
         3. 두 온도가 수렴할 때까지 반복 계산하여 물리적으로 일관된 해를 얻기 위함.
         '''
         max_iter = 20
         tol = 1e-3
         self.T_f = self.T_g  # 초기값
-        self.T_f_in = self.T_f + self.dT_r_exch  # 초기값, 열교환기에서의 순환수 유입 온도
+        self.T_f_in = self.T_f + self.dT_r_HX  # 초기값, 열교환기에서의 순환수 유입 온도
 
         for _ in range(max_iter):
-            self.T_r_exch = self.T_f_in + self.dT_r_exch  # 5 K 높게 설정
+            self.T_r_HX = self.T_f_in + self.dT_r_HX  # 5 K 높게 설정
             self.COP = calculate_GSHP_COP(Tg = self.T_g,
-                                         T_cond = self.T_r_exch,
+                                         T_cond = self.T_r_HX,
                                          T_evap = self.T_r_int,
                                          theta_hat = 0.3)
             self.E_cmp = self.Q_r_int / self.COP # compressor power input [W]
-            self.Q_r_exch = self.Q_r_int + self.E_cmp
-            self.Q_bh = (self.Q_r_exch + self.E_pmp) / self.H_b 
+            self.Q_r_HX = self.Q_r_int + self.E_cmp
+            self.Q_bh = (self.Q_r_HX + self.E_pmp) / self.H_b 
             T_f_in_old = self.T_f_in
             self.g_i = G_FLS(t = self.time, ks = self.k_g, as_ = self.alpha, rb = self.r_b, H = self.H_b) # g-function [mK/W]
             self.T_b = self.T_g + self.Q_bh * self.g_i # borehole wall temperature [K]
@@ -2355,7 +2448,7 @@ class GroundSourceHeatPump_cooling:
         self.X_a_int_out = c_a * rho_a * self.dV_int * ((self.T_a_int_out - self.T0) - self.T0 * math.log(self.T_a_int_out / self.T0))
 
         self.X_r_int  = - self.Q_r_int * (1 - self.T0 / self.T_r_int)
-        self.X_r_exch = - self.Q_r_exch * (1 - self.T0 / self.T_r_exch)
+        self.X_r_HX = - self.Q_r_HX * (1 - self.T0 / self.T_r_HX)
 
         self.X_f_in = c_w * rho_w * self.dV_f * ((self.T_f_in - self.T0) - self.T0 * math.log(self.T_f_in / self.T0))
         self.X_f_out = c_w * rho_w * self.dV_f * ((self.T_f_out - self.T0) - self.T0 * math.log(self.T_f_out / self.T0))
@@ -2374,12 +2467,12 @@ class GroundSourceHeatPump_cooling:
         self.Xc_GHE = self.Xin_GHE - self.Xout_GHE
 
         # Heat exchanger
-        self.Xin_exch = self.Xout_GHE 
-        self.Xout_exch = self.X_r_exch + self.X_f_in
-        self.Xc_exch = self.Xin_exch - self.Xout_exch
+        self.Xin_HX = self.Xout_GHE 
+        self.Xout_HX = self.X_r_HX + self.X_f_in
+        self.Xc_HX = self.Xin_HX - self.Xout_HX
 
         # Closed refrigerant system
-        self.Xin_r = self.E_cmp + self.X_r_exch
+        self.Xin_r = self.E_cmp + self.X_r_HX
         self.Xout_r = self.X_r_int
         self.Xc_r = self.Xin_r - self.Xout_r
 
@@ -2413,7 +2506,7 @@ class GroundSourceHeatPump_cooling:
         self.exergy_balance["refrigerant"] = {
             "in": {
                 "$X_{cmp}$": self.E_cmp,
-                "$X_{r,exch}$": self.X_r_exch,
+                "$X_{r,exch}$": self.X_r_HX,
             },
             "con": {
                 "$X_{c,r}$": self.Xc_r,
@@ -2429,10 +2522,10 @@ class GroundSourceHeatPump_cooling:
                 "$X_{f,out}$": self.X_f_out,
             },
             "con": {
-                "$X_{c,exch}$": self.Xc_exch,
+                "$X_{c,exch}$": self.Xc_HX,
             },
             "out": {
-                "$X_{r,exch}$": self.X_r_exch,
+                "$X_{r,exch}$": self.X_r_HX,
                 "$X_{f,in}$": self.X_f_in,
             }
         }
@@ -2492,11 +2585,11 @@ class GroundSourceHeatPump_heating:
         self.fan_int = Fan().fan1
 
         # Temperature
-        self.dT_r_exch = -5  # 예시: 열교환기 측 냉매 온도 - 열교환후 지중순환수 온도 [K]
+        self.dT_r_HX = -5  # 예시: 열교환기 측 냉매 온도 - 열교환후 지중순환수 온도 [K]
         self.T0 = 0 # environmental temperature [°C]
         self.T_g = 15 # initial ground temperature [°C]
         self.T_a_room = 20 # room air temperature [°C]
-        self.T_r_exch = 5 # heat exchanger side refrigerant temperature [°C]
+        self.T_r_HX = 5 # heat exchanger side refrigerant temperature [°C]
         
         self.T_r_int = self.T_a_room + 15 # internal unit refrigerant temperature [°C]
         self.T_a_int_out = self.T_a_room + 10 # internal unit air outlet temperature [°C]
@@ -2522,26 +2615,26 @@ class GroundSourceHeatPump_heating:
         # 반복 수치해법 적용
         '''
         반복 수치해법을 사용하는 이유:
-        1. 냉매 온도(T_r_exch)와 유체 입구 온도(T_f_in)가 서로 연동되어 직접 계산이 불가능함.
+        1. 냉매 온도(T_r_HX)와 유체 입구 온도(T_f_in)가 서로 연동되어 직접 계산이 불가능함.
         2. 보어홀 열저항, 유량, 토양물성 등 시스템 파라미터가 COP, 온도, 효율에 반영되도록 하기 위함.
         3. 두 온도가 수렴할 때까지 반복 계산하여 물리적으로 일관된 해를 얻기 위함.
         '''
         max_iter = 20
         tol = 1e-3
         self.T_f = self.T_g  # 초기값
-        self.T_f_in = self.T_f + self.dT_r_exch  # 초기값, 열교환기에서의 순환수 유입 온도
+        self.T_f_in = self.T_f + self.dT_r_HX  # 초기값, 열교환기에서의 순환수 유입 온도
 
         for _ in range(max_iter):
-            self.T_r_exch = self.T_f_in + self.dT_r_exch  # 5 K 높게 설정
+            self.T_r_HX = self.T_f_in + self.dT_r_HX  # 5 K 높게 설정
             self.COP = calculate_GSHP_COP(Tg = self.T_g,
                                          T_cond = self.T_r_int,
-                                         T_evap = self.T_r_exch,
+                                         T_evap = self.T_r_HX,
                                          theta_hat = 0.3)
             # Others
             self.E_cmp = self.Q_r_int / self.COP # compressor power input [W]
-            self.Q_r_exch = self.Q_r_int - self.E_cmp  # changed from Q_r_ext to Q_r_exch
+            self.Q_r_HX = self.Q_r_int - self.E_cmp  # changed from Q_r_ext to Q_r_HX
             # Borehole 
-            self.Q_bh = (self.Q_r_exch - self.E_pmp) / self.H_b # heat flow rate from borehole to ground per unit length [W/m]
+            self.Q_bh = (self.Q_r_HX - self.E_pmp) / self.H_b # heat flow rate from borehole to ground per unit length [W/m]
             self.g_i = G_FLS(t = self.time, ks = self.k_g, as_ = self.alpha, rb = self.r_b, H = self.H_b) # g-function [mK/W]
             # fluid temperature & borehole wall temperature [K]
             T_f_in_old = self.T_f_in  # 이전 유체 입구 온도 저장
@@ -2566,7 +2659,7 @@ class GroundSourceHeatPump_heating:
         self.X_a_int_out = c_a * rho_a * self.dV_int * ((self.T_a_int_out - self.T0) - self.T0 * math.log(self.T_a_int_out / self.T0))
 
         self.X_r_int   = self.Q_r_int * (1 - self.T0 / self.T_r_int)
-        self.X_r_exch   = self.Q_r_exch * (1 - self.T0 / self.T_r_exch)
+        self.X_r_HX   = self.Q_r_HX * (1 - self.T0 / self.T_r_HX)
 
         self.X_f_in = c_w * rho_w * self.dV_f * ((self.T_f_in - self.T0) - self.T0 * math.log(self.T_f_in / self.T0))
         self.X_f_out = c_w * rho_w * self.dV_f * ((self.T_f_out - self.T0) - self.T0 * math.log(self.T_f_out / self.T0))
@@ -2580,14 +2673,14 @@ class GroundSourceHeatPump_heating:
         self.Xc_int = self.Xin_int - self.Xout_int
 
         # Closed refrigerant system
-        self.Xin_r = self.E_cmp + self.X_r_exch
+        self.Xin_r = self.E_cmp + self.X_r_HX
         self.Xout_r = self.X_r_int
         self.Xc_r = self.Xin_r - self.Xout_r
 
         # Heat exchanger
-        self.Xin_exch = self.X_f_out
-        self.Xout_exch = self.X_r_exch + self.X_f_in
-        self.Xc_exch = self.Xin_exch - self.Xout_exch
+        self.Xin_HX = self.X_f_out
+        self.Xout_HX = self.X_r_HX + self.X_f_in
+        self.Xc_HX = self.Xin_HX - self.Xout_HX
 
         # Ground heat exchanger
         self.Xin_GHE = self.E_pmp + self.X_b + self.X_f_in
@@ -2624,7 +2717,7 @@ class GroundSourceHeatPump_heating:
         self.exergy_balance["refrigerant"] = {
             "in": {
                 "$X_{cmp}$": self.E_cmp,
-                "$X_{r,exch}$": self.X_r_exch,
+                "$X_{r,exch}$": self.X_r_HX,
             },
             "con": {
                 "$X_{c,r}$": self.Xc_r,
@@ -2640,10 +2733,10 @@ class GroundSourceHeatPump_heating:
                 "$X_{f,out}$": self.X_f_out,
             },
             "con": {
-                "$X_{c,exch}$": self.Xc_exch,
+                "$X_{c,exch}$": self.Xc_HX,
             },
             "out": {
-                "$X_{r,exch}$": self.X_r_exch,
+                "$X_{r,exch}$": self.X_r_HX,
                 "$X_{f,in}$": self.X_f_in,
             }
         }
