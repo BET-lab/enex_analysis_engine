@@ -339,7 +339,6 @@ def generate_entropy_exergy_term(energy_term, Tsys, T0, fluid = None):
 #%%
 # class - Fan & Pump
 @dataclass
-@dataclass
 class Fan:
     def __post_init__(self): 
         # Fan reference: https://www.krugerfan.com/public/uploads/KATCAT006.pdf
@@ -1484,14 +1483,71 @@ class HeatPumpBoiler_without_tank:
         self.Q_w_serv    = c_w * rho_w * self.dV_w_serv * (self.T_w_serv - self.T0)
         self.Q_r_HX      = self.Q_w_HX - self.Q_w_sup_HX # Heat transfer from refrigerant to tank water
         
-        self.COP = calculate_ASHP_heating_COP(T0 = self.T0, Q_r_int=self.Q_r_HX, Q_r_max = self.Q_r_max)
-        self.E_cmp    = self.Q_r_HX/self.COP  
-        self.Q_r_ext  = self.Q_r_HX - self.E_cmp 
+        ########################################################################################################################
+        # self.COP = calculate_ASHP_heating_COP(T0 = self.T0, Q_r_int=self.Q_r_HX, Q_r_max = self.Q_r_max)
+        # self.E_cmp    = self.Q_r_HX/self.COP  
+        # self.Q_r_ext  = self.Q_r_HX - self.E_cmp 
 
-        self.dV_a_ext = self.Q_r_ext / (self.dP / self.eta_fan + c_a * rho_a * (self.T_a_ext_in - self.T_a_ext_out))
-        if self.dV_a_ext < 0: 
-            print("Negative air flow rate, check the input temperatures and heat transfer values.")
-        self.E_fan   = self.dP * self.dV_a_ext/self.eta_fan  # Power input to external fan [W]
+        # self.dV_a_ext = self.Q_r_ext / (c_a * rho_a * (self.T_a_ext_in - self.T_a_ext_out))
+        # if self.dV_a_ext < 0: 
+        #     print("Negative air flow rate, check the input temperatures and heat transfer values.")
+        # self.E_fan   = Fan().get_power(fan = self.fan_ext, dV_fan = self.dV_a_ext)  # Power input to external fan [W] (\Delta P = 0.5 * rho * V^2)
+        ########################################################################################################################
+        
+        COP_target = calculate_ASHP_heating_COP(T0=self.T0, Q_r_int=self.Q_r_HX, Q_r_max=self.Q_r_max)
+
+        # 2) rhs = Q_r_HX / COP_target  (E_cmp + E_fan 이 만족해야 하는 값)
+        rhs = self.Q_r_HX / max(COP_target, 1e-9)
+
+        # 3) 이분법으로 E_cmp를 직접 풉니다. (브래킷 [0, Q_r_HX])
+        lo, hi = 0.0, max(self.Q_r_HX, 1e-9)
+        tol = 1e-3      # W
+        max_iter = 60
+
+        # 외기측 ΔT가 0 이하이면 팬 전력 0으로 처리
+        dT_air = (self.T_a_ext_in - self.T_a_ext_out)
+        if dT_air <= 0:
+            self.E_cmp = min(rhs, self.Q_r_HX)
+            self.E_fan = 0.0
+        else:
+            # 부호교차가 충분하지 않으면 고정점으로도 수렴하니, 이분법 우선 시도
+            for _ in range(max_iter):
+                mid = 0.5*(lo + hi)
+
+                # mid 가정에서 팬 전력 계산
+                Q_r_ext_mid = max(self.Q_r_HX - mid, 0.0)
+                if Q_r_ext_mid <= 0.0:
+                    E_fan_mid = 0.0
+                else:
+                    dV_mid = Q_r_ext_mid / (c_a * rho_a * dT_air)
+                    E_fan_mid = Fan().get_power(fan=self.fan_ext, dV_fan=dV_mid)
+
+                F_mid = mid + E_fan_mid - rhs  # =0 이면 해
+
+                if abs(F_mid) < tol or (hi - lo) < 1e-6:
+                    self.E_cmp = mid
+                    self.E_fan = E_fan_mid
+                    break
+
+                if F_mid > 0.0:
+                    hi = mid
+                else:
+                    lo = mid
+            else:
+                # (드물게) 반복 종료까지 못 맞추면 보수적으로 고정점 한 번
+                E_cmp_guess = min(max(rhs, 0.0), self.Q_r_HX)
+                Q_r_ext_g = max(self.Q_r_HX - E_cmp_guess, 0.0)
+                dV_g = 0.0 if dT_air <= 0 else Q_r_ext_g / (c_a * rho_a * dT_air)
+                E_fan_g = 0.0 if dV_g <= 0 else Fan().get_power(fan=self.fan_ext, dV_fan=dV_g)
+                self.E_cmp = min(max(rhs - E_fan_g, 0.0), self.Q_r_HX)
+                self.E_fan = E_fan_g
+
+        # 4) 해로부터 나머지 업데이트
+        self.Q_r_ext  = max(self.Q_r_HX - self.E_cmp, 0.0)
+        self.dV_a_ext = 0.0 if dT_air <= 0 or self.Q_r_ext <= 0 else self.Q_r_ext/(c_a*rho_a*dT_air)
+
+        # (선택) "시스템 COP(팬 포함)" 저장
+        self.COP = self.Q_r_HX / max(self.E_cmp + self.E_fan, 1e-9)
 
         self.Q_a_ext_in   = c_a * rho_a * self.dV_a_ext * (self.T_a_ext_in - self.T0)
         self.Q_a_ext_out  = c_a * rho_a * self.dV_a_ext * (self.T_a_ext_out - self.T0)
