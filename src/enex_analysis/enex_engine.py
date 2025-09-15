@@ -8,6 +8,9 @@ import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 from scipy import integrate
 from scipy.special import erf
+import CoolProp.CoolProp as CP
+import numpy as np
+from scipy.optimize import minimize
 
 #%%
 # constant
@@ -1334,93 +1337,93 @@ class HeatPumpBoiler_without_tank:
     """
     좋습니다 👍. 모든 하첨자를 `{}`로 묶은 버전을 정리해 드릴게요. 이러면 노션에 붙여넣어도 수식 구조가 무너지지 않고 직관적으로 읽을 수 있습니다.
 
----
+    ---
 
-# ASHP 팬 전력 “역직관” 현상 정리
+    # ASHP 팬 전력 “역직관” 현상 정리
 
-**3줄 요약**
+    **3줄 요약**
 
-* 에너지수지: Q\_{load} = W\_{comp} + Q\_{evap} 은 맞음
-* 외기 ↓ → COP ↓ → W\_{comp} ↑ → 같은 부하라면 Q\_{evap} ↓
-* 하지만 (ΔT\_{air} 고정 + ΔP 고정 + 팬 전력 100% 회수) 가정 때문에 모델상 "추울수록 P\_{fan} ↓" 현상이 나타남. 실제 장치에서는 보통 유지되거나 증가.
+    * 에너지수지: Q\_{load} = W\_{comp} + Q\_{evap} 은 맞음
+    * 외기 ↓ → COP ↓ → W\_{comp} ↑ → 같은 부하라면 Q\_{evap} ↓
+    * 하지만 (ΔT\_{air} 고정 + ΔP 고정 + 팬 전력 100% 회수) 가정 때문에 모델상 "추울수록 P\_{fan} ↓" 현상이 나타남. 실제 장치에서는 보통 유지되거나 증가.
 
----
+    ---
 
-## 결론
+    ## 결론
 
-* 같은 급탕 부하에서 외기온이 낮아지면 **컴프레서 전력 증가**, **증발기 흡열 감소**는 타당.
-* 현재 가정하에서
+    * 같은 급탕 부하에서 외기온이 낮아지면 **컴프레서 전력 증가**, **증발기 흡열 감소**는 타당.
+    * 현재 가정하에서
 
-  V\_{air} = Q\_{evap} / (ρ \* c\_{p} \* ΔT\_{air} + ΔP / η\_{fan})
-  P\_{fan} = ΔP \* V\_{air} / η\_{fan}
+    V\_{air} = Q\_{evap} / (ρ \* c\_{p} \* ΔT\_{air} + ΔP / η\_{fan})
+    P\_{fan} = ΔP \* V\_{air} / η\_{fan}
 
-  이므로 Q\_{evap} ↓ → V\_{air} ↓ → P\_{fan} ↓.
-* 물리적으로 불가능한 건 아니지만, 실제 장치와는 대체로 다름.
+    이므로 Q\_{evap} ↓ → V\_{air} ↓ → P\_{fan} ↓.
+    * 물리적으로 불가능한 건 아니지만, 실제 장치와는 대체로 다름.
 
----
+    ---
 
-## 현실과 어긋나는 이유
+    ## 현실과 어긋나는 이유
 
-1. **ΔT\_{air} 고정 가정**
-   외기 ↓ → 증발기 포화온도 ↓ → LMTD 감소. 보통은 유량을 늘리거나 ΔT\_{air} 를 키워 대응.
+    1. **ΔT\_{air} 고정 가정**
+    외기 ↓ → 증발기 포화온도 ↓ → LMTD 감소. 보통은 유량을 늘리거나 ΔT\_{air} 를 키워 대응.
 
-2. **공기 밀도 효과**
-   추울수록 ρ\_{air} ↑. 압력강하는 ΔP \~ ρ \* V², 팬 전력은 P\_{fan} \~ ρ \* V³.
-   따라서 밀도가 커질수록 팬 전력이 오히려 커지는 경향.
+    2. **공기 밀도 효과**
+    추울수록 ρ\_{air} ↑. 압력강하는 ΔP \~ ρ \* V², 팬 전력은 P\_{fan} \~ ρ \* V³.
+    따라서 밀도가 커질수록 팬 전력이 오히려 커지는 경향.
 
-3. **서리·디프로스트**
-   서리 발생 → ΔP 급증, 전열 성능 저하. 이를 상쇄하기 위해 팬 속도 ↑ 또는 디프로스트 주기 삽입 → 평균 전력 증가.
+    3. **서리·디프로스트**
+    서리 발생 → ΔP 급증, 전열 성능 저하. 이를 상쇄하기 위해 팬 속도 ↑ 또는 디프로스트 주기 삽입 → 평균 전력 증가.
 
-4. **제어 전략**
-   상용기는 보통 정유량/정정압/최저 회전수 등을 유지. Q\_{evap} 비례 제어를 쓰지 않음 → 추울수록 팬 전력은 유지되거나 증가.
+    4. **제어 전략**
+    상용기는 보통 정유량/정정압/최저 회전수 등을 유지. Q\_{evap} 비례 제어를 쓰지 않음 → 추울수록 팬 전력은 유지되거나 증가.
 
-5. **팬 전열 100% 회수 가정**
-   실제로는 손실 분산, 바이패스, 모터 발열 위치 등으로 완전 회수 불가. 성능평가(HSPF, SCOP)에서는 팬 전력을 기생 전력으로 본다.
+    5. **팬 전열 100% 회수 가정**
+    실제로는 손실 분산, 바이패스, 모터 발열 위치 등으로 완전 회수 불가. 성능평가(HSPF, SCOP)에서는 팬 전력을 기생 전력으로 본다.
 
----
+    ---
 
-## 모델 개선 체크리스트
+    ## 모델 개선 체크리스트
 
-* [ ] **팬 열 회수 제거 또는 감쇠**
-  Q\_{evap} ≈ m\_{air} \* c\_{p} \* (T\_{in} - T\_{out})
-  팬 전력은 COP 계산에 소비전력으로만 반영
-  (옵션) 회수율 β (0\~0.3) 추가: Q\_{evap} = m \* c\_{p} \* ΔT + β \* P\_{fan}
+    * [ ] **팬 열 회수 제거 또는 감쇠**
+    Q\_{evap} ≈ m\_{air} \* c\_{p} \* (T\_{in} - T\_{out})
+    팬 전력은 COP 계산에 소비전력으로만 반영
+    (옵션) 회수율 β (0\~0.3) 추가: Q\_{evap} = m \* c\_{p} \* ΔT + β \* P\_{fan}
 
-* [ ] **ΔT\_{air} 고정 해제, ε–NTU/UA 모델 적용**
-  Q\_{evap} = UA(V) \* LMTD(T\_{air}, T\_{evap})
-  UA(V) ≈ a + b \* V^{n} (n ≈ 0.6\~0.8)
+    * [ ] **ΔT\_{air} 고정 해제, ε–NTU/UA 모델 적용**
+    Q\_{evap} = UA(V) \* LMTD(T\_{air}, T\_{evap})
+    UA(V) ≈ a + b \* V^{n} (n ≈ 0.6\~0.8)
 
-* [ ] **팬 법칙·압력강하 반영**
-  ΔP ≈ K \* ρ \* V²
-  P\_{fan} = ΔP \* V / η
+    * [ ] **팬 법칙·압력강하 반영**
+    ΔP ≈ K \* ρ \* V²
+    P\_{fan} = ΔP \* V / η
 
-* [ ] **최소/최대 팬 속도·제어 목표 도입**
-  예: V ≥ V\_{min}, 또는 T\_{evap} 목표를 유지하기 위해 V 조절
+    * [ ] **최소/최대 팬 속도·제어 목표 도입**
+    예: V ≥ V\_{min}, 또는 T\_{evap} 목표를 유지하기 위해 V 조절
 
-* [ ] **서리·디프로스트 평균 효과 반영**
-  외기온/습도 기반 ΔP 증가, UA 감소, 디프로스트 주기와 소비 전력 평균 반영
+    * [ ] **서리·디프로스트 평균 효과 반영**
+    외기온/습도 기반 ΔP 증가, UA 감소, 디프로스트 주기와 소비 전력 평균 반영
 
----
+    ---
 
-## 질문에 대한 답
+    ## 질문에 대한 답
 
-> “추워지면 COP가 떨어져서 컴프레서 전력은 늘고, 팬은 덜 일하는 게 실제로 가능한가?”
+    > “추워지면 COP가 떨어져서 컴프레서 전력은 늘고, 팬은 덜 일하는 게 실제로 가능한가?”
 
-* **모델 가정하에서는 가능** (필연적인 결과)
-* **현실 장치에서는 드묾**. 공기 밀도, 서리, 제어 전략, 최소 팬속 조건 때문에 팬 전력은 대체로 유지되거나 오히려 증가
+    * **모델 가정하에서는 가능** (필연적인 결과)
+    * **현실 장치에서는 드묾**. 공기 밀도, 서리, 제어 전략, 최소 팬속 조건 때문에 팬 전력은 대체로 유지되거나 오히려 증가
 
----
+    ---
 
-## 빠른 적용 팁
+    ## 빠른 적용 팁
 
-* 팬 열 회수 제거
-* 팬 법칙·압력강하 반영
+    * 팬 열 회수 제거
+    * 팬 법칙·압력강하 반영
 
-이 두 가지만 적용해도 지금 겪는 “역직관” 문제는 대부분 해소되고 실제 경향과 유사해짐.
+    이 두 가지만 적용해도 지금 겪는 “역직관” 문제는 대부분 해소되고 실제 경향과 유사해짐.
 
----
+    ---
 
-👉 혹시 이 버전을 표 형태(예: "모델 가정 vs 실제 현상")로도 정리해드릴까요?
+    👉 혹시 이 버전을 표 형태(예: "모델 가정 vs 실제 현상")로도 정리해드릴까요?
 
     """
 
@@ -1489,9 +1492,9 @@ class HeatPumpBoiler_without_tank:
         self.Q_ref_HX      = self.Q_w_HX - self.Q_w_sup_HX # Heat transfer from refrigerant to tank water
         self.Q_a_ext_in   = c_a * rho_a * self.dV_a_ext * (self.T_a_ext_in - self.T0)
         self.Q_a_ext_out  = c_a * rho_a * self.dV_a_ext * (self.T_a_ext_out - self.T0)
-        self.Q_ref_ext = self.Q_a_ext_out - self.Q_a_ext_in  # Heat transfer from external unit to refrigerant
+        self.Q_ref_ext = self.Q_a_ext_in - self.Q_a_ext_out  # Heat transfer from external unit to refrigerant
 
-        self.COP = calculate_ASHP_heating_COP(T0 = self.T0, Q_ref_int=self.Q_ref_HX, Q_ref_max = self.Q_ref_max)
+        self.COP = calculate_ASHP_heating_COP(T0 = self.T0, Q_ref_int=(self.Q_ref_HX - self.Q_ref_ext), Q_ref_max = self.Q_ref_max)
         self.E_cmp = (self.Q_ref_HX - self.Q_ref_ext)/self.COP
         self.E_fan   = Fan().get_power(fan = self.fan_ext, dV_fan = self.dV_a_ext)  # Power input to external fan [W] (\Delta P = 0.5 * rho * V^2)
 
@@ -1590,6 +1593,194 @@ class HeatPumpBoiler_without_tank:
         self.exergy_balance["mixing valve"]["in"]["X_w_sup_mix"] = self.X_w_sup_mix
         self.exergy_balance["mixing valve"]["con"]["X_c_mix"] = self.X_c_mix
         self.exergy_balance["mixing valve"]["out"]["X_w_serv"] = self.X_w_serv
+
+class HeatPumpModel:
+    """
+    물리적 원리에 기반한 히트펌프 성능 계산 및 최적 운전점 탐색 클래스.
+    """
+    def __init__(self,
+                 refrigerant='R410A',
+                 compressor_displacement_m3=0.0005,
+                 eta_compressor_isentropic=0.7,
+                 eta_compressor_volumetric=0.85,
+                 fan_power_per_airflow_W_per_m3s=500,
+                 condenser_approach_temp_K=5.0,
+                 evaporator_approach_temp_K=5.0,
+                 indoor_air_temp_C=20.0):
+        """
+        히트펌프의 고정된 물리적 파라미터를 초기화합니다.
+
+        Args:
+            refrigerant (str): 사용할 냉매 이름 (CoolProp 형식).
+            compressor_displacement_m3 (float): 압축기 행정 체적 (1회전 당 흡입량) [m^3].
+            eta_compressor_isentropic (float): 압축기 단열 효율.
+            eta_compressor_volumetric (float): 압축기 체적 효율.
+            fan_power_per_airflow_W_per_m3s (float): 풍량 대비 팬 동력 계수 [W / (m^3/s)].
+            condenser_approach_temp_K (float): 응축기 접근 온도차 (응축온도 - 실내온도) [K].
+            evaporator_approach_temp_K (float): 증발기 접근 온도차 (실외온도 - 증발온도) [K].
+            indoor_air_temp_C (float): 목표 실내 공기 온도 [°C].
+        """
+        self.refrigerant = refrigerant
+        self.compressor_displacement_m3 = compressor_displacement_m3
+        self.eta_comp_isen = eta_compressor_isentropic
+        self.eta_comp_vol = eta_compressor_volumetric
+        self.fan_power_coeff = fan_power_per_airflow_W_per_m3s
+        self.cond_approach_K = condenser_approach_temp_K
+        self.evap_approach_K = evaporator_approach_temp_K
+        self.indoor_temp_C = indoor_air_temp_C
+        self.indoor_temp_K = self.indoor_temp_C + 273.15
+
+    def _calculate_cycle_performance(self, comp_speed_rps, fan_airflow_m3s, outdoor_temp_C):
+        """
+        주어진 운전 조건(압축기/팬 속도, 외기온도)에서 사이클 성능을 계산하는 내부 함수.
+        핵심은 State 1과 State 3의 온도를 먼저 결정하고, 나머지 State 2와 State 4의 온도는 이 두 지점의 조건에 따라 계산된다는 점입니다.
+        (저온/저압 가스)                                (고온/고압 가스)
+        (1) --------------------> [ 압축기 ] --------------------> (2)
+        ^                                                        |
+        |                                                        v
+        |                                                        |
+        [증발기]                                                [응축기]
+        [실외기]                                                [실내기]
+        (열 흡수 ❄️)                                           (열 방출 🔥)
+        ^                                                        |
+        |                                                        v
+        |                                                        |
+        (4) <----------------- [ 팽창밸브 ] <------------------- (3)
+        (저온/저압 액체+가스)                                     (고압 액체)
+        
+        """
+        
+        # --- 1. 증발 및 응축 온도/압력 계산 ---
+        # 증발 온도 = 외기온도 - 접근온도차 (state 1)
+        T_evap_C = outdoor_temp_C - self.evap_approach_K
+        P_evap_Pa = CP.PropsSI('P', 'T', cu.C2K(T_evap_C), 'Q', 1, self.refrigerant)
+
+        # 응축 온도 = 실내온도 + 접근온도차 (state 3)
+        T_cond_C = self.indoor_temp_C + self.cond_approach_K
+        P_cond_Pa = CP.PropsSI('P', 'T', cu.C2K(T_cond_C), 'Q', 0, self.refrigerant)
+
+        # --- 2. 사이클의 각 지점(State 1, 2, 3, 4) 물성치 계산 ---
+        # State 1: 압축기 입구 (포화 증기)
+        h1 = CP.PropsSI('H', 'P', P_evap_Pa, 'Q', 1, self.refrigerant)  # J/kg
+        s1 = CP.PropsSI('S', 'P', P_evap_Pa, 'Q', 1, self.refrigerant)  # J/kg-K
+        rho1 = CP.PropsSI('D', 'P', P_evap_Pa, 'Q', 1, self.refrigerant) # kg/m^3
+
+        # State 2: 압축기 출구 (과열 증기)
+        # 등엔트로피 압축 후의 엔탈피(h2s) 계산
+        h2s = CP.PropsSI('H', 'P', P_cond_Pa, 'S', s1, self.refrigerant)
+        # 실제 압축 후의 엔탈피(h2) 계산 (단열효율 적용)
+        h2 = h1 + (h2s - h1) / self.eta_comp_isen
+
+        # State 3: 응축기 출구 (포화 액체)
+        h3 = CP.PropsSI('H', 'P', P_cond_Pa, 'Q', 0, self.refrigerant)
+
+        # State 4: 팽창밸브 출구 (이상 팽창, 등엔탈피 과정)
+        h4 = h3
+
+        # --- 3. 질량 유량 및 성능 지표 계산 ---
+        # 질량 유량 (m_dot) = 회전수 * 행정체적 * 흡입밀도 * 체적효율
+        m_dot = comp_speed_rps * self.compressor_displacement_m3 * rho1 * self.eta_comp_vol
+
+        # 난방 능력 (응축기 방출 열량)
+        heating_capacity_kW = m_dot * (h2 - h3) / 1000.0
+
+        # 압축기 소비 전력
+        compressor_power_kW = m_dot * (h2 - h1) / 1000.0
+        
+        # 팬 소비 전력
+        fan_power_kW = (fan_airflow_m3s * self.fan_power_coeff) / 1000.0
+        
+        total_power_kW = compressor_power_kW + fan_power_kW
+        
+        # COP (Coefficient of Performance)
+        cop = heating_capacity_kW / total_power_kW if total_power_kW > 0 else 0
+
+        return {
+            "heating_capacity_kW": heating_capacity_kW,
+            "compressor_power_kW": compressor_power_kW,
+            "fan_power_kW": fan_power_kW,
+            "total_power_kW": total_power_kW,
+            "cop": cop,
+            "m_dot_kg_s": m_dot,
+            "T_evap_C": T_evap_C,
+            "P_evap_kPa": P_evap_Pa / 1000.0,
+            "T_cond_C": T_cond_C,
+            "P_cond_kPa": P_cond_Pa / 1000.0,
+        }
+
+    def find_optimal_operation(self, required_heating_load_kW, outdoor_temp_C):
+        """
+        주어진 난방 부하와 외기온도 조건에서 총 전력소비를 최소화하는
+        압축기 및 팬 운전 조건을 찾습니다.
+
+        Args:
+            required_heating_load_kW (float): 요구되는 난방 부하 [kW].
+            outdoor_temp_C (float): 실외 공기 온도 [°C].
+
+        Returns:
+            dict: 최적화 결과 또는 에러 메시지.
+        """
+        # 최적화 변수: x[0] = 압축기 회전수(rps), x[1] = 팬 풍량(m^3/s)
+        
+        # 1. 목적 함수: 총 전력 소비량 (최소화 대상)
+        def objective(x):
+            comp_speed, fan_airflow = x
+            perf = self._calculate_cycle_performance(comp_speed, fan_airflow, outdoor_temp_C)
+            return perf["total_power_kW"]
+
+        # 2. 제약 조건: 계산된 난방 능력이 요구 부하와 같아야 함
+        def constraint(x):
+            comp_speed, fan_airflow = x
+            perf = self._calculate_cycle_performance(comp_speed, fan_airflow, outdoor_temp_C)
+            # solver가 0을 만족하는 해를 찾으므로 (계산값 - 목표값) 형태로 반환
+            return perf["heating_capacity_kW"] - required_heating_load_kW
+
+        # 변수의 경계 조건 (최소/최대 운전 범위)
+        # 압축기: 10 ~ 100 rps (600 ~ 6000 rpm), 팬: 0.1 ~ 2.0 m^3/s
+        bounds = [(10, 100), (0.1, 2.0)]
+        
+        # 제약 조건 설정
+        cons = ({'type': 'eq', 'fun': constraint})
+        
+        # 초기 추정값
+        initial_guess = [40, 0.8]
+
+        # 최적화 실행 (SLSQP 알고리즘 사용)
+        result = minimize(objective, initial_guess, method='SLSQP',
+                          bounds=bounds, constraints=cons, options={'disp': False})
+
+        if result.success:
+            optimal_comp_speed, optimal_fan_airflow = result.x
+            final_performance = self._calculate_cycle_performance(
+                optimal_comp_speed, optimal_fan_airflow, outdoor_temp_C
+            )
+            
+            # 보기 쉽게 결과 정리
+            output = {
+                "success": True,
+                "message": "최적 운전점을 찾았습니다.",
+                "required_load_kW": required_heating_load_kW,
+                "outdoor_temp_C": outdoor_temp_C,
+                "optimal_compressor_speed_rps": round(optimal_comp_speed, 2),
+                "optimal_compressor_speed_rpm": round(optimal_comp_speed * 60, 0),
+                "optimal_fan_airflow_m3s": round(optimal_fan_airflow, 3),
+                "performance": {
+                    "Calculated_Heating_Capacity_kW": round(final_performance["heating_capacity_kW"], 3),
+                    "COP": round(final_performance["cop"], 3),
+                    "Total_Power_kW": round(final_performance["total_power_kW"], 3),
+                    "Compressor_Power_kW": round(final_performance["compressor_power_kW"], 3),
+                    "Fan_Power_kW": round(final_performance["fan_power_kW"], 3),
+                    "Evaporating_Temp_C": round(final_performance["T_evap_C"], 2),
+                    "Condensing_Temp_C": round(final_performance["T_cond_C"], 2),
+                }
+            }
+            return output
+        else:
+            return {
+                "success": False,
+                "message": f"최적화에 실패했습니다: {result.message}"
+            }
+
 
 @dataclass
 class SolarAssistedGasBoiler:
