@@ -569,7 +569,7 @@ class HeatPumpModel:
                  fan_power_per_airflow_W_per_m3s=500,
                  condenser_approach_temp_K=5.0,
                  evaporator_approach_temp_K=5.0,
-                 indoor_air_temp_C=20.0):
+                 T_ia_C=20.0):
         """
         히트펌프의 고정된 물리적 파라미터를 초기화합니다.
 
@@ -581,7 +581,7 @@ class HeatPumpModel:
             fan_power_per_airflow_W_per_m3s (float): 풍량 대비 팬 동력 계수 [W / (m^3/s)].
             condenser_approach_temp_K (float): 응축기 접근 온도차 (응축온도 - 실내온도) [K].
             evaporator_approach_temp_K (float): 증발기 접근 온도차 (실외온도 - 증발온도) [K].
-            indoor_air_temp_C (float): 목표 실내 공기 온도 [°C].
+            T_ia_C (float): 목표 실내 공기 온도 [°C].
         """
         
         self.refrigerant = refrigerant
@@ -591,14 +591,14 @@ class HeatPumpModel:
         self.fan_power_coeff = fan_power_per_airflow_W_per_m3s # -> 팬 데이터를 참고하여 설정
         self.cond_approach_K = condenser_approach_temp_K
         self.evap_approach_K = evaporator_approach_temp_K
-        self.T_ia_C = indoor_air_temp_C
-        self.T_ia_K = self.T_ia_C + 273.15
+        self.T_ia_C = T_ia_C
+        self.T_ia_K = cu.C2K(self.T_ia_C)
 
     def _calculate_cycle_performance(self, comp_speed_rps, fan_airflow_m3s, T0_C):
         """
         주어진 운전 조건(압축기/팬 속도, 외기온도)에서 사이클 성능을 계산하는 내부 함수.
         (저온/저압 가스)                                (고온/고압 가스)
-        (1) <-------------------- [ 압축기 ] --------------------> (2)
+        (1) -------------------- [ 압축기 ] --------------------> (2)
         ^                                                        |
         |                                                        v
         |                                                        |
@@ -649,8 +649,10 @@ class HeatPumpModel:
         # 압축기 사용 전력
         compressor_power_kW = m_dot * (h2 - h1) / 1000.0
 
+        ##########################################################################
         # 팬 사용 전력
         fan_power_kW = (fan_airflow_m3s * self.fan_power_coeff) / 1000.0
+        ##########################################################################
         
         total_power_kW = compressor_power_kW + fan_power_kW
         
@@ -698,8 +700,8 @@ class HeatPumpModel:
             return perf["heating_capacity_kW"] - required_heating_load_kW
 
         # 변수의 경계 조건 (최소/최대 운전 범위)
-        # 압축기: 10 ~ 100 rps (600 ~ 6000 rpm), 팬: 0.1 ~ 2.0 m^3/s
-        bounds = [(10, 100), (0.1, 2.0)]
+        # 압축기: 10 ~ 100 rps (600 ~ 6000 rpm), 팬: 0.1 ~ 3.0 m^3/s
+        bounds = [(10, 100), (0.1, 3.0)]
         
         # 제약 조건 설정
         cons = ({'type': 'eq', 'fun': constraint})
@@ -852,8 +854,7 @@ if __name__ == '__main__':
         fan_power_per_airflow_W_per_m3s=500,
         condenser_approach_temp_K=5.0,
         evaporator_approach_temp_K=5.0,
-        indoor_air_temp_C=20.0
-        
+        T_ia_C=20.0
     )
 
     # 2. 시뮬레이션 조건 설정
@@ -866,6 +867,13 @@ if __name__ == '__main__':
         print("--- 최적 운전 결과 ---")
         # ... (이전과 동일한 결과 출력 부분) ...
         print(f"COP: {optimal_result['performance']['COP']}")
+        print(f"난방 능력 (kW): {optimal_result['performance']['Calculated_Heating_Capacity_kW']}")
+        print(f"총 전력 사용량 (kW): {optimal_result['performance']['Total_Power_kW']}")
+        print(f"압축기 전력 사용량 (kW): {optimal_result['performance']['Compressor_Power_kW']}")
+        print(f" 팬 전력 사용량 (kW): {optimal_result['performance']['Fan_Power_kW']}")
+        print(f"증발 온도 (°C): {optimal_result['performance']['Evaporating_Temp_C']}")
+        print(f"응축 온도 (°C): {optimal_result['performance']['Condensing_Temp_C']}")
+        print(f"팬 풍량 (m3/s): {optimal_result['optimal_fan_airflow_m3s']}")
         print(f"압축기 회전수 (RPM): {optimal_result['optimal_compressor_speed_rpm']}")
 
         # 4. 그래프 그리기를 위한 상태값 계산 및 저장
