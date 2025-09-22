@@ -20,6 +20,8 @@ c_w   = 4186 # Water specific heat [J/kgK]
 rho_w = 1000
 mu_w = 0.001 # Water dynamic viscosity [Pa.s]
 k_w = 0.606 # Water thermal conductivity [W/mK]
+g = 9.81         # 중력가속도 [m/s²]
+beta = 2.07e-4   # 물의 체적팽창계수 [1/K] (약 20°C 기준)
 
 sigma = 5.67*10**-8 # Stefan-Boltzmann constant [W/m²K⁴]
 
@@ -287,8 +289,37 @@ def G_FLS(t, ks, as_, rb, H):
     _g_func_cache[key] = result
     return result
 
-import math
-import numpy as np
+def calc_boussinesq_mixing_flow(T_upper, T_lower, A, dz, C_d=0.1):
+    """
+    두 인접 노드 간의 부시네스크 근사에 기반한 혼합 유량을 계산합니다.
+    혼합은 하단 노드의 온도가 상단 노드보다 높아 중력적으로 불안정할 때만 발생합니다.
+
+    Parameters:
+    -----------
+    T_upper : float
+        상단 노드의 온도 [K]
+    T_lower : float
+        하단 노드의 온도 [K]
+    A : float
+        탱크 단면적 [m²]
+    dz : float
+        노드 높이 [m]
+    C_d : float, optional
+        유량 계수 (경험적 상수), 기본값 0.1
+
+    Returns:
+    --------
+    float
+        두 노드 간 교환되는 체적 유량 [m³/s]
+    """
+    if T_lower > T_upper:
+        # 하단이 더 따뜻하면 (밀도가 낮으면) 불안정하여 혼합 발생
+        delta_T = T_lower - T_upper
+        Q_mix = C_d * A * math.sqrt(g * beta * delta_T * dz)
+        return Q_mix
+    else:
+        # 안정적인 상태에서는 혼합 없음
+        return 0.0
 
 def calc_UA_tank_arr(r0, x_shell, x_ins, k_shell, k_ins, H, N, h_w, h_o):
     """
@@ -430,7 +461,7 @@ class StratifiedTankTDMA:
     np.ndarray
         다음 시간 단계의 노드 온도 배열 [K]
     '''
-    def __init__(self, H, N, r0, x_shell, x_ins, k_shell, k_ins, h_w, h_o):
+    def __init__(self, H, N, r0, x_shell, x_ins, k_shell, k_ins, h_w, h_o, C_d_mix):
         self.H = H; self.D = 2*r0; self.N = N
         self.A = np.pi * (self.D**2) / 4.0
         self.dz = H / N
@@ -438,11 +469,20 @@ class StratifiedTankTDMA:
         self.UA = calc_UA_tank_arr(r0, x_shell, x_ins, k_shell, k_ins, H, N, h_w, h_o)
         self.K = k_w * self.A / self.dz
         self.C = rho_w * c_w * self.V
+        self.C_d_mix = C_d_mix
 
     def step(self, T, dt, T_in, dV, T_amb, Q_heater_node=None, Q_heater_W=0.0):
         N = self.N;
         UA = self.UA; K = self.K
         G = c_w * rho_w * dV 
+        
+        # --- 부시네스크 혼합(자연대류) 계산 시작 ---
+        # 각 경계면(i와 i+1 사이)에서의 혼합 열 전달 계수를 계산
+        G_mix = np.zeros(N - 1)
+        for i in range(N - 1):
+            # T[i]가 상단, T[i+1]이 하단 노드
+            Q_mix = calc_boussinesq_mixing_flow(T[i], T[i+1], self.A, self.dz, self.C_d_mix)
+            G_mix[i] = rho_w * c_w * Q_mix
         
         # TDMA를 위한 matrix 계수 설정
         a = np.zeros(N); b = np.zeros(N); c = np.zeros(N); d = np.zeros(N)
@@ -455,20 +495,25 @@ class StratifiedTankTDMA:
         
         # 최상단 노드 (0) TDMA 계수 별도 계산
         a[0] = 0
-        b[0] = self.C/dt + G + K + UA[0]
-        c[0] = -(K + G)
-        d[0] = self.C*T[0]/dt + UA[0]*T_amb + S[0] 
+        b[0] = self.C/dt + G + K + UA[0] + G_mix[0] # G_mix[0] 추가
+        c[0] = -(K + G + G_mix[0])                 # G_mix[0] 추가
+        d[0] = self.C*T[0]/dt + UA[0]*T_amb + S[0]
         
         # 중간 노드 (1~N-2) TDMA 계수 계산
         for i in range(1, N-1):
-            a[i] = -K
-            b[i] = self.C/dt + G + 2*K + UA[i]
-            c[i] = -(K + G)
+            # 혼합은 위(i-1) 및 아래(i+1) 노드와의 사이에서 발생
+            G_mix_upper = G_mix[i-1] # i-1과 i 사이
+            G_mix_lower = G_mix[i]   # i와 i+1 사이
+            
+            a[i] = -(K + G_mix_upper)                   # G_mix_upper 추가
+            b[i] = self.C/dt + G + 2*K + UA[i] + G_mix_upper + G_mix_lower
+            c[i] = -(K + G + G_mix_lower)               # G_mix_lower 추가
             d[i] = self.C*T[i]/dt + UA[i]*T_amb + S[i]
         
         # 최하단 노드 (N-1) TDMA 계수 별도 계산
-        a[N-1] = -K
-        b[N-1] = self.C/dt + G + K + UA[N-1]
+        # 혼합은 위 노드(N-2)와의 사이에서만 발생 (G_mix[N-2])
+        a[N-1] = -(K + G_mix[N-2])                  # G_mix[N-2] 추가
+        b[N-1] = self.C/dt + G + K + UA[N-1] + G_mix[N-2] # G_mix[N-2] 추가
         c[N-1] = 0
         d[N-1] = self.C*T[N-1]/dt + UA[N-1]*T_amb + S[N-1] + G*T_in
 
