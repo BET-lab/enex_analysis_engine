@@ -304,7 +304,7 @@ class Fan:
             'pressure'   : [137, 138, 143, 168, 182, 191, 198, 200, 201, 170], # [Pa]
             'efficiency' : [0.45, 0.49, 0.57, 0.62, 0.67, 0.69, 0.68, 0.67, 0.63, 0.40], # [-]
             'fan type' : 'centrifugal',
-        },
+        }
         self.fan3 = { # https://ventilatorry.ru/downloads/ebmpapst/datasheet/w3g710-go81-01-en-datasheet-ebmpapst.pdf
             'flow rate' : [0/cu.h2s, 6245/cu.h2s, 8330/cu.h2s, 10410/cu.h2s, 12610/cu.h2s], # [m3/s]
             'power' : [0, 100, 238, 465, 827], # [-]
@@ -1799,7 +1799,7 @@ class AirSourceHeatPump_cooling:
     def __post_init__(self):
         # fan
         self.fan_int = Fan().fan1
-        self.fan_ext = Fan().fan3
+        self.fan_ext = Fan().fan2
 
         # COP
         self.Q_r_max = 9000 # [W]
@@ -1808,8 +1808,8 @@ class AirSourceHeatPump_cooling:
         self.T0      = 32 # environmental temperature [°C]
         self.T_a_room = 20 # room air temperature [°C]
         
-        self.T_r_int     = self.T_a_room - 10 # internal unit refrigerant temperature [°C]
-        self.T_a_int_out = self.T_a_room - 5 # internal unit air outlet temperature [°C]
+        self.T_r_int     = self.T_a_room - 15 # internal unit refrigerant temperature [°C]
+        self.T_a_int_out = self.T_a_room - 10 # internal unit air outlet temperature [°C]
         
         self.T_a_ext_out = self.T0 + 10 # external unit air outlet temperature [°C]
         self.T_r_ext     = self.T0 + 15 # external unit refrigerant temperature [°C]
@@ -1930,7 +1930,7 @@ class AirSourceHeatPump_heating:
 
         # fan
         self.fan_int = Fan().fan1
-        self.fan_ext = Fan().fan3
+        self.fan_ext = Fan().fan2
 
         # COP
         self.Q_r_max = 9000 # maximum heating capacity [W]
@@ -1942,8 +1942,8 @@ class AirSourceHeatPump_heating:
         self.T_r_int = self.T_a_room + 15 # internal unit refrigerant temperature [°C]
         self.T_a_int_out = self.T_a_room + 10 # internal unit air outlet temperature [°C]
         
-        self.T_a_ext_out = self.T0 - 5 # external unit air outlet temperature [°C]
-        self.T_r_ext = self.T0 - 10 # external unit refrigerant temperature [°C]
+        self.T_a_ext_out = self.T0 - 10 # external unit air outlet temperature [°C]
+        self.T_r_ext = self.T0 - 15 # external unit refrigerant temperature [°C]
 
         # load
         self.Q_r_int = 6000 # [W]
