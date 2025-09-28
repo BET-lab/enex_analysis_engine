@@ -422,6 +422,37 @@ def TDMA(a,b,c,d) -> np.ndarray:
     T_new = np.dot(A_inv, d).flatten() # Flatten the result to 1D array
     return T_new
 
+def _add_loop_advection_terms(a, b, c, d, in_idx, out_idx, G_loop, T_loop_in):
+    """
+    지정 구간(in_idx -> out_idx)으로 흐르는 강제 대류를 TDMA 계수(a,b,cU,d)에 더함.
+    - 인덱스는 0-based (노드 1 -> idx 0).
+    - 방향: in_idx > out_idx 이면 '상향'(아래→위), 반대면 '하향'(위→아래).
+    """
+    if G_loop <= 0 or in_idx == out_idx:
+        return
+
+    if in_idx > out_idx:
+        # 상향: in(N쪽) -> ... -> out(1쪽)
+        # inlet 노드
+        b[in_idx] += G_loop
+        a[in_idx] -= G_loop              # 진행 이웃(i-1) 계수에 -G
+        d[in_idx] += G_loop * T_loop_in  # 유입 스트림 온도
+        # 경로 내부 노드 (out_idx+1 .. in_idx-1)
+        for k in range(in_idx - 1, out_idx, -1):
+            b[k] += G_loop
+            c[k] -= G_loop              # 유입측 이웃(아래, k+1)에 -G
+        # outlet 노드: out_idx -> outflow 경계 (추가 없음)
+
+    else:
+        # 하향: in(1쪽) -> ... -> out(N쪽)
+        b[in_idx] += G_loop
+        c[in_idx] -= G_loop             # 진행 이웃(i+1) 계수에 -G
+        d[in_idx] += G_loop * T_loop_in
+        for k in range(in_idx + 1, out_idx):
+            b[k] += G_loop
+            a[k] -= G_loop               # 유입측 이웃(위, k-1)에 -G
+    # outlet 노드: out_idx -> outflow 경계 (추가 없음)
+    
 class StratifiedTankTDMA:
     '''
     To do: 탱크와 연결된 순환 루프 추가시 각 a, b, c, d 계수에 대한 수정 필요.
@@ -470,54 +501,76 @@ class StratifiedTankTDMA:
         self.K = k_w * self.A / self.dz
         self.C = rho_w * c_w * self.V
         self.C_d_mix = C_d_mix
-
-    def step(self, T, dt, T_in, dV, T_amb, Q_heater_node=None, Q_heater_W=0.0):
-        N = self.N;
-        UA = self.UA; K = self.K
-        G = c_w * rho_w * dV 
         
-        # --- 부시네스크 혼합(자연대류) 계산 시작 ---
-        # 각 경계면(i와 i+1 사이)에서의 혼합 열 전달 계수를 계산
+    # --- 추가: 유틸리티 헬퍼 (클래스 바깥에 둬도 됨) -----------------------------
+
+        
+    def step(self,
+             T, dt, T_in, dV, T_amb,
+             Q_heater_node=None, Q_heater_W=0.0,
+             loop_outlet_node=None, loop_inlet_node=None,
+             dV_loop=0.0, Q_loop=0.0):
+        """
+        기존 인자 + 외부 루프(탱크↔열교환기) 인자를 추가:
+        - loop_outlet_node: 탱크에서 루프로 '빼내는' 노드 (1..N)
+        - loop_inlet_node : 루프에서 탱크로 '되돌리는' 노드 (1..N)
+        - dV_loop        : 루프 체적유량 [m^3/s]
+        - Q_loop         : 루프 가열률(전열량, W)
+        """
+        N = self.N
+        UA = self.UA; K = self.K
+        G = c_w * rho_w * dV                            # 기존 전구간 대류
+        eps = 1e-12
+        G_loop = c_w * rho_w * max(dV_loop, 0.0)        # 루프 대류
+
+        # ---- 부시네스크 혼합 (기존) ------------------------------------------------
         G_mix = np.zeros(N - 1)
         for i in range(N - 1):
-            # T[i]가 상단, T[i+1]이 하단 노드
             Q_mix = calc_boussinesq_mixing_flow(T[i], T[i+1], self.A, self.dz, self.C_d_mix)
             G_mix[i] = rho_w * c_w * Q_mix
-        
-        # TDMA를 위한 matrix 계수 설정
+
+        # ---- TDMA 계수 기본 구성 ----------------------------------------------------
         a = np.zeros(N); b = np.zeros(N); c = np.zeros(N); d = np.zeros(N)
         S = np.zeros(N)
-        
+
         if Q_heater_node is not None:
             idx = Q_heater_node - 1
             if 0 <= idx < N:
                 S[idx] = Q_heater_W
-        
-        # 최상단 노드 (0) TDMA 계수 별도 계산
-        a[0] = 0
-        b[0] = self.C/dt + G + K + UA[0] + G_mix[0] # G_mix[0] 추가
-        c[0] = -(K + G + G_mix[0])                 # G_mix[0] 추가
+
+        # 상부(노드 1, idx=0) : 유출 경계 (전구간 G는 상향 가정일 때 top에 미적용)
+        a[0] = 0.0
+        b[0] = self.C/dt + K + UA[0] + G_mix[0]
+        c[0] = -(K + G_mix[0])
         d[0] = self.C*T[0]/dt + UA[0]*T_amb + S[0]
-        
-        # 중간 노드 (1~N-2) TDMA 계수 계산
+
+        # 내부(i=2..N-1)
         for i in range(1, N-1):
-            # 혼합은 위(i-1) 및 아래(i+1) 노드와의 사이에서 발생
-            G_mix_upper = G_mix[i-1] # i-1과 i 사이
-            G_mix_lower = G_mix[i]   # i와 i+1 사이
-            
-            a[i] = -(K + G_mix_upper)                   # G_mix_upper 추가
-            b[i] = self.C/dt + G + 2*K + UA[i] + G_mix_upper + G_mix_lower
-            c[i] = -(K + G + G_mix_lower)               # G_mix_lower 추가
-            d[i] = self.C*T[i]/dt + UA[i]*T_amb + S[i]
-        
-        # 최하단 노드 (N-1) TDMA 계수 별도 계산
-        # 혼합은 위 노드(N-2)와의 사이에서만 발생 (G_mix[N-2])
-        a[N-1] = -(K + G_mix[N-2])                  # G_mix[N-2] 추가
-        b[N-1] = self.C/dt + G + K + UA[N-1] + G_mix[N-2] # G_mix[N-2] 추가
-        c[N-1] = 0
-        d[N-1] = self.C*T[N-1]/dt + UA[N-1]*T_amb + S[N-1] + G*T_in
+            a[i]   = -(K + G_mix[i-1])
+            b[i]   = self.C/dt + (2*K) + UA[i] + (G if dV>0 else 0.0) + G_mix[i-1] + G_mix[i]
+            c[i]  = -(K + (G if dV>0 else 0.0) + G_mix[i])
+            d[i]   = self.C*T[i]/dt + UA[i]*T_amb + S[i]
 
+        # 하부(노드 N, idx=N-1) : 유입 경계
+        a[N-1] = -(K + G_mix[N-2] + (G if dV>0 else 0.0))
+        b[N-1] = self.C/dt + K + UA[N-1] + G_mix[N-2] + (G if dV>0 else 0.0)
+        c[N-1] = 0.0
+        d[N-1] = self.C*T[N-1]/dt + UA[N-1]*T_amb + S[N-1] + (G if dV>0 else 0.0)*T_in
+
+        # ---- 외부 루프(지정 구간 강제 대류) 반영 ------------------------------------
+        if (G_loop > 0.0) and (loop_outlet_node is not None) and (loop_inlet_node is not None):
+            out_idx = int(loop_outlet_node) - 1
+            in_idx  = int(loop_inlet_node)  - 1
+            if 0 <= out_idx < N and 0 <= in_idx < N and out_idx != in_idx:
+                # 루프 스트림 유입 온도 (outlet 측 온도 기준)
+                T_stream_out = T[out_idx]                           # n 시점 사용(안정적)
+                T_loop_in = T_stream_out + Q_loop / max(G_loop, eps)
+                # (선택) 비현실적 고온 방지용 소프트 클램프 예시:
+                # T_loop_in = min(T_loop_in, T_stream_out + 50.0)
+
+                _add_loop_advection_terms(a, b, c, d, in_idx, out_idx, G_loop, T_loop_in)
+
+        # ---- 선형계 풀이 ------------------------------------------------------------
         T_next = TDMA(a, b, c, d)
-
         return T_next
 
