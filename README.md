@@ -1,44 +1,38 @@
-# 에너지 시스템 통합 리포지토리
+# ENEX Analysis Engine
 
-## 개요
-이 리포지토리는 다양한 보일러 및 열 펌프 모델을 구현하여 에너지 시스템 통합을 다룹니다. 각 모델은 에너지, 엔트로피, 엑서지 균형을 분석하는 기능을 포함하고 있습니다.
+Exergy-focused thermodynamic modeling for building energy systems
 
-## 파일 설명
+## Overview
 
-- `constant.py`: 온도, 길이, 에너지, 전력 변환을 위한 다양한 단위 변환 상수 및 함수 정의.
-- `enex_engine.py`: 전기 보일러, 가스 보일러, 열 펌프 등 다양한 난방 시스템 모델을 구현하며, 열역학 분석과 균형 계산을 수행.
+**ENEX Analysis Engine** provides component models for electric boilers, gas boilers, and heat pumps, along with utilities to compute energy, entropy, and exergy balances consistently across a system. It targets teaching, research, and prototyping for building energy systems where second-law (exergy) accounting matters
 
-## 설치 방법
-모델을 사용하려면 필요한 패키지를 설치해야 합니다. 본 리포지토리의 패키지는 uv에 기반해 관리됩니다. 
+### Key capabilities
 
-uv 설치 
+- Component models for typical heating technologies: electric boiler, gas boiler, heat pump  
+- Built-in bookkeeping of energy, entropy, and exergy balances for each component  
+- Utilities for common unit conversions to keep calculations consistent  
+- Simple, composable API suitable for notebooks and scripts
+
+## Project structure
+
+Key modules
+
+- `constant.py` — conversion constants and helper functions for temperature, length, energy, and power  
+- `enex_engine.py` — component models and thermodynamic balance routines for electric boiler, gas boiler, and heat pump  
+
+> The project uses a standard `src` layout with the Python package located under `src/enex_analysis` and is managed with a `pyproject.toml` and a `uv.lock` for reproducible environments
+
+## Installation
+
+### Option A — Work on the project locally (recommended for contributors)
+
 ```bash
+# 1) Install uv (Windows PowerShell)
 powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
-```
 
-소스 코드 다운로드
-```bash
-uv add git+https://github.com/BET-lab/enex_analysis_engine.git
-```
-
-환경 설치
-```bash
+# 2) Clone the repository
+git clone https://github.com/BET-lab/enex_analysis_engine.git
 cd enex_analysis_engine
+
+# 3) Create and sync the virtual environment from pyproject + uv.lock
 uv sync
-```
-
-## 사용 방법
-
-### 모듈 임포트하기
-```python
-import enex_analysis as enex
-```
-
-### 예제: 전기 보일러 시스템 생성
-```python
-EB = enex.ElectricBoiler()
-EB.T0 = 10
-EB.system_update
-enex.print_balance(EB.exergy_balance)
-```
-
