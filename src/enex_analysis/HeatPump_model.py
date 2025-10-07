@@ -400,12 +400,12 @@ class Fan:
         scatter_colors = ['dm.red3', 'dm.blue3', 'dm.green3', 'dm.orange3']
         plot_colors = ['dm.red6', 'dm.blue6', 'dm.green6', 'dm.orange6']
 
-        data_pairs = [
+        datairs = [
             ("pressure", "Pressure [Pa]", "Flow Rate vs Pressure"),
             ("efficiency", "Efficiency [-]", "Flow Rate vs Efficiency"),
         ]
 
-        for ax, (key, ylabel, title) in zip(axes, data_pairs):
+        for ax, (key, ylabel, title) in zip(axes, datairs):
             print(f"\n{'='*10} {title} {'='*10}")
             for i, fan in enumerate(self.fan_list):
                 # 원본 데이터 (dot 형태)
@@ -442,12 +442,12 @@ class Fan:
         scatter_colors = ['dm.red3', 'dm.blue3', 'dm.green3', 'dm.orange3']
         plot_colors = ['dm.red6', 'dm.blue6', 'dm.green6', 'dm.orange6']
 
-        data_pairs = [
+        datairs = [
             ("pressure", "Pressure [Pa]", "Flow Rate vs Pressure"),
             ("efficiency", "Efficiency [-]", "Flow Rate vs Efficiency"),
         ]
 
-        for ax, (key, ylabel, title) in zip(axes, data_pairs):
+        for ax, (key, ylabel, title) in zip(axes, datairs):
             print(f"\n{'='*10} {title} {'='*10}")
             for i, fan in enumerate(self.fan_list):
                 # 원본 데이터 (dot 형태)
@@ -563,38 +563,37 @@ class HeatPumpModel:
     """
     def __init__(self,
                  refrigerant='R410A',
-                 compressor_displacement_m3=0.0005,
-                 eta_compressor_isentropic=0.7,
-                 eta_compressor_volumetric=0.85,
-                 fan_power_per_airflow_W_per_m3s=500,
-                 condenser_approach_temp_K=5.0,
-                 evaporator_approach_temp_K=5.0,
-                 T_ia_C=20.0):
+                 disp_cmp =0.0005,
+                 eta_cmp_isen =0.7,
+                 eta_cmp_volumetric =0.85,
+                 coeff_fan_power =500,
+                 dT_cond =5.0,
+                 dT_evap =5.0,
+                 T_ia=20.0):
         """
         히트펌프의 고정된 물리적 파라미터를 초기화합니다.
 
         Args:
             refrigerant (str): 사용할 냉매 이름 (CoolProp 형식).
-            compressor_displacement_m3 (float): 압축기 행정 체적 (1회전 당 흡입량) [m^3].
-            eta_compressor_isentropic (float): 압축기 단열 효율. - 단열 효율은 압축 과정에서 발생하는 에너지 손실이 얼마나 적은가를 나타내는 지표
-            eta_compressor_volumetric (float): 압축기 체적 효율. - 압축기가 한 번 회전할 때 이론적으로 빨아들일 수 있는 냉매량 대비, 실제로 얼마나 빨아들였는가를 나타내는 지표
-            fan_power_per_airflow_W_per_m3s (float): 풍량 대비 팬 동력 계수 [W / (m^3/s)].
-            condenser_approach_temp_K (float): 응축기 접근 온도차 (응축온도 - 실내온도) [K].
-            evaporator_approach_temp_K (float): 증발기 접근 온도차 (실외온도 - 증발온도) [K].
-            T_ia_C (float): 목표 실내 공기 온도 [°C].
+            disp_cmp  (float): 압축기 행정 체적 (1회전 당 흡입량) [m^3].
+            eta_cmp_isen  (float): 압축기 단열 효율. - 단열 효율은 압축 과정에서 발생하는 에너지 손실이 얼마나 적은가를 나타내는 지표
+            eta_cmp_volumetric  (float): 압축기 체적 효율. - 압축기가 한 번 회전할 때 이론적으로 빨아들일 수 있는 냉매량 대비, 실제로 얼마나 빨아들였는가를 나타내는 지표
+            coeff_fan_power  (float): 풍량 대비 팬 동력 계수 [W / (m^3/s)]. -> 경험식으로 가야함
+            dT_cond  (float): 응축기 접근 온도차 (응축온도 - 실내온도) [K].
+            dT_evap  (float): 증발기 접근 온도차 (실외온도 - 증발온도) [K].
+            T_ia (float): 목표 실내 공기 온도 [°C].
         """
         
-        self.refrigerant = refrigerant
-        self.compressor_displacement_m3 = compressor_displacement_m3
-        self.eta_comp_isen = eta_compressor_isentropic
-        self.eta_comp_vol = eta_compressor_volumetric
-        self.fan_power_coeff = fan_power_per_airflow_W_per_m3s # -> 팬 데이터를 참고하여 설정
-        self.cond_approach_K = condenser_approach_temp_K
-        self.evap_approach_K = evaporator_approach_temp_K
-        self.T_ia_C = T_ia_C
-        self.T_ia_K = cu.C2K(self.T_ia_C)
+        self.ref = refrigerant
+        self.disp_cmp  = disp_cmp 
+        self.eta_cmp_isen = eta_cmp_isen 
+        self.eta_cmp_volumetric = eta_cmp_volumetric 
+        self.coeff_fan_power = coeff_fan_power  # -> 팬 데이터를 참고하여 설정
+        self.dT_cond = dT_cond
+        self.dT_evap = dT_evap
+        self.T_ia = cu.C2K(self.T_ia)
 
-    def _calculate_cycle_performance(self, comp_speed_rps, fan_airflow_m3s, T0_C):
+    def _calculate_cycle_performance(self, cmp_rps, dV_fan, T0):
         """
         주어진 운전 조건(압축기/팬 속도, 외기온도)에서 사이클 성능을 계산하는 내부 함수.
         (저온/저압 가스)                                (고온/고압 가스)
@@ -614,34 +613,47 @@ class HeatPumpModel:
         
         # --- 1. 증발 및 응축 온도/압력 계산 ---
         # 증발 온도 = 외기온도 - 접근온도차
-        T_evap_C = T0_C - self.evap_approach_K
-        P_evap_Pa = CP.PropsSI('P', 'T', cu.C2K(T_evap_C), 'Q', 1, self.refrigerant)
+        T0 = cu.C2K(T0)
+        T_evap = T0 - self.dT_evap
+        P_evap = CP.PropsSI('P', 'T', T_evap, 'Q', 1, self.ref)
 
         # 응축 온도 = 실내온도 + 접근온도차
-        T_cond_C = self.T_ia_C + self.cond_approach_K
-        P_cond_Pa = CP.PropsSI('P', 'T', cu.C2K(T_cond_C), 'Q', 0, self.refrigerant)
+        T_cond = self.T_ia + self.dT_cond
+        P_cond = CP.PropsSI('P', 'T', T_cond, 'Q', 0, self.ref)
+
+
 
         # --- 2. 사이클의 각 지점(State 1, 2, 3, 4) 물성치 계산 ---
         # State 1: 압축기 입구 (포화 증기)
-        h1 = CP.PropsSI('H', 'P', P_evap_Pa, 'Q', 1, self.refrigerant)  # J/kg
-        s1 = CP.PropsSI('S', 'P', P_evap_Pa, 'Q', 1, self.refrigerant)  # J/kg-K
-        rho1 = CP.PropsSI('D', 'P', P_evap_Pa, 'Q', 1, self.refrigerant) # kg/m^3
+        h1 = CP.PropsSI('H', 'P', P_evap, 'Q', 1, self.ref)  # J/kg
+        s1 = CP.PropsSI('S', 'P', P_evap, 'Q', 1, self.ref)  # J/kg-K
+        rho1 = CP.PropsSI('D', 'P', P_evap, 'Q', 1, self.ref) # kg/m^3
 
         # State 2: 압축기 출구 (과열 증기)
+        '''
+        등엔트로피 과정 -> 일로 공급된 것이 모두 외부 열손실 없이 내부에너지 증가로 사용됨
+        TdS = dU + PdV => dS=0 -> dU = -PdV -> 즉, 압축기에서 일로 공급된 것이 모두 내부에너지 증가로 사용됨
+        하지만 실제 압축기에서는 마찰 및 열손실등으로 공급한 압축기 일의 일부가 내부에너지 증가로 사용되지 않고 열로 손실됨
+        따라서 단열효율(η_isen)을 적용하여 실제 압축기 출구의 엔탈피(h2)를 계산
+        '''
         # 등엔트로피 압축 후의 엔탈피(h2s) 계산
-        h2s = CP.PropsSI('H', 'P', P_cond_Pa, 'S', s1, self.refrigerant)
+        h2_isen = CP.PropsSI('H', 'P', P_cond, 'S', s1, self.ref) 
         # 실제 압축 후의 엔탈피(h2) 계산 (단열효율 적용)
-        h2 = h1 + (h2s - h1) / self.eta_comp_isen
+        h2 = h1 + (h2_isen - h1) / self.eta_comp_isen
+
+
 
         # State 3: 응축기 출구 (포화 액체)
-        h3 = CP.PropsSI('H', 'P', P_cond_Pa, 'Q', 0, self.refrigerant)
+        h3 = CP.PropsSI('H', 'P', P_cond, 'Q', 0, self.ref)
 
         # State 4: 팽창밸브 출구 (이상 팽창, 등엔탈피 과정)
         h4 = h3
 
+
+
         # --- 3. 질량 유량 및 성능 지표 계산 ---
         # 질량 유량 (m_dot) = 회전수(회전수/s) * 행정체적(1회전당 흡입량 m3/회전수) * 흡입밀도(kg/m3) * 체적효율(실제 흡입량/이론 흡입량)
-        m_dot = comp_speed_rps * self.compressor_displacement_m3 * rho1 * self.eta_comp_vol
+        m_dot = cmp_rps * self.disp_cmp  * rho1 * self.eta_comp_vol
 
         # 난방 능력 (응축기 방출 열량)
         heating_capacity_kW = m_dot * (h2 - h3) / 1000.0
@@ -651,7 +663,7 @@ class HeatPumpModel:
 
         ##########################################################################
         # 팬 사용 전력
-        fan_power_kW = (fan_airflow_m3s * self.fan_power_coeff) / 1000.0
+        fan_power_kW = (dV_fan * self.fan_power_coeff) / 1000.0
         ##########################################################################
         
         total_power_kW = compressor_power_kW + fan_power_kW
@@ -666,20 +678,20 @@ class HeatPumpModel:
             "total_power_kW": total_power_kW,
             "cop": cop,
             "m_dot_kg_s": m_dot,
-            "T_evap_C": T_evap_C,
-            "P_evap_kPa": P_evap_Pa / 1000.0,
-            "T_cond_C": T_cond_C,
-            "P_cond_kPa": P_cond_Pa / 1000.0,
+            "T_evap": T_evap,
+            "P_evap_kPa": P_evap / 1000.0,
+            "T_cond": T_cond,
+            "P_cond_kPa": P_cond / 1000.0,
         }
 
-    def find_optimal_operation(self, required_heating_load_kW, T0_C):
+    def find_optimal_operation(self, required_heating_load_kW, T0):
         """
         주어진 난방 부하와 외기온도 조건에서 총 전력사용를 최소화하는
         압축기 및 팬 운전 조건을 찾습니다.
 
         Args:
             required_heating_load_kW (float): 요구되는 난방 부하 [kW].
-            T0_C (float): 실외 공기 온도 [°C].
+            T0 (float): 실외 공기 온도 [°C].
 
         Returns:
             dict: 최적화 결과 또는 에러 메시지.
@@ -689,13 +701,13 @@ class HeatPumpModel:
         # 1. 목적 함수: 총 전력 사용량 (최소화 대상)
         def objective(x):
             comp_speed, fan_airflow = x
-            perf = self._calculate_cycle_performance(comp_speed, fan_airflow, T0_C)
+            perf = self._calculate_cycle_performance(comp_speed, fan_airflow, T0)
             return perf["total_power_kW"]
 
         # 2. 제약 조건: 계산된 난방 능력이 요구 부하와 같아야 함
         def constraint(x):
             comp_speed, fan_airflow = x
-            perf = self._calculate_cycle_performance(comp_speed, fan_airflow, T0_C)
+            perf = self._calculate_cycle_performance(comp_speed, fan_airflow, T0)
             # solver가 0을 만족하는 해를 찾으므로 (계산값 - 목표값) 형태로 반환
             return perf["heating_capacity_kW"] - required_heating_load_kW
 
@@ -716,7 +728,7 @@ class HeatPumpModel:
         if result.success:
             optimal_comp_speed, optimal_fan_airflow = result.x
             final_performance = self._calculate_cycle_performance(
-                optimal_comp_speed, optimal_fan_airflow, T0_C
+                optimal_comp_speed, optimal_fan_airflow, T0
             )
             
             # 보기 쉽게 결과 정리
@@ -724,18 +736,18 @@ class HeatPumpModel:
                 "success": True,
                 "message": "최적 운전점을 찾았습니다.",
                 "required_load_kW": required_heating_load_kW,
-                "T0_C": T0_C,
+                "T0": T0,
                 "optimal_compressor_speed_rps": round(optimal_comp_speed, 2),
                 "optimal_compressor_speed_rpm": round(optimal_comp_speed * 60, 0),
-                "optimal_fan_airflow_m3s": round(optimal_fan_airflow, 3),
+                "optimal_dV_fan": round(optimal_fan_airflow, 3),
                 "performance": {
                     "Calculated_Heating_Capacity_kW": round(final_performance["heating_capacity_kW"], 3),
                     "COP": round(final_performance["cop"], 3),
                     "Total_Power_kW": round(final_performance["total_power_kW"], 3),
                     "Compressor_Power_kW": round(final_performance["compressor_power_kW"], 3),
                     "Fan_Power_kW": round(final_performance["fan_power_kW"], 3),
-                    "Evaporating_Temp_C": round(final_performance["T_evap_C"], 2),
-                    "Condensing_Temp_C": round(final_performance["T_cond_C"], 2),
+                    "Evaporating_Temp_C": round(final_performance["T_evap"], 2),
+                    "Condensing_Temp_C": round(final_performance["T_cond"], 2),
                 }
             }
             return output
@@ -848,17 +860,17 @@ if __name__ == '__main__':
     # 1. 히트펌프 모델 객체 생성
     my_heat_pump = HeatPumpModel(
         refrigerant='R410A',
-        compressor_displacement_m3=0.000045,
-        eta_compressor_isentropic=0.75,
-        eta_compressor_volumetric=0.9,
-        fan_power_per_airflow_W_per_m3s=500,
-        condenser_approach_temp_K=5.0,
+        disp_cmp =0.000045,
+        eta_cmp_isen =0.75,
+        eta_cmp_volumetric =0.9,
+        coeff_fan_power =500,
+        dT_cond =5.0,
         evaporator_approach_temp_K=5.0,
-        T_ia_C=20.0
+        T_ia=20.0
     )
 
     # 2. 시뮬레이션 조건 설정
-    load_condition = {"required_heating_load_kW": 5.0, "T0_C": 2.0}
+    load_condition = {"required_heating_load_kW": 5.0, "T0": 2.0}
     
     # 3. 최적 운전점 탐색
     optimal_result = my_heat_pump.find_optimal_operation(**load_condition)
@@ -873,13 +885,13 @@ if __name__ == '__main__':
         print(f" 팬 전력 사용량 (kW): {optimal_result['performance']['Fan_Power_kW']}")
         print(f"증발 온도 (°C): {optimal_result['performance']['Evaporating_Temp_C']}")
         print(f"응축 온도 (°C): {optimal_result['performance']['Condensing_Temp_C']}")
-        print(f"팬 풍량 (m3/s): {optimal_result['optimal_fan_airflow_m3s']}")
+        print(f"팬 풍량 (m3/s): {optimal_result['optimal_dV_fan']}")
         print(f"압축기 회전수 (RPM): {optimal_result['optimal_compressor_speed_rpm']}")
 
         # 4. 그래프 그리기를 위한 상태값 계산 및 저장
         # 최적화된 속도로 다시 한번 사이클 계산을 수행하여 각 지점의 물성치 확보
         opt_speed = optimal_result['optimal_compressor_speed_rps']
-        opt_airflow = optimal_result['optimal_fan_airflow_m3s']
+        opt_airflow = optimal_result['optimal_dV_fan']
 
         # 각 상태의 압력(P), 엔탈피(H), 온도(T)를 계산
         P_evap = CP.PropsSI('P', 'T', cu.C2K(optimal_result['performance']['Evaporating_Temp_C']), 'Q', 1, my_heat_pump.refrigerant)
