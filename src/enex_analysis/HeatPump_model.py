@@ -617,6 +617,20 @@ class HeatPumpModel:
         self.Fan_ou = Fan_ou
         
         self.Q_iu = Q_iu # 실내기 목표 열 교환율
+        self.mode = 'heating' if Q_iu < 0 else 'cooling'
+
+        if self.mode == 'heating':
+            # 난방: 실내기=응축기, 실외기=증발기
+            self.A_iu, self.A_ou = A_cond, A_evap
+            self.U_coeff_iu, self.U_coeff_ou = U_coeff_cond, U_coeff_evap
+            self.dT_iu, self.dT_ou = dT_cond, dT_evap
+            self.Fan_iu, self.Fan_ou = Fan_iu, Fan_ou
+        else: # cooling
+            # 냉방: 실내기=증발기, 실외기=응축기
+            self.A_iu, self.A_ou = A_evap, A_cond
+            self.U_coeff_iu, self.U_coeff_ou = U_coeff_evap, U_coeff_cond
+            self.dT_iu, self.dT_ou = dT_evap, dT_cond
+            self.Fan_iu, self.Fan_ou = Fan_iu, Fan_ou
 
         def _solve_for_fan_airflow(self, Q_target, T_air_in, T_ref, A, U_coeff):
             """
@@ -701,8 +715,6 @@ class HeatPumpModel:
         # 응축 온도 = 실내온도 + 접근온도차
         T_cond = self.T_ia + self.dT_cond
         P_cond = CP.PropsSI('P', 'T', T_cond, 'Q', 0, self.ref)
-
-
 
         # --- 2. 사이클의 각 지점(State 1, 2, 3, 4) 물성치 계산 ---
         # State 1: 압축기 입구 (포화 증기)
@@ -953,7 +965,7 @@ if __name__ == '__main__':
         eta_cmp_volumetric =0.9,
         coeff_fan_power =500,
         dT_cond =5.0,
-        evaporator_approach_temp_K=5.0,
+        evaporator_temp_K=5.0,
         T_ia=20.0
     )
 
