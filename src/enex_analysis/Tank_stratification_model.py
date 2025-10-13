@@ -289,6 +289,32 @@ def G_FLS(t, ks, as_, rb, H):
     _g_func_cache[key] = result
     return result
 
+######################################################################################### 미완
+def calc_Orifice_flow_coefficient(D0, D1):
+    """
+    Calculate the orifice flow coefficient based on the diameters.
+
+    ---------------
+     ->      |
+     D0     D1 ->
+     ->      |
+    ---------------
+
+    Parameters:
+    - D0 : float
+        pipe diameter [m]
+    - D1 : float
+        hole diameter [m]
+
+    Returns:
+    - C_d : float
+        Orifice flow coefficient (dimensionless)
+    """
+    
+    m = D1 / D0 # 개공비
+    return (m)**2
+#########################################################################################
+
 def calc_boussinesq_mixing_flow(T_upper, T_lower, A, dz, C_d=0.1):
     """
     두 인접 노드 간의 부시네스크 근사에 기반한 혼합 유량을 계산합니다.
@@ -315,7 +341,7 @@ def calc_boussinesq_mixing_flow(T_upper, T_lower, A, dz, C_d=0.1):
     if T_lower > T_upper:
         # 하단이 더 따뜻하면 (밀도가 낮으면) 불안정하여 혼합 발생
         delta_T = T_lower - T_upper
-        Q_mix = C_d * A * math.sqrt(g * beta * delta_T * dz)
+        Q_mix = C_d * A * math.sqrt(2 * g * beta * delta_T * dz)
         return Q_mix
     else:
         # 안정적인 상태에서는 혼합 없음
@@ -428,35 +454,40 @@ def _add_loop_advection_terms(a, b, c, d, in_idx, out_idx, G_loop, T_loop_in):
     - 인덱스는 0-based (노드 1 -> idx 0).
     - 방향: in_idx > out_idx 이면 '상향'(아래→위), 반대면 '하향'(위→아래).
     """
+    
+    # 유효하지 않은 경우 무시
     if G_loop <= 0 or in_idx == out_idx:
-        return
+        return print("Warning: negative loop flow rate or identical in/out loop nodes.")
 
+    # inlet 노드 (공통)
+    b[in_idx] += G_loop
+    d[in_idx] += G_loop * T_loop_in  # 유입 스트림 온도
+    
+    # 상향: in(N쪽) -> ... -> out(1쪽)
     if in_idx > out_idx:
-        # 상향: in(N쪽) -> ... -> out(1쪽)
-        # inlet 노드
-        b[in_idx] += G_loop
-        a[in_idx] -= G_loop              # 진행 이웃(i-1) 계수에 -G
-        d[in_idx] += G_loop * T_loop_in  # 유입 스트림 온도
         # 경로 내부 노드 (out_idx+1 .. in_idx-1)
         for k in range(in_idx - 1, out_idx, -1):
             b[k] += G_loop
-            c[k] -= G_loop              # 유입측 이웃(아래, k+1)에 -G
-        # outlet 노드: out_idx -> outflow 경계 (추가 없음)
+            c[k] -= G_loop
+        # outlet 노드 (out_idx)
+        b[out_idx] += G_loop
+        c[out_idx] -= G_loop
 
+    # 하향: in(1쪽) -> ... -> out(N쪽)
     else:
-        # 하향: in(1쪽) -> ... -> out(N쪽)
-        b[in_idx] += G_loop
-        c[in_idx] -= G_loop             # 진행 이웃(i+1) 계수에 -G
-        d[in_idx] += G_loop * T_loop_in
         for k in range(in_idx + 1, out_idx):
+            a[k] -= G_loop 
             b[k] += G_loop
-            a[k] -= G_loop               # 유입측 이웃(위, k-1)에 -G
-    # outlet 노드: out_idx -> outflow 경계 (추가 없음)
+        # outlet 노드 (out_idx)
+        a[out_idx] -= G_loop
+        b[out_idx] += G_loop
     
 class StratifiedTankTDMA:
     '''
-    To do: 탱크와 연결된 순환 루프 추가시 각 a, b, c, d 계수에 대한 수정 필요.
-    현재는 탱크 상단 하단에서 동일한 물만 유입/유출되는 경우만 고려.
+    To do: 부시네스크 근사에 의한 물블록간 순환 유량계산 알고리즘에서 C_d(유량계수)를 자동으로 계산하는
+    알고리즘 추가 필요. 현재는 외부에서 지정해줘야하며 값이 신뢰할 수 없음.
+    
+    
     Parameters:
     -----------
     H : float
@@ -578,4 +609,77 @@ class StratifiedTankTDMA:
         # ---- 선형계 풀이 ------------------------------------------------------------
         T_next = TDMA(a, b, c, d)
         return T_next
+    
+    def info(self, as_dict: bool = False, precision: int = 3):
+        """
+        현재 탱크/모델 설정을 요약해서 보여줍니다.
 
+        Parameters
+        ----------
+        as_dict : bool
+            True면 dict로 반환, False면 사람이 읽기 좋은 문자열을 print 후 None 반환
+        precision : int
+            표시 유효숫자(소수 자리) 제어
+        """
+        import numpy as _np
+
+        # 파생량 계산
+        H      = float(self.H)
+        D      = float(self.D)
+        N      = int(self.N)
+        dz     = float(self.dz)
+        A      = float(self.A)
+        V_node = float(self.V)
+        V_tot  = V_node * N
+        C_node = float(self.C)
+        C_tot  = C_node * N
+        K_ax   = float(self.K)            # 축방향 전도 등가전달계수 [W/K] (층간)
+        UA_arr = _np.asarray(self.UA, dtype=float)
+        UA_sum = float(UA_arr.sum())
+        UA_min = float(UA_arr.min()) if UA_arr.size else _np.nan
+        UA_max = float(UA_arr.max()) if UA_arr.size else _np.nan
+
+        out = {
+            "geometry": {
+                "H_m": H, "D_m": D, "area_m2": A,
+                "layers_N": N, "dz_m": dz,
+                "volume_node_m3": V_node, "volume_total_m3": V_tot
+            },
+            "thermal": {
+                "C_node_J_per_K": C_node, "C_total_J_per_K": C_tot,
+                "K_axial_W_per_K": K_ax,
+                "UA_sum_W_per_K": UA_sum,
+                "UA_min_W_per_K": UA_min,
+                "UA_max_W_per_K": UA_max
+            },
+            "model": {
+                "C_d_mix": getattr(self, "C_d_mix", None)
+            }
+        }
+
+        if as_dict:
+            return out
+
+        # pretty print
+        p = precision
+        def fmt(x): 
+            try: 
+                return f"{x:.{p}g}" if abs(x) >= 1 else f"{x:.{p}f}"
+            except Exception:
+                return str(x)
+
+        lines = []
+        lines.append("=== StratifiedTankTDMA :: Model Info ===")
+        lines.append("[Geometry]")
+        lines.append(f"  H = {fmt(H)} m,  D = {fmt(D)} m,  A = {fmt(A)} m²")
+        lines.append(f"  N = {N} layers,  dz = {fmt(dz)} m")
+        lines.append(f"  V_node = {fmt(V_node)} m³,  V_total = {fmt(V_tot)} m³")
+        lines.append("[Thermal]")
+        lines.append(f"  C_node = {fmt(C_node)} J/K,  C_total = {fmt(C_tot)} J/K")
+        lines.append(f"  K_axial (conduction) = {fmt(K_ax)} W/K")
+        lines.append(f"  UA_sum = {fmt(UA_sum)} W/K  " f"(min {fmt(UA_min)}, max {fmt(UA_max)})")
+        lines.append("[Mixing]")
+        lines.append(f"  C_d_mix = {fmt(getattr(self, 'C_d_mix', None))}")
+        print("\n".join(lines))
+
+# %%
