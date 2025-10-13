@@ -1,19 +1,22 @@
 """Figure 13 – Monthly ambient temperatures and exergy balance."""
-from __future__ import annotations
-
-from pathlib import Path
+import sys
+sys.path.append('src')
 
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
 import numpy as np
 import dartwork_mpl as dm
-
+from figure_setting import fs, pad
+import enex_analysis as enex
+import calc_util as cu
 import enex_analysis as enex
 
 from data_prep import load_processed_dataset
 
-PNG_PATH = Path("figure") / "Fig. 13.png"
-SVG_PATH = Path("figure") / "Fig. 13.svg"
+PATH = "figure"
+FIG_NAME = "Fig. 13"
+PNG_PATH = PATH +  '/' + FIG_NAME + ".png"
+SVG_PATH = PATH +  '/' + FIG_NAME + ".svg"
 
 COOLING_J_COL = "DistrictCooling:Facility [J](TimeStep)"
 HEATING_J_COL = "DistrictHeatingWater:Facility [J](TimeStep)"
@@ -23,17 +26,6 @@ def main() -> None:
     dm.use_style()
     plt.rcParams["font.size"] = 9
 
-    fs = {
-        "label": dm.fs(0),
-        "tick": dm.fs(-1.5),
-        "subtitle": dm.fs(-0.5),
-        "legend": dm.fs(-2.0),
-        "setpoint": dm.fs(-1.0),
-        "text": dm.fs(-3.0),
-    }
-    pad = {"label": 6, "tick": 4}
-
-    Wh2GWh = 1.0 / 1_000_000_000.0
 
     df = load_processed_dataset()
     if "Month" not in df:
@@ -103,7 +95,7 @@ def main() -> None:
         consumption_exergy = input_exergy - output_exergy
         monthly_exergy_input.append(input_exergy * Wh2GWh)
         monthly_exergy_consumption.append(consumption_exergy * Wh2GWh)
-        monthly_exergy_output.append(output_exergy * Wh2GWh)
+        monthly_exergy_output.append(output_exergy * enex.W2GW)
 
         total_count = cooling_count + heating_count
         if total_count > 0:
@@ -113,7 +105,10 @@ def main() -> None:
         monthly_avg_COP.append(avg_cop)
 
     labels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-    x = np.arange(1, 13)
+
+
+    MONTH_LENGTH = len(labels)
+    x = np.arange(1, MONTH_LENGTH + 1)
     total_exergy = np.array(monthly_exergy_input)
 
     fig, (ax_temp, ax_exergy) = plt.subplots(
@@ -143,7 +138,7 @@ def main() -> None:
     ax_temp.set_ylim(-10.0, 40.0)
     ax_temp.set_xticks(x)
     ax_temp.set_xticklabels(labels, fontsize=fs["tick"])
-    ax_temp.set_yticks(np.arange(-10, 41, 10))
+    ax_temp.set_yticks(np.arange(-10, 40*1.001, 10))
     ax_temp.tick_params(axis="both", which="major", labelsize=fs["tick"], pad=pad["tick"])
     ax_temp.text(0.01, 0.97, "(a)", transform=ax_temp.transAxes, fontsize=fs["subtitle"], fontweight="bold", va="top", ha="left")
     ax_temp.set_ylabel("Environmental temperature [$^{\\circ}$C]", fontsize=fs["label"], labelpad=pad["label"])
