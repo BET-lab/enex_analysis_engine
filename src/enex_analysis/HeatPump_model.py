@@ -640,10 +640,14 @@ class HeatPumpModel:
                 T_ref (float): 냉매 온도 [K].
                 A (float): 열교환기 전열 면적 [m^2].
                 U_coeff (float): 열교환기 열전달 특성 계수.
-            Returns:
+            Returns: 
                 dV_fan (float): 필요 풍량 [m^3/s] 또는 None
             Description:
-                목표 열교환량(Q_target)을 만족시키기 위한 필요 풍량(dV_fan)을 수치적으로 계산한다.
+                목표 열교환율 (Q_target)을 만족시키기 위한 필요 풍량(dV_fan)을 수치적으로 계산한다.
+                열교환율은 다음을 만족시켜야한다.
+                1) 공기 측 에너지 공식: Q = c_a * dV_fan * rho_a * (T_air_in - T_air_out)
+                2) 열교환기 공식: Q = U * A * LMTD
+                2-1) 이때 U는 풍량에 따라 변하며, U ∝ dV_fan^0.8로 가정한다. 
                 Q_target은 positive(+) 일때 냉매에 흡수되는 방향으로, negative(-) 일때 냉매에서 방출되는 방향으로 정의된다.
             """
             
@@ -688,7 +692,7 @@ class HeatPumpModel:
             except ValueError:
                 return None
 
-    def _calculate_cycle_performance(self, cmp_rps, dV_fan, T0):
+    def _calculate_cycle_performance(self, cmp_rps, T0):
         """
         주어진 운전 조건(압축기/팬 속도, 외기온도)에서 사이클 성능을 계산하는 내부 함수.
         (저온/저압 가스)                                (고온/고압 가스)
