@@ -127,8 +127,8 @@ SETPOINT_TX_Y        = 26.2
 SETPOINT_TX_ROT      = 90
 
 # Figure/레이아웃
-FIG_W_CM, FIG_H_CM   = 17, 13
-MARGINS              = dict(left=0.07, right=0.89, top=0.97, bottom=0.08)
+FIG_W_CM, FIG_H_CM   = 17, 12
+MARGINS              = dict(left=0.07, right=0.87, top=0.97, bottom=0.08)
 HSPACE               = 0.3
 
 CBAR_W               = 0.018
