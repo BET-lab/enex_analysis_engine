@@ -39,13 +39,13 @@ df_sub['xpos'] = df_sub['Day'] + hour_sub / 24.0  # 연속 x축
 
 # 최대 부하(정규화용) 한 번만 계산
 Q_r_max_cooling = (df_sub['DistrictCooling:Facility [J](TimeStep)'] * enex.s2h).max()
-Q_r_max_heating = (df_sub['DistrictHeatingWater:Facility [J](TimeStep)'] * enex.s2h).max()
+Q_r_max_heating = (df_sub['DistrictHeatingWater:Facility [J](TimeStep) '] * enex.s2h).max()
 
 # 2) COP / 엑서지 계산 (부분집합에만 수행)
 def compute_metrics(row):
     Toa = row['Environment:Site Outdoor Air Drybulb Temperature [C](TimeStep)']
     cooling_load = row['DistrictCooling:Facility [J](TimeStep)'] * enex.s2h
-    heating_load = row['DistrictHeatingWater:Facility [J](TimeStep)'] * enex.s2h
+    heating_load = row['DistrictHeatingWater:Facility [J](TimeStep) '] * enex.s2h
 
     exergy_effi = 0.0
     cop = 0.0

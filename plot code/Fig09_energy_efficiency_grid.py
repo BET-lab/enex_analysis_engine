@@ -27,7 +27,7 @@ df = get_weekday_df()
 date_list = df['Date/Time_clean']
 Toa_list = df['Environment:Site Outdoor Air Drybulb Temperature [C](TimeStep)']
 cooling_load_list = df['DistrictCooling:Facility [J](TimeStep)'] * enex.s2h
-heating_load_list = df['DistrictHeatingWater:Facility [J](TimeStep)'] * enex.s2h
+heating_load_list = df['DistrictHeatingWater:Facility [J](TimeStep) '] * enex.s2h
 
 ASHP_cooling_exergy_effi = []
 ASHP_heating_exergy_effi = []
@@ -128,7 +128,7 @@ SETPOINT_TX_ROT      = 90
 # Figure/레이아웃
 FIG_W_CM, FIG_H_CM   = 17, 13
 MARGINS              = dict(left=0.07, right=0.89, top=0.95, bottom=0.10)
-HSPACE               = 0.25
+HSPACE               = 0.3
 
 # 컬러바 위치/크기(축 바깥 개별 배치)
 CBAR_W               = 0.018

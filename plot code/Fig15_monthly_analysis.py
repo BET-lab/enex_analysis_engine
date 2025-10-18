@@ -11,7 +11,7 @@ dm.use_style()
 # Data
 weekday_df = get_weekday_df()
 cooling_load_list = weekday_df['DistrictCooling:Facility [J](TimeStep)'] * enex.s2h
-heating_load_list = weekday_df['DistrictHeatingWater:Facility [J](TimeStep)'] * enex.s2h
+heating_load_list = weekday_df['DistrictHeatingWater:Facility [J](TimeStep) '] * enex.s2h
 
 # 월별 그룹화
 grouped = weekday_df.groupby('Month')
@@ -44,7 +44,7 @@ for month, group in grouped:
         Toa = row['Environment:Site Outdoor Air Drybulb Temperature [C](TimeStep)']
         Tia = row['CORE_ZN:Zone Air Temperature [C](TimeStep)']
         cooling_load = row['DistrictCooling:Facility [J](TimeStep)'] * enex.s2h
-        heating_load = row['DistrictHeatingWater:Facility [J](TimeStep)'] * enex.s2h
+        heating_load = row['DistrictHeatingWater:Facility [J](TimeStep) '] * enex.s2h
 
         if cooling_load > 0:
             ASHP_cooling = enex.AirSourceHeatPump_cooling()

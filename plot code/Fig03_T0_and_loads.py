@@ -12,7 +12,7 @@ dm.use_style()
 df = get_weekday_df()
 Toa_list = df['Environment:Site Outdoor Air Drybulb Temperature [C](TimeStep)']
 cooling_load_list = df['DistrictCooling:Facility [J](TimeStep)'] * enex.s2h
-heating_load_list = df['DistrictHeatingWater:Facility [J](TimeStep)'] * enex.s2h
+heating_load_list = df['DistrictHeatingWater:Facility [J](TimeStep) '] * enex.s2h
 
 # Set up the subplots
 fig, ax = plt.subplots(2, 1, figsize=(dm.cm2in(17), dm.cm2in(10)))

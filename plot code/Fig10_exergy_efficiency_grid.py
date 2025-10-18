@@ -27,7 +27,7 @@ df = get_weekday_df()
 date_list = df['Date/Time_clean']
 Toa_list = df['Environment:Site Outdoor Air Drybulb Temperature [C](TimeStep)']
 cooling_load_list = df['DistrictCooling:Facility [J](TimeStep)'] * enex.s2h
-heating_load_list = df['DistrictHeatingWater:Facility [J](TimeStep)'] * enex.s2h
+heating_load_list = df['DistrictHeatingWater:Facility [J](TimeStep) '] * enex.s2h
 
 ASHP_cooling_exergy_effi = []
 ASHP_heating_exergy_effi = []
