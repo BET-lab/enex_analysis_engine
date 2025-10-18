@@ -1,222 +1,265 @@
-"""Figure 10 – System exergy efficiency across temperature and load bins."""
-from __future__ import annotations
-
-from pathlib import Path
-
-import matplotlib.colors as mcolors
+#%%
+# import libraries
+import enex_analysis as enex
 import matplotlib.pyplot as plt
-from matplotlib import cm
-import numpy as np
-from matplotlib import patches
 import dartwork_mpl as dm
+import numpy as np
+import matplotlib.colors as mcolors
+from matplotlib import cm
+from data_setting import get_weekday_df
+from enex_analysis.plot_style import fs, pad
+dm.use_style()
 
-from data_prep import load_processed_dataset
-
-PNG_PATH = Path("figure") / "Fig. 10.png"
-PDF_PATH = Path("figure") / "Fig. 10.pdf"
-
-
-def _grid_stats(
-    toa: np.ndarray,
-    load_kw: np.ndarray,
-    efficiency: np.ndarray,
-    bins_x: np.ndarray,
-    bins_y: np.ndarray,
-) -> np.ndarray:
-    avg = np.full((len(bins_y) - 1, len(bins_x) - 1), np.nan, dtype=float)
-    for i in range(len(bins_x) - 1):
-        x_low, x_high = bins_x[i], bins_x[i + 1]
-        x_mask = (toa >= x_low) & (toa < x_high)
-        if not np.any(x_mask):
-            continue
-        for j in range(len(bins_y) - 1):
-            y_low, y_high = bins_y[j], bins_y[j + 1]
-            mask = x_mask & (load_kw >= y_low) & (load_kw < y_high)
+def grid_stats(Toa, Load, COP, bins_x, bins_y):
+    avg_COP = np.full((len(bins_y)-1, len(bins_x)-1), np.nan)
+    for i in range(len(bins_x)-1):  # x축 (Toa)
+        for j in range(len(bins_y)-1):  # y축 (Load)
+            mask = (
+                (Toa >= bins_x[i]) & (Toa < bins_x[i+1]) &
+                (Load >= bins_y[j]) & (Load < bins_y[j+1])
+            )
             if np.any(mask):
-                avg[j, i] = float(np.nanmean(efficiency[mask]))
-    return avg
+                avg_COP[j,i] = np.mean(COP[mask])
+    return avg_COP, bins_x, bins_y
+
+# Data
+df = get_weekday_df()
+date_list = df['Date/Time_clean']
+Toa_list = df['Environment:Site Outdoor Air Drybulb Temperature [C](TimeStep)']
+cooling_load_list = df['DistrictCooling:Facility [J](TimeStep)'] * enex.s2h
+heating_load_list = df['DistrictHeatingWater:Facility [J](TimeStep) '] * enex.s2h
+
+ASHP_cooling_exergy_effi = []
+ASHP_heating_exergy_effi = []
+ASHP_cooling_COP = []
+ASHP_heating_COP = []
+
+for Toa, cooling_load, heating_load in zip(Toa_list, cooling_load_list, heating_load_list):
+    # 냉방 엑서지 효율 계산
+    if cooling_load > 0:
+        ASHP_cooling = enex.AirSourceHeatPump_cooling()
+        ASHP_cooling.T0 = Toa
+        ASHP_cooling.T_a_room = 22
+        ASHP_cooling.Q_r_int = cooling_load
+        ASHP_cooling.Q_r_max = max(cooling_load_list)
+        ASHP_cooling.system_update()
+        if ASHP_cooling.X_eff < 0:
+            ASHP_cooling_exergy_effi.append(None)
+            ASHP_cooling_COP.append(None)
+        else:          
+            ASHP_cooling_exergy_effi.append(ASHP_cooling.X_eff)
+            ASHP_cooling_COP.append(ASHP_cooling.COP_sys)
+    else:
+        ASHP_cooling_exergy_effi.append(None)
+        ASHP_cooling_COP.append(None)
+
+    # 난방 엑서지 효율 계산
+    if heating_load > 0:
+        ASHP_heating = enex.AirSourceHeatPump_heating()
+        ASHP_heating.T0 = Toa
+        ASHP_heating.T_a_room = 22
+        ASHP_heating.Q_r_int = heating_load
+        ASHP_heating.Q_r_max = max(heating_load_list)
+        ASHP_heating.system_update() 
+        if ASHP_heating.X_eff < 0:
+            ASHP_heating_exergy_effi.append(None)
+            ASHP_heating_COP.append(None)
+        else:
+            ASHP_heating_exergy_effi.append(ASHP_heating.X_eff)
+            ASHP_heating_COP.append(ASHP_heating.COP_sys)
+    else:
+        ASHP_heating_exergy_effi.append(None)
+        ASHP_heating_COP.append(None)
+
+# COP None 값일 때 해당하는 COP를 제거한 필터링된 리스트
+ASHP_cooling_COP_filtered = [cop for cop in ASHP_cooling_COP if cop is not None]
+ASHP_heating_COP_filtered = [cop for cop in ASHP_heating_COP if cop is not None]
+ASHP_cooling_exergy_effi_filtered = [eff for eff in ASHP_cooling_exergy_effi if eff is not None]
+ASHP_heating_exergy_effi_filtered = [eff for eff in ASHP_heating_exergy_effi if eff is not None]
+
+# 엑서지효율 None 값일 때 해당하는 온도, 부하를 제거한 필터링된 리스트
+Date_cooling_list_filtered = [date for date, eff in zip(date_list, ASHP_cooling_exergy_effi) if eff is not None]
+Date_heating_list_filtered = [date for date, eff in zip(date_list, ASHP_heating_exergy_effi) if eff is not None]
+Toa_cooling_list_filtered = [Toa for Toa, eff in zip(Toa_list, ASHP_cooling_exergy_effi) if eff is not None]
+Toa_heating_list_filtered = [Toa for Toa, eff in zip(Toa_list, ASHP_heating_exergy_effi) if eff is not None]
+cooling_load_list_filtered = [load for load, eff in zip(cooling_load_list, ASHP_cooling_exergy_effi) if eff is not None]
+heating_load_list_filtered = [load for load, eff in zip(heating_load_list, ASHP_heating_exergy_effi) if eff is not None]
+
+# =========================
+# 0) 한 곳에서 모두 수정 (튜닝 파라미터)
+# =========================
+# Colormap 설정
+CMAP_BASE_NAME       = 'coolwarm'
+CMAP_LEFT_RANGE      = (0.00, 0.45)   # 냉방 패널용 구간
+CMAP_RIGHT_RANGE     = (0.55, 1.00)   # 난방 패널용 구간
+REVERSE_LEFT_CMAP    = True           # 냉방 colormap 반전 여부
+
+# 격자/범위
+BIN_TEMP             = 2.5            # x격자(외기온, °C)
+BIN_LOAD             = 5.0            # y격자(부하, kW)
+X_RANGE              = (-10, 35)      # x축 범위(°C)
+Y_RANGE              = (0, 30)        # y축 범위(kW)
+
+# 패널별 컬러바/스케일 (엑서지 효율, %)
+COOL_VMIN, COOL_VMAX, COOL_VTICK = 0, 20, 5
+HEAT_VMIN, HEAT_VMAX, HEAT_VTICK = 0, 32, 8
+
+# 격자 테두리/그리드/틱
+GRID_RECT_LW         = 1.0
+EDGE_COLOR_COOL      = 'white'
+EDGE_COLOR_HEAT      = 'dm.white'
+MAJOR_GRID_LS        = '--'
+MAJOR_GRID_ALPHA     = 0.5
+MINOR_X_LEN          = 1.6
+MINOR_X_COLOR        = 'dm.gray7'
+
+# 텍스트 색 판단용 밝기 컷오프(0=검정, 1=흰색) — 필요시 0.50~0.60 조정
+LUMINANCE_CUTOFF     = 0.5
+
+# Setpoint
+SETPOINT_VALUE       = 22
+SETPOINT_LS          = '--'
+SETPOINT_LW          = 0.6
+SETPOINT_COLOR       = 'dm.teal6'
+SETPOINT_TEXT        = 'Setpoint'
+SETPOINT_TX_X        = 20.8
+SETPOINT_TX_Y        = 26.2
+SETPOINT_TX_ROT      = 90
+
+# Figure/레이아웃
+FIG_W_CM, FIG_H_CM   = 17, 13
+MARGINS              = dict(left=0.07, right=0.89, top=0.97, bottom=0.08)
+HSPACE               = 0.3
+
+CBAR_W               = 0.018
+CBAR_OFF_H           = 0.025  # 축 bbox 오른쪽으로의 거리(정규 좌표)
+
+# 패널 라벨
+PANEL_A              = '(a)'
+PANEL_B              = '(b)'
+
+# =========================
+# 1) Colormap 준비
+# =========================
+_coolwarm = cm.get_cmap(CMAP_BASE_NAME)
+coolwarm_left  = mcolors.LinearSegmentedColormap.from_list(
+    'coolwarm_left',  _coolwarm(np.linspace(*CMAP_LEFT_RANGE, 256))
+)
+coolwarm_right = mcolors.LinearSegmentedColormap.from_list(
+    'coolwarm_right', _coolwarm(np.linspace(*CMAP_RIGHT_RANGE, 256))
+)
+CMAP_COOL = coolwarm_left.reversed() if REVERSE_LEFT_CMAP else coolwarm_left
+CMAP_HEAT = coolwarm_right
+
+# =========================
+# 2) 데이터 & 빈
+# =========================
+# Cooling
+Toa_c   = np.array(Toa_cooling_list_filtered)
+Load_c  = np.array(cooling_load_list_filtered) / 1000.0
+X_eff_c = np.array(ASHP_cooling_exergy_effi_filtered) * 100.0  # [%]
+
+# Heating
+Toa_h   = np.array(Toa_heating_list_filtered)
+Load_h  = np.array(heating_load_list_filtered) / 1000.0
+X_eff_h = np.array(ASHP_heating_exergy_effi_filtered) * 100.0  # [%]
+
+bins_x = np.arange(X_RANGE[0], X_RANGE[1] + BIN_TEMP, BIN_TEMP)
+bins_y = np.arange(Y_RANGE[0], Y_RANGE[1] + BIN_LOAD, BIN_LOAD)
+
+# 평균 엑서지 효율(%) 격자 계산 (grid_stats는 기존 정의 사용)
+avg_c, xedges, yedges = grid_stats(Toa_c, Load_c, X_eff_c, bins_x, bins_y)
+avg_h, _,      _      = grid_stats(Toa_h, Load_h, X_eff_h, bins_x, bins_y)
+
+# =========================
+# 3) 플롯
+# =========================
+fig, axes = plt.subplots(2, 1, figsize=(dm.cm2in(FIG_W_CM), dm.cm2in(FIG_H_CM)), sharex=False, sharey=True)
+plt.subplots_adjust(**MARGINS, hspace=HSPACE)
+
+# 패널 파라미터 목록(루프로 그리기)
+panels = [
+    dict(ax_idx=0, avg=avg_c, cmap=CMAP_COOL, vmin=COOL_VMIN, vmax=COOL_VMAX,
+         y_label='Cooling load [kW]', edge_color=EDGE_COLOR_COOL,
+         cbar_ticks=np.arange(COOL_VMIN, COOL_VMAX + 1e-9, COOL_VTICK),
+         panel_tag=PANEL_A),
+    dict(ax_idx=1, avg=avg_h, cmap=CMAP_HEAT, vmin=HEAT_VMIN, vmax=HEAT_VMAX,
+         y_label='Heating load [kW]', edge_color=EDGE_COLOR_HEAT,
+         cbar_ticks=np.arange(HEAT_VMIN, HEAT_VMAX + 1e-9, HEAT_VTICK),
+         panel_tag=PANEL_B),
+]
+
+for p in panels:
+    ax = axes[p['ax_idx']]
+    im = ax.pcolormesh(xedges, yedges, p['avg'], cmap=p['cmap'], vmin=p['vmin'], vmax=p['vmax'])
+
+    # ★ 패널별 정규화/컬러맵 (텍스트 색 결정에 사용)
+    _norm = mcolors.Normalize(vmin=p['vmin'], vmax=p['vmax'])
+    _cmap_for_text = p['cmap']  # 이미 Colormap 객체
+
+    # 격자 테두리 + 셀 값 표기
+    for i in range(len(xedges) - 1):
+        for j in range(len(yedges) - 1):
+            ax.add_patch(plt.Rectangle(
+                (xedges[i], yedges[j]),
+                xedges[i+1] - xedges[i],
+                yedges[j+1] - yedges[j],
+                linewidth=GRID_RECT_LW,
+                edgecolor=p['edge_color'],
+                facecolor='none',
+                zorder=1
+            ))
+            val = p['avg'][j, i]
+            if not np.isnan(val):
+                # ★ 배경색의 상대 휘도(luminance)로 텍스트 색 자동 선택
+                r, g, b, _ = _cmap_for_text(_norm(val))
+                luminance = 0.2126*r + 0.7152*g + 0.0722*b
+                txt_color = 'white' if luminance < LUMINANCE_CUTOFF else 'black'
+
+                ax.text(
+                    (xedges[i] + xedges[i+1]) / 2.0,
+                    (yedges[j] + yedges[j+1]) / 2.0,
+                    f"{val:.1f}", ha='center', va='center',
+                    fontsize=fs['text'], color=txt_color
+                )
+
+    # 축 라벨/마이너틱
+    ax.set_ylabel(p['y_label'], fontsize=fs['label'], labelpad=pad['label'])
+    ax.minorticks_off()
+
+    # Setpoint 라인/텍스트
+    ax.axvline(x=SETPOINT_VALUE, color=SETPOINT_COLOR, linestyle=SETPOINT_LS, linewidth=SETPOINT_LW)
+    ax.text(SETPOINT_TX_X, SETPOINT_TX_Y, SETPOINT_TEXT, rotation=SETPOINT_TX_ROT,
+            fontsize=fs['setpoint'], color=SETPOINT_COLOR, ha='left', va='center')
+
+    # 패널 태그
+    ax.text(0.01, 0.97, p['panel_tag'], transform=ax.transAxes,
+            fontsize=fs['subtitle'], fontweight='bold', va='top', ha='left')
+    
+    
+    # 컬러바(축 바깥 개별 배치)
+    bbox = ax.get_position()
+    cb_ax = fig.add_axes([bbox.x1 + CBAR_OFF_H, bbox.y0, CBAR_W, bbox.y1 - bbox.y0])
+    cbar  = fig.colorbar(im, cax=cb_ax, orientation='vertical')
+    cbar.ax.tick_params(direction='in', labelsize=fs['cbar_tick'], pad=pad['tick'])
+    cbar.set_ticks(np.arange(COOL_VMIN, COOL_VMAX + 1e-9, COOL_VTICK) if p['ax_idx'] == 0 else np.arange(HEAT_VMIN, HEAT_VMAX + 1e-9, HEAT_VTICK))
+    cbar.ax.minorticks_off()
+    cbar.ax.set_ylabel('Exergy efficiency ($\eta_{X,sys}$) [ - ]',
+                       rotation=90, fontsize=fs['cbar_label'], labelpad=pad['label'], loc='center')
+
+# 공통 축/그리드/틱
+for ax in axes:
+    ax.set_xlim(X_RANGE)
+    ax.set_ylim(Y_RANGE)
+    ax.set_xlabel('Environmental temperature [$^{\\circ}$C]', fontsize=fs['label'], labelpad=pad['label'])
+    ax.grid(True, linestyle=MAJOR_GRID_LS, alpha=MAJOR_GRID_ALPHA)
+    ax.set_xticks(xedges, minor=True)
+    ax.tick_params(axis='x', which='minor', length=MINOR_X_LEN, color=MINOR_X_COLOR)
+    ax.tick_params(axis='both', which='major', labelsize=fs['tick'])
+    
 
 
-def _draw_grid(ax: plt.Axes, bins_x: np.ndarray, bins_y: np.ndarray, color: str) -> None:
-    for i in range(len(bins_x) - 1):
-        for j in range(len(bins_y) - 1):
-            rect = patches.Rectangle(
-                (bins_x[i], bins_y[j]),
-                bins_x[i + 1] - bins_x[i],
-                bins_y[j + 1] - bins_y[j],
-                linewidth=1.0,
-                edgecolor=color,
-                facecolor="none",
-                zorder=1,
-            )
-            ax.add_patch(rect)
-
-
-def _annotate_cells(
-    ax: plt.Axes,
-    data: np.ndarray,
-    bins_x: np.ndarray,
-    bins_y: np.ndarray,
-    font_size: float,
-    white_text_threshold: float,
-) -> None:
-    for i in range(len(bins_x) - 1):
-        x_mid = (bins_x[i] + bins_x[i + 1]) / 2
-        for j in range(len(bins_y) - 1):
-            value = data[j, i]
-            if np.isnan(value):
-                continue
-            y_mid = (bins_y[j] + bins_y[j + 1]) / 2
-            text_color = "white" if value >= white_text_threshold else "black"
-            ax.text(
-                x_mid,
-                y_mid,
-                f"{value:.1f}",
-                ha="center",
-                va="center",
-                fontsize=font_size,
-                color=text_color,
-                zorder=3,
-            )
-
-
-def main() -> None:
-    dm.use_style()
-    plt.rcParams["font.size"] = 9
-
-    fs = {
-        "label": dm.fs(0),
-        "tick": dm.fs(-1.5),
-        "subtitle": dm.fs(-0.5),
-        "cbar_label": dm.fs(-2.0),
-        "cbar_tick": dm.fs(-2.0),
-        "setpoint": dm.fs(-1.0),
-        "text": dm.fs(-3.0),
-    }
-    pad = {"label": 6, "tick": 4}
-
-    bin_temp = 2.5
-    bin_load = 5.0
-    x_range = (-10.0, 35.0)
-    y_range = (0.0, 30.0)
-    line_width = 1.0
-    cooling_white_text = 18.0
-    heating_white_text = 26.8
-
-    coolwarm_left = mcolors.LinearSegmentedColormap.from_list(
-        "coolwarm_left", cm.get_cmap("coolwarm")(np.linspace(0.0, 0.45, 256))
-    )
-    coolwarm_right = mcolors.LinearSegmentedColormap.from_list(
-        "coolwarm_right", cm.get_cmap("coolwarm")(np.linspace(0.55, 1.0, 256))
-    )
-
-    df = load_processed_dataset()
-
-    cooling_mask = df["ASHP_cooling_exergy_efficiency"].notna() & (df["DistrictCooling:Facility [W](TimeStep)"] > 0)
-    heating_mask = df["ASHP_heating_exergy_efficiency"].notna() & (
-        df["DistrictHeatingWater:Facility [W](TimeStep)"] > 0
-    )
-
-    toa_cooling = df.loc[cooling_mask, "Environment:Site Outdoor Air Drybulb Temperature [C](TimeStep)"].to_numpy()
-    load_cooling = df.loc[cooling_mask, "DistrictCooling:Facility [W](TimeStep)"].to_numpy() / 1000.0
-    x_eff_cooling = df.loc[cooling_mask, "ASHP_cooling_exergy_efficiency"].to_numpy() * 100.0
-
-    toa_heating = df.loc[heating_mask, "Environment:Site Outdoor Air Drybulb Temperature [C](TimeStep)"].to_numpy()
-    load_heating = df.loc[heating_mask, "DistrictHeatingWater:Facility [W](TimeStep)"].to_numpy() / 1000.0
-    x_eff_heating = df.loc[heating_mask, "ASHP_heating_exergy_efficiency"].to_numpy() * 100.0
-
-    bins_x = np.arange(x_range[0], x_range[1] + bin_temp, bin_temp)
-    bins_y = np.arange(y_range[0], y_range[1] + bin_load, bin_load)
-
-    avg_cooling = _grid_stats(toa_cooling, load_cooling, x_eff_cooling, bins_x, bins_y)
-    avg_heating = _grid_stats(toa_heating, load_heating, x_eff_heating, bins_x, bins_y)
-
-    fig, axes = plt.subplots(2, 1, figsize=(dm.cm2in(17), dm.cm2in(13)), sharey=True)
-    plt.subplots_adjust(left=0.07, right=1.07, top=0.95, bottom=0.08, hspace=0.25)
-
-    im1 = axes[0].pcolormesh(bins_x, bins_y, avg_cooling, cmap=coolwarm_left.reversed(), vmin=0.0, vmax=20.0)
-    for i in range(len(bins_x) - 1):
-        for j in range(len(bins_y) - 1):
-            rect = patches.Rectangle(
-                (bins_x[i], bins_y[j]),
-                bins_x[i + 1] - bins_x[i],
-                bins_y[j + 1] - bins_y[j],
-                linewidth=line_width,
-                edgecolor="dm.white",
-                facecolor="none",
-                zorder=1,
-            )
-            axes[0].add_patch(rect)
-    _annotate_cells(axes[0], avg_cooling, bins_x, bins_y, fs["text"], cooling_white_text)
-    axes[0].set_ylabel("Cooling load [kW]", fontsize=fs["label"], labelpad=pad["label"])
-    axes[0].tick_params(axis="both", which="major", labelsize=fs["tick"], pad=pad["tick"])
-    axes[0].minorticks_off()
-    axes[0].axvline(x=22, color="dm.teal6", linestyle="--", linewidth=0.6)
-    axes[0].text(20.8, 26.2, "Setpoint", rotation=90, fontsize=fs["setpoint"], color="dm.teal6", ha="left", va="center")
-    axes[0].text(0.01, 0.97, "(a)", transform=axes[0].transAxes, fontsize=fs["subtitle"], fontweight="bold", va="top", ha="left")
-
-    cbar1 = fig.colorbar(
-        im1,
-        ax=axes[0],
-        label="Exergy efficiency ($\\eta_{X,sys}$) [%]",
-        orientation="vertical",
-        pad=0.02,
-        aspect=20,
-    )
-    cbar1.set_label("Exergy efficiency ($\\eta_{X,sys}$) [%]", fontsize=fs["cbar_label"], labelpad=pad["label"])
-    cbar1.set_ticks(np.arange(0, 21, 5))
-    cbar1.ax.tick_params(axis="both", which="major", labelsize=fs["cbar_tick"])
-    cbar1.ax.tick_params(axis="both", which="minor", bottom=False, left=False)
-    cbar1.ax.minorticks_off()
-
-    im2 = axes[1].pcolormesh(bins_x, bins_y, avg_heating, cmap=coolwarm_right, vmin=0.0, vmax=32.0)
-    for i in range(len(bins_x) - 1):
-        for j in range(len(bins_y) - 1):
-            rect = patches.Rectangle(
-                (bins_x[i], bins_y[j]),
-                bins_x[i + 1] - bins_x[i],
-                bins_y[j + 1] - bins_y[j],
-                linewidth=line_width,
-                edgecolor="dm.white",
-                facecolor="none",
-                zorder=1,
-            )
-            axes[1].add_patch(rect)
-    _annotate_cells(axes[1], avg_heating, bins_x, bins_y, fs["text"], heating_white_text)
-    axes[1].set_ylabel("Heating load [kW]", fontsize=fs["label"], labelpad=pad["label"])
-    axes[1].tick_params(axis="both", which="major", labelsize=fs["tick"], pad=pad["tick"])
-    axes[1].minorticks_off()
-    axes[1].axvline(x=22, color="dm.teal6", linestyle="--", linewidth=0.6)
-    axes[1].text(20.8, 26.2, "Setpoint", rotation=90, fontsize=fs["setpoint"], color="dm.teal6", ha="left", va="center")
-    axes[1].text(0.01, 0.97, "(b)", transform=axes[1].transAxes, fontsize=fs["subtitle"], fontweight="bold", va="top", ha="left")
-
-    cbar2 = fig.colorbar(
-        im2,
-        ax=axes[1],
-        label="Exergy efficiency ($\\eta_{X,sys}$) [%]",
-        orientation="vertical",
-        pad=0.02,
-        aspect=20,
-    )
-    cbar2.set_label("Exergy efficiency ($\\eta_{X,sys}$) [%]", fontsize=fs["cbar_label"], labelpad=pad["label"])
-    cbar2.set_ticks(np.arange(0, 33, 8))
-    cbar2.ax.tick_params(axis="both", which="major", labelsize=fs["cbar_tick"])
-    cbar2.ax.tick_params(axis="both", which="minor", bottom=False, left=False)
-    cbar2.ax.minorticks_off()
-
-    for ax in axes:
-        ax.set_xlim(x_range)
-        ax.set_ylim(y_range)
-        ax.set_xlabel("Environmental temperature [$^{\\circ}$C]", fontsize=fs["label"], labelpad=pad["label"])
-        ax.grid(True, linestyle="--", alpha=0.5)
-        ax.set_xticks(bins_x, minor=True)
-        ax.tick_params(axis="x", which="minor", length=1.6, color="dm.gray7")
-
-    PNG_PATH.parent.mkdir(exist_ok=True)
-    fig.savefig(PNG_PATH, dpi=600)
-    fig.savefig(PDF_PATH, dpi=600)
-    dm.util.save_and_show(fig)
-
-
-if __name__ == "__main__":
-    main()
+# 저장/표시 (파일명은 원 코드에 맞춰 Fig. 10)
+plt.savefig('../figure/Fig. 10.png', dpi=600)
+plt.savefig('../figure/Fig. 10.pdf', dpi=600)
+dm.util.save_and_show(fig)
