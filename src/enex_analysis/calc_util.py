@@ -29,6 +29,7 @@ s2m = 1 / 60
 
 # Year
 y2d = 365
+y2s = 365 * 24 * 3600
 d2y = 1 / 365
 
 ## Length conversion

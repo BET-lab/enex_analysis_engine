@@ -2139,7 +2139,7 @@ class GroundSourceHeatPumpBoiler:
         
         # Volumetric flow rates [m³/s]
         self.dV_w_sup_tank = self.alp * self.dV_w_serv
-        self.dV_w_sup_mix  = (1-self.alp)*self.dV_w_serv
+        self.dV_w_sup_mix  = (1-self.alp) * self.dV_w_serv
 
         # Thermal resistances per unit area/legnth
         self.R_base_unit = self.x_shell / self.k_shell + self.x_ins / self.k_ins # [m2K/W]

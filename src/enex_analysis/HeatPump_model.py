@@ -1,7 +1,8 @@
+#%%
 import numpy as np
 import math
-# from . import calc_util as cu
-import calc_util as cu
+from . import calc_util as cu
+# import calc_util as cu
 from dataclasses import dataclass
 import dartwork_mpl as dm
 import matplotlib.pyplot as plt
@@ -10,6 +11,7 @@ from scipy import integrate
 from scipy.special import erf
 import CoolProp.CoolProp as CP
 import numpy as np
+from tqdm import tqdm
 from scipy.optimize import minimize
 from scipy.optimize import root_scalar
 
@@ -55,42 +57,6 @@ def darcy_friction_factor(Re, e_d):
     # Turbulent flow
     else:
         return 0.25 / (math.log10(e_d / 3.7 + 5.74 / Re ** 0.9)) ** 2
-
-def calc_h_vertical_plate(T_s, T_inf, L):
-    '''
-    📌 Function: compute_natural_convection_h_cp
-    이 함수는 자연 대류에 의한 열전달 계수를 계산합니다.
-    🔹 Parameters
-        - T_s (float): 표면 온도 [K]
-        - T_inf (float): 유체 온도 [K]
-        - L (float): 특성 길이 [m]
-    🔹 Return
-        - h_cp (float): 열전달 계수 [W/m²K]
-    🔹 Example
-        ```
-        h_cp = compute_natural_convection_h_cp(T_s, T_inf, L)
-        ```
-    🔹 Note
-        - 이 함수는 자연 대류에 의한 열전달 계수를 계산하는 데 사용됩니다.
-        - L은 특성 길이로, 일반적으로 물체의 길이나 직경을 사용합니다.
-        - 이 함수는 Churchill & Chu 식을 사용하여 열전달 계수를 계산합니다.
-    '''
-    # 공기 물성치 @ 40°C
-    nu = 1.6e-5  # 0.000016 m²/s
-    k_air = 0.027 # W/m·K
-    Pr = 0.7 # Prandtl number 
-    beta = 1 / ((T_s + T_inf)/2) # 1/K
-    g = 9.81 # m/s²
-
-    # Rayleigh 수 계산
-    delta_T = T_s - T_inf
-    Ra_L = g * beta * delta_T * L**3 / (nu**2) * Pr
-
-    # Churchill & Chu 식 https://doi.org/10.1016/0017-9310(75)90243-4
-    Nu_L = (0.825 + (0.387 * Ra_L**(1/6)) / (1 + (0.492/Pr)**(9/16))**(8/27))**2
-    h_cp = Nu_L * k_air / L  # [W/m²K]
-    
-    return h_cp
 
 def linear_function(x, a, b):
     return a * x + b
@@ -147,102 +113,32 @@ def print_balance(balance, decimal=2):
     '''
     total_length = 50
     
-    balance_type = "energy"
-    unit = "[W]"
+    balance_type = 'energy'
+    unit = '[W]'
     
     for subsystem, category_dict in balance.items(): 
         for category, terms in category_dict.items():
             # category: in, out, consumed, generated
-            if "gen" in category:
-                balance_type = "entropy"
-                unit = "[W/K]"
-            elif "con" in category:
-                balance_type = "exergy"
+            if 'gen' in category:
+                balance_type = 'entropy'
+                unit = '[W/K]'
+            elif 'con' in category:
+                balance_type = 'exergy'
     
     for subsystem, category_dict in balance.items(): 
         # subsystem: hot water tank, mixing valve...
         # category_dict: {in: {a,b}, out: {a,b}...} 
-        text = f"{subsystem.upper()} {balance_type.upper()} BALANCE:"
-        print(f'\n\n{text}'+'='*(total_length-len(text)))
+        text = f'{subsystem.upper()} {balance_type.upper()} BALANCE:'
+        print(f'\n\n{text}'+"="*(total_length-len(text)))
         
         for category, terms in category_dict.items():
             # category: in, out, consumed, generated
             # terms: {a,b}
             # a,b..: symbol: value
-            print(f"\n{category.upper()} ENTRIES:")
+            print(f'\n{category.upper()} ENTRIES:')
             
             for symbol, value in terms.items():
-                print(f"{symbol}: {round(value, decimal)} {unit}")
-
-def calculate_ASHP_cooling_COP(T_a_int_out, T_a_ext_in, Q_ref_int, Q_ref_max, COP_ref):
-    '''
-    https://publications.ibpsa.org/proceedings/bs/2023/papers/bs2023_1118.pdf
-    Calculate the Coefficient of Performance (COP) for an Air Source Heat Pump (ASHP) in cooling mode.
-
-    Parameters:
-    - T_a_int_out : Indoor air temperature [K]
-    - T_a_ext_in  : Outdoor air temperature [K]
-    - Q_ref_int     : Indoor heat load [W]
-    - Q_ref_max     : Maximum cooling capacity [W]
-
-    Defines the COP based on the following parameters:
-    - PLR : Part Load Ratio
-    - EIR : Energy input to cooling output ratio
-    - COP_ref : the reference COP at the standard conditions
-    '''
-    PLR = Q_ref_int / Q_ref_max
-    EIR_by_T = 0.38 + 0.02 * cu.K2C(T_a_int_out) + 0.01 * cu.K2C(T_a_ext_in)
-    EIR_by_PLR = 0.22 + 0.50 * PLR + 0.26 * PLR**2
-    COP = PLR * COP_ref / (EIR_by_T * EIR_by_PLR)
-    return COP
-
-def calculate_ASHP_heating_COP(T0, Q_ref_int, Q_ref_max):
-    '''
-    https://www.mdpi.com/2071-1050/15/3/1880
-    Calculate the Coefficient of Performance (COP) for an Air Source Heat Pump (ASHP) in heating mode.
-
-    Parameters:
-    - T0 : Enviromnetal temperature [K]
-    - Q_ref_int : Indoor heat load [W]
-    - Q_ref_max : Maximum heating capacity [W]
-
-    Defines the COP based on the following parameters:
-    - PLR : Part Load Ratio
-    '''
-    PLR = Q_ref_int / Q_ref_max
-    COP = -7.46 * (PLR - 0.0047 * cu.K2C(T0) - 0.477)**2 + 0.0941 * cu.K2C(T0) + 4.34
-    return COP
-
-def calculate_GSHP_COP(Tg, T_cond, T_evap, theta_hat):
-    """
-    https://www.sciencedirect.com/science/article/pii/S0360544219304347?via%3Dihub
-    Calculate the Carnot-based COP of a GSHP system using the modified formula:
-    COP = 1 / (1 - T0/T_cond + ΔT * θ̂ / T_cond)
-
-    Parameters:
-    - Tg: Undisturbed ground temperature [K]
-    - T_cond: Condenser refrigerant temperature [K]
-    - T_evap: Evaporator refrigerant temperature [K]
-    - theta_hat: θ̂(x0, k_sb), dimensionless average fluid temperature -> 논문 Fig 8 참조, Table 1 참조
-
-    Returns:
-    - COP_carnot_modified: Modified Carnot-based COP (float)
-    """
-
-    # Temperature difference (ΔT = T0 - T1)
-    if T_cond <= T_evap:
-        raise ValueError("T_cond must be greater than T_evap for a valid COP calculation.")
-    
-    delta_T = Tg - T_evap
-
-    # Compute COP using the modified Carnot expression
-    denominator = 1 - (Tg / T_cond) + (delta_T /(T_cond*theta_hat))
-
-    if denominator <= 0:
-        return float('nan')  # Avoid division by zero or negative COP
-
-    COP = 1 / denominator
-    return COP
+                print(f'{symbol}: {round(value, decimal)} {unit}')
 
 def f(x):
     return x*erf(x) - (1-np.exp(-x**2))/SP
@@ -290,337 +186,108 @@ def G_FLS(t, ks, as_, rb, H):
     _g_func_cache[key] = result
     return result
 
-def generate_balance_dict(subsystem_category):
-    energy_balance = {}; entropy_balance = {}; exergy_balance = {}
-    energy_balance_category = ['in', 'out']
-    entropy_balance_category = ['in', 'gen','out']
-    exergy_balance_category = ['in', 'con','out']
-   
-    for subsystem in subsystem_category:
-        energy_balance[subsystem] = {}
-        for category in energy_balance_category:
-            energy_balance[subsystem][category] = {}
-
-    for subsystem in subsystem_category:
-        entropy_balance[subsystem] = {}
-        for category in entropy_balance_category:
-            entropy_balance[subsystem][category] = {}
-            
-    for subsystem in subsystem_category:
-        exergy_balance[subsystem] = {}
-        for category in exergy_balance_category:
-            exergy_balance[subsystem][category] = {}
-            
-    return energy_balance, entropy_balance, exergy_balance
-
-def generate_entropy_exergy_term(energy_term, Tsys, T0, fluid = None):
-    """
-    Calculates the entropy and exergy terms based on the provided energy term and temperatures.
-    Parameters:
-        energy_term (float): The energy value for which entropy and exergy are to be calculated.
-        Tsys (float): The system temperature [K].
-        T0 (float): The reference (environment) temperature [K].
-        fluid (optional): If provided, modifies the entropy calculation using a logarithmic relation.
-    Returns:
-        tuple:
-            entropy_term (float): The calculated entropy term.
-            exergy_term (float): The calculated exergy term.
-    """
-    entropy_term = energy_term / Tsys
-    
-    if fluid:
-        if Tsys - T0 != 0:
-            entropy_term = energy_term * math.log(Tsys/T0) / (Tsys - T0)
-        elif Tsys - T0 == 0:
-            entropy_term = 0
-            
-    exergy_term = energy_term - entropy_term * T0
-
-    if not fluid and Tsys < T0: # Cool exergy (fluid의 경우 항상 exergy term이 양수임 엑서지 항을 구성하는 {(A-B)-ln(A/B)*B} 구조는 항상 A>0, B>0일 때 양수일 수 밖에 없기 때문)
-        exergy_term = -exergy_term
-    return entropy_term, exergy_term
-
 #%%
-# class - Fan & Pump
-@dataclass
-class Fan:
-    def __post_init__(self): 
-        # Fan reference: https://www.krugerfan.com/public/uploads/KATCAT006.pdf
-        self.fan1 = {
-            'flow rate'  : [0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.5, 3.0], # [m3/s]
-            'pressure'   : [140, 136, 137, 147, 163, 178, 182, 190, 198, 181], # [Pa]
-            'efficiency' : [0.43, 0.48, 0.52, 0.55, 0.60, 0.65, 0.68, 0.66, 0.63, 0.52], # [-]
-            'fan type' : 'centrifugal',
-        }
-        self.fan2 = {
-            'flow rate'  : [0.5, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.5], # [m3/s]
-            'pressure'   : [137, 138, 143, 168, 182, 191, 198, 200, 201, 170], # [Pa]
-            'efficiency' : [0.45, 0.49, 0.57, 0.62, 0.67, 0.69, 0.68, 0.67, 0.63, 0.40], # [-]
-            'fan type' : 'centrifugal',
-        },
-        self.fan3 = { # https://ventilatorry.ru/downloads/ebmpapst/datasheet/w3g710-go81-01-en-datasheet-ebmpapst.pdf
-            'flow rate' : [0, 6245/cu.h2s, 8330/cu.h2s, 10410/cu.h2s, 12610/cu.h2s], # [m3/s]
-            'power' : [0, 100, 238, 465, 827], # [-]
-            'fan type' : 'axial',
-        }
-        self.fan_list = [self.fan1, self.fan2, self.fan3]
-
-    def get_efficiency(self, fan, dV_fan):
-        if 'efficiency' not in fan:
-            raise ValueError("Selected fan does not have efficiency data.")
-        self.efficiency_coeffs, _ = curve_fit(cubic_function, fan['flow rate'], fan['efficiency'])
-        eff = cubic_function(dV_fan, *self.efficiency_coeffs)
-        return eff
+def calc_simple_tank_UA(
+        # Tank size [m]
+        r0 = 0.2,
+        H = 0.8,
+        # Tank layer thickness [m]
+        x_shell = 0.01,
+        x_ins   = 0.10,
+        # Tank thermal conductivity [W/mK]
+        k_shell = 25,  
+        k_ins   = 0.03,
+        # External convective heat transfer coefficient [W/m²K]
+        h_o     = 10,
+        ):
     
-    def get_pressure(self, fan, dV_fan):
-        if 'pressure' not in fan:
-            raise ValueError("Selected fan does not have pressure data.")
-        self.pressure_coeffs, _ = curve_fit(cubic_function, fan['flow rate'], fan['pressure'])
-        pressure = cubic_function(dV_fan, *self.pressure_coeffs)
-        return pressure
-    
-    def get_power(self, fan, dV_fan):
-        if 'efficiency' in fan and 'pressure' in fan:
-            eff = self.get_efficiency(fan, dV_fan)
-            pressure = self.get_pressure(fan, dV_fan)
-            power = pressure * dV_fan / eff
-        elif 'power' in fan:
-            self.power_coeffs, _ = curve_fit(quartic_function, fan['flow rate'], fan['power'])
-            power = quartic_function(dV_fan, *self.power_coeffs)
-        return power
-
-    def show_graph(self):
-        """
-        유량(flow rate) 대비 압력(pressure) 및 효율(efficiency) 그래프를 출력.
-        - 원본 데이터는 점(dot)으로 표시.
-        - 커브 피팅된 곡선은 선(line)으로 표시.
-        """
-        fig, axes = plt.subplots(1, 2, figsize=(dm.cm2in(15), dm.cm2in(5)))
-
-        # 그래프 색상 설정
-        scatter_colors = ['dm.red3', 'dm.blue3', 'dm.green3', 'dm.orange3']
-        plot_colors = ['dm.red6', 'dm.blue6', 'dm.green6', 'dm.orange6']
-
-        datairs = [
-            ("pressure", "Pressure [Pa]", "Flow Rate vs Pressure"),
-            ("efficiency", "Efficiency [-]", "Flow Rate vs Efficiency"),
-        ]
-
-        for ax, (key, ylabel, title) in zip(axes, datairs):
-            print(f"\n{'='*10} {title} {'='*10}")
-            for i, fan in enumerate(self.fan_list):
-                # 원본 데이터 (dot 형태)
-                ax.scatter(fan['flow rate'], fan[key], label=f'Fan {i+1} Data', color=scatter_colors[i], s=2)
-
-                # 곡선 피팅 수행
-                coeffs, _ = curve_fit(cubic_function, fan['flow rate'], fan[key])
-                flow_range = np.linspace(min(fan['flow rate']), max(fan['flow rate']), 100)
-                fitted_values = cubic_function(flow_range, *coeffs)
-
-                # 피팅된 곡선 (line 형태)
-                ax.plot(flow_range, fitted_values, label=f'Fan {i+1} Fit', color=plot_colors[i], linestyle='-')
-                a,b,c,d = coeffs
-                print(f"fan {i+1}: {a:.4f}x³ + {b:.4f}x² + {c:.4f}x + {d:.4f}")
-
-            ax.set_xlabel('Flow Rate [m$^3$/s]', fontsize=dm.fs(0.5))
-            ax.set_ylabel(ylabel, fontsize=dm.fs(0.5))
-            ax.set_title(title, fontsize=dm.fs(0.5))
-            ax.legend()
-
-        plt.subplots_adjust(wspace=0.3)
-        dm.simple_layout(fig, margins=(0.05, 0.05, 0.05, 0.05), bbox=(0, 1, 0, 1), verbose=False)
-        dm.save_and_show(fig)
-
-    def show_graph(self):
-        """
-        유량(flow rate) 대비 압력(pressure) 및 효율(efficiency) 그래프를 출력.
-        - 원본 데이터는 점(dot)으로 표시.
-        - 커브 피팅된 곡선은 선(line)으로 표시.
-        """
-        fig, axes = plt.subplots(1, 2, figsize=(dm.cm2in(15), dm.cm2in(5)))
-
-        # 그래프 색상 설정
-        scatter_colors = ['dm.red3', 'dm.blue3', 'dm.green3', 'dm.orange3']
-        plot_colors = ['dm.red6', 'dm.blue6', 'dm.green6', 'dm.orange6']
-
-        datairs = [
-            ("pressure", "Pressure [Pa]", "Flow Rate vs Pressure"),
-            ("efficiency", "Efficiency [-]", "Flow Rate vs Efficiency"),
-        ]
-
-        for ax, (key, ylabel, title) in zip(axes, datairs):
-            print(f"\n{'='*10} {title} {'='*10}")
-            for i, fan in enumerate(self.fan_list):
-                # 원본 데이터 (dot 형태)
-                ax.scatter(fan['flow rate'], fan[key], label=f'Fan {i+1} Data', color=scatter_colors[i], s=2)
-
-                # 곡선 피팅 수행
-                coeffs, _ = curve_fit(cubic_function, fan['flow rate'], fan[key])
-                flow_range = np.linspace(min(fan['flow rate']), max(fan['flow rate']), 100)
-                fitted_values = cubic_function(flow_range, *coeffs)
-
-                # 피팅된 곡선 (line 형태)
-                ax.plot(flow_range, fitted_values, label=f'Fan {i+1} Fit', color=plot_colors[i], linestyle='-')
-                a,b,c,d = coeffs
-                print(f"fan {i+1}: {a:.4f}x³ + {b:.4f}x² + {c:.4f}x + {d:.4f}")
-
-            ax.set_xlabel('Flow Rate [m$^3$/s]', fontsize=dm.fs(0.5))
-            ax.set_ylabel(ylabel, fontsize=dm.fs(0.5))
-            ax.set_title(title, fontsize=dm.fs(0.5))
-            ax.legend()
-
-        plt.subplots_adjust(wspace=0.3)
-        dm.simple_layout(fig, margins=(0.05, 0.05, 0.05, 0.05), bbox=(0, 1, 0, 1), verbose=False)
-        dm.save_and_show(fig)
-
-@dataclass
-class Pump:
-    """
-    Pump 클래스: 펌프의 성능 데이터를 저장하고 분석하는 클래스.
-    
-    - 유량(flow rate)과 효율(efficiency) 데이터를 보유.
-    - 효율 데이터를 기반으로 곡선 피팅(curve fitting)을 수행하여 예측 값 계산.
-    - 주어진 압력 차이(dP_pmp)와 유량(V_pmp)을 이용하여 펌프의 전력 사용량 계산.
-    """
-
-    def __post_init__(self):
-        """
-        클래스 초기화 후 자동 실행되는 메서드.
-        두 개의 펌프의 유량 및 효율 데이터를 저장.
-        """
-        self.pump1 = {
-            'flow rate'  : np.array([2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6])/cu.h2s, # m3/s
-            'efficiency' : [0.255, 0.27, 0.3, 0.33, 0.34, 0.33, 0.32, 0.3, 0.26], # [-]
-        }
-        self.pump2 = {
-            'flow rate'  : np.array([1.8, 2.2, 2.8, 3.3, 3.8, 4.3, 4.8, 5.3, 5.8])/cu.h2s, # m3/s
-            'efficiency' : [0.23, 0.26, 0.29, 0.32, 0.35, 0.34, 0.33, 0.31, 0.28], # [-]
-        }
-        self.pump_list = [self.pump1, self.pump2]
+        r1 = r0 + x_shell
+        r2 = r1 + x_ins
         
-    def get_efficiency(self, pump, dV_pmp):
-        """
-        주어진 유량(V_pmp)에 대해 3차 곡선 피팅을 통해 펌프 효율을 예측.
+        # Tank surface areas [m²]
+        A_side = 2 * math.pi * r2 * H
+        A_base = math.pi * r0**2
+        R_base_unit = x_shell / k_shell + x_ins / k_ins # [m2K/W]
+        R_side_unit = math.log(r1 / r0) / (2 * math.pi * k_shell) + math.log(r2 / r1) / (2 * math.pi * k_ins) # [mK/W]
         
-        :param pump: 선택한 펌프 (self.pump1 또는 self.pump2)
-        :param V_pmp: 유량 (m3/h)
-        :return: 예측된 펌프 효율
-        """
-        self.efficiency_coeffs, _ = curve_fit(cubic_function, pump['flow rate'], pump['efficiency'])
-        eff = cubic_function(dV_pmp, *self.efficiency_coeffs)
-        return eff
-
-    def get_power(self, pump, V_pmp, dP_pmp):
-        """
-        주어진 유량(V_pmp)과 압력 차이(dP_pmp)를 이용하여 펌프의 전력 사용량을 계산.
+        # Thermal resistances [K/W]
+        R_base = R_base_unit / A_base # [K/W]
+        R_side = R_side_unit / H # [K/W]
         
-        :param pump: 선택한 펌프 (self.pump1 또는 self.pump2)
-        :param V_pmp: 유량 (m3/h)
-        :param dP_pmp: 펌프 압력 차이 (Pa)
-        :return: 펌프의 사용 전력 (W)
-        """
-        efficiency = self.get_efficiency(pump, V_pmp)
-        power = (V_pmp * dP_pmp) / efficiency
-        return power
+        # Thermal resistances [K/W]
+        R_base_ext = 1 / (h_o * A_base)
+        R_side_ext = 1 / (h_o * A_side)
 
-    def show_graph(self):
-        """
-        유량(flow rate) 대비 효율(efficiency) 그래프를 출력.
-        - 원본 데이터는 점(dot)으로 표시.
-        - 커브 피팅된 곡선은 선(line)으로 표시.
-        """
-        fig, ax = plt.subplots(figsize=(dm.cm2in(10), dm.cm2in(5)))
+        # Total thermal resistances [K/W]
+        R_base_tot = R_base + R_base_ext
+        R_side_tot = R_side + R_side_ext
 
-        # 그래프 색상 설정
-        scatter_colors = ['dm.red3', 'dm.blue3', 'dm.green3', 'dm.orange3']
-        plot_colors = ['dm.red6', 'dm.blue6', 'dm.green6', 'dm.orange6']
+        # U-value [W/K]
+        U_tank = 2/R_base_tot + 1/R_side_tot 
+        return U_tank
 
-        for i, pump in enumerate(self.pump_list):
-            # 원본 데이터 (dot 형태)
-            ax.scatter(pump['flow rate']*cu.h2s, pump['efficiency'], label=f'Pump {i+1} Data', color=scatter_colors[i], s=2)
-
-            # 곡선 피팅 수행
-            coeffs, _ = curve_fit(cubic_function, pump['flow rate']*cu.h2s, pump['efficiency'])
-            flow_range = np.linspace(min(pump['flow rate']), max(pump['flow rate']), 100)*cu.h2s
-            fitted_values = cubic_function(flow_range, *coeffs)
-
-            # 피팅된 곡선 (line 형태)
-            a,b,c,d = coeffs
-            ax.plot(flow_range, fitted_values, label=f'Pump {i+1} Fit', color=plot_colors[i], linestyle='-')
-            print(f"fan {i+1}: {a:.4f}x³ + {b:.4f}x² + {c:.4f}x + {d:.4f}")
-
-        ax.set_xlabel('Flow Rate [m$^3$/h]', fontsize=dm.fs(0.5))
-        ax.set_ylabel('Efficiency [-]', fontsize=dm.fs(0.5))
-        ax.legend()
-
-        dm.simple_layout(fig, margins=(0.05, 0.05, 0.05, 0.05), bbox=(0, 1, 0, 1), verbose=False)
-        dm.save_and_show(fig)
 
 #%%
 @dataclass
-class HeatPumpModel:
-    """
+class AirSourceHeatPump:
+    '''
     물리적 원리에 기반한 히트펌프 성능 계산 및 최적 운전점 탐색 클래스.
-    """
+    '''
     def __init__(self,
                  refrigerant        = 'R410A',
                  disp_cmp           = 0.0005,
                  eta_cmp_isen       = 0.7,
-                 eta_cmp_volumetric = 0.85,
-                 A_cond       = 15.0,   # 응축기 전열 면적 [m2]
-                 A_evap       = 20.0,   # 증발기 전열 면적 [m2]
-                 U_coeff_cond = 100.0,  # 응축기 열전달 특성 계수
-                 U_coeff_evap = 80.0,   # 증발기 열전달 특성 계수
-                 dT_cond = 5.0,
-                 dT_evap = 5.0,
+                 eta_cmp_dV = 0.85,
+                 A_iu       = 15.0,   # 응축기 전열 면적 [m2]
+                 A_ou       = 20.0,   # 증발기 전열 면적 [m2]
+                 U_coeff_iu = 100.0,  # 응축기 열전달 특성 계수
+                 U_coeff_ou = 80.0,   # 증발기 열전달 특성 계수
+                 dT_iu_ref = 5.0,
+                 dT_ou_ref = 5.0,
                  T_ia    = 20.0,
-                 Fan_iu  = Fan().fan2,
-                 Fan_ou  = Fan().fan3,
                  Q_iu    = 6000,
                  ):
-        """
+        '''
         히트펌프의 고정된 물리적 파라미터를 초기화합니다.
 
         Args:
             refrigerant (str): 사용할 냉매 이름 (CoolProp 형식).
-            disp_cmp  (float): 압축기 행정 체적 (1회전 당 흡입량) [m^3].
-            eta_cmp_isen  (float): 압축기 단열 효율. - 단열 효율은 압축 과정에서 발생하는 에너지 손실이 얼마나 적은가를 나타내는 지표
-            eta_cmp_volumetric  (float): 압축기 체적 효율. - 압축기가 한 번 회전할 때 이론적으로 빨아들일 수 있는 냉매량 대비, 실제로 얼마나 빨아들였는가를 나타내는 지표
-            A_cond (float): 응축기 전열 면적 [m2].
-            A_evap (float): 증발기 전열 면적 [m2].
-            U_coeff_cond (float): 응축기 열전달 특성 계수.
-            U_coeff_evap (float): 증발기 열전달 특성 계수.
-            dT_cond  (float): 응축기 접근 온도차 (응축온도 - 실내온도) [K]. 
-            dT_evap  (float): 증발기 접근 온도차 (실외온도 - 증발온도) [K].
+            disp_cmp (float): 압축기 행정 체적 (1회전 당 흡입량) [m^3].
+            eta_cmp_isen (float): 압축기 단열 효율. - 단열 효율은 압축 과정에서 발생하는 에너지 손실이 얼마나 적은가를 나타내는 지표
+            eta_cmp_dV (float): 압축기 체적 효율. - 압축기가 한 번 회전할 때 이론적으로 빨아들일 수 있는 냉매량 대비, 실제로 얼마나 빨아들였는가를 나타내는 지표
+            A_iu (float): 실내기 전열 면적 [m2].
+            A_ou (float): 실외기 전열 면적 [m2].
+            U_coeff_iu (float): 실내기 열전달 특성 계수.
+            U_coeff_ou (float): 실외기 열전달 특성 계수.
+            dT_iu_ref (float): 실내기 접근 온도차 (응축온도 - 실내온도) [K]. 
+            dT_ou_ref (float): 실외기 접근 온도차 (실외온도 - 증발온도) [K].
             T_ia (float): 목표 실내 공기 온도 [°C].
-            Fan_iu (dict): 실내기 팬 데이터.
-            Fan_ou (dict): 실외기 팬 데이터.
+            iu_fan (dict): 실내기 팬 데이터.
+            ou_fan (dict): 실외기 팬 데이터.
             Q_iu (float): 실내기 목표 열 교환율 [W].
-        """
+        '''
         
         self.ref = refrigerant
         self.disp_cmp  = disp_cmp 
         self.eta_cmp_isen = eta_cmp_isen 
-        self.eta_cmp_volumetric = eta_cmp_volumetric
+        self.eta_cmp_dV = eta_cmp_dV
         
-        self.A_cond = A_cond
-        self.A_evap = A_evap
+        self.A_iu = A_iu
+        self.A_ou = A_ou
         
-        self.U_coeff_cond = U_coeff_cond
-        self.U_coeff_evap = U_coeff_evap
+        self.U_coeff_iu = U_coeff_iu
+        self.U_coeff_ou = U_coeff_ou
         
-        self.dT_cond = dT_cond
-        self.dT_evap = dT_evap
+        self.dT_iu_ref = dT_iu_ref
+        self.dT_ou_ref = dT_ou_ref
         self.T_ia = cu.C2K(self.T_ia)
         
-        self.Fan_iu = Fan_iu
-        self.Fan_ou = Fan_ou
         
         self.Q_iu = Q_iu # 실내기 목표 열 교환율
         self.mode = 'heating' if Q_iu < 0 else 'cooling'
 
         def _solve_for_fan_airflow(self, Q_target, T_air_in, T_ref, A, U_coeff):
-            """
+            '''
             Args:
                 Q_target (float): 목표 열교환량 [W]. (+) 냉매
                 T_air_in (float): 공기 입구 온도 [°C].
@@ -636,7 +303,7 @@ class HeatPumpModel:
                 2) 열교환기 공식: Q = U * A * LMTD
                 2-1) 이때 U는 풍량에 따라 변하며, U ∝ dV_fan^0.8로 가정한다. 
                 Q_target은 positive(+) 일때 냉매에 흡수되는 방향으로, negative(-) 일때 냉매에서 방출되는 방향으로 정의된다.
-            """
+            '''
             
             # 절대온도 변환
             T_air_in = cu.C2K(T_air_in)
@@ -660,7 +327,7 @@ class HeatPumpModel:
                 
                 # 풍량에 따른 U값 계산 (U ∝ dV_fan^0.8 가정)
                 '''
-                Incropera & DeWitt의 "Fundamentals of Heat and Mass Transfer
+                Incropera & DeWitt의 'Fundamentals of Heat and Mass Transfer
                 '''
                 U = U_coeff * (dV_fan**0.8)
                 
@@ -678,9 +345,86 @@ class HeatPumpModel:
                     return None # 해를 찾지 못한 경우
             except ValueError:
                 return None
+    
+    def calc_fan_power_from_parameters(
+        P_max, 
+        dV_max, 
+        eta_max, 
+        k_sys, 
+        A_fan, 
+        bep_ratio=0.75
+        ):
+        '''
+        팬의 핵심 성능 파라미터와 시스템 저항 계수로부터
+        운전점을 찾아내고, 해당 지점의 투입 전력과 속도를 계산합니다.
 
+        Args:
+            P_max (float): 팬의 최대 정압 (Shut-off Head) [Pa].
+            dV_max (float): 팬의 최대 풍량 (Free Delivery) [m³/s].
+            eta_max (float): 팬의 최대 전효율 [0.0 ~ 1.0].
+            k_sys (float): 시스템 저항 계수 [Pa/(m³/s)²].
+            A_fan (float): 팬의 토출 면적 [m²].
+            bep_ratio (float, optional): 최대 효율점(BEP)이 발생하는 풍량의 비율. 
+                                        기본값은 0.75 (최대 풍량의 75% 지점).
+
+        Returns:
+            dict: 운전점의 풍량, 정압, 속도, 투입 전력을 담은 딕셔너리.
+                해를 찾지 못하면 None을 반환합니다.
+        '''
+        
+        # --- 1. 성능 및 저항 곡선 함수 정의 ---
+        def fan_performance_curve(dV):
+            '''P_max와 dV_max를 이용해 팬 성능 곡선을 2차 포물선으로 근사'''
+            if dV > dV_max: return 0
+            return P_max * (1 - (dV / dV_max)**2)
+
+        def system_resistance_curve(dV):
+            '''시스템 저항 곡선'''
+            return k_sys * dV**2
+
+        # --- 2. 운전점(풍량) 탐색 ---
+        # 오차 함수: P_fan(dV) - P_sys(dV) = 0
+        def error_function(dV):
+            if dV < 0: return 1e6
+            return fan_performance_curve(dV) - system_resistance_curve(dV)
+
+        try:
+            sol = root_scalar(error_function, bracket=[0, dV_max], method='brentq')
+            if sol.converged:
+                dV_op = sol.root  # 운전점 풍량 (Operating flow rate)
+            else:
+                return None
+        except ValueError:
+            return None
+        
+        # --- 3. 운전점에서의 값 계산 ---
+        # 운전점 압력
+        P_op = system_resistance_curve(dV_op)
+
+        # 운전점 효율 (최고 효율점을 갖는 포물선으로 근사)
+        dV_bep = dV_max * bep_ratio # 최고 효율점 풍량
+        # 정규화된 풍량 (최고점에서 1, 양 끝에서 0이 되도록)
+        norm_dv = 1 - ((dV_op - dV_bep) / dV_bep)**2 if dV_op < dV_bep else 1 - ((dV_op - dV_bep) / (dV_max - dV_bep))**2
+        eta_op = eta_max * max(0, norm_dv) # 효율 계산, 음수 방지
+
+        # 팬 토출 속도
+        velocity_op = dV_op / A_fan
+
+        # 최종 투입 전력
+        power_input = (dV_op * P_op) / eta_op if eta_op > 0 else float('inf')
+
+        return {
+            'operating_flow_rate_m3_s': dV_op,
+            'operating_pressure_Pa': P_op,
+            'operating_efficiency': eta_op,
+            'operating_velocity_m_s': velocity_op,
+            'required_power_W': power_input
+        }
+    
     def _calculate_cycle_performance(self, cmp_rps, T0):
-        """
+        '''
+        EX) 난방 모드 기준 사이클 다이어그램
+        
         주어진 운전 조건(압축기/팬 속도, 외기온도)에서 사이클 성능을 계산하는 내부 함수.
         (저온/저압 가스)                                (고온/고압 가스)
         (1) -------------------- [ 압축기 ] --------------------> (2)
@@ -694,55 +438,99 @@ class HeatPumpModel:
         |                                                        v
         |                                                        |
         (4) <----------------- [ 팽창밸브 ] <------------------- (3)
-        (저온/저압 액체+가스)                                     (고압 액체)
-        """
+        (저온/저압 액체+가스)                                   (고압 액체)
+        '''
         
         # --- 1. 증발 및 응축 온도/압력 계산 ---
-        # 증발 온도 = 외기온도 - 접근온도차
-        T0 = cu.C2K(T0)
-        T_evap = T0 - self.dT_evap
-        P_evap = CP.PropsSI('P', 'T', T_evap, 'Q', 1, self.ref)
+        if self.mode == 'heating':
+            T0 = cu.C2K(T0)
+            
+            # --- 1. 증발 및 응축 온도/압력 계산 (역할 기반으로 명확화) ---
+            # 난방 모드: 실내기 = 응축기, 실외기 = 증발기
+            
+            # 응축기(실내기) 온도/압력
+            T_iu_ref = self.T_ia + self.dT_iu_ref
+            P_iu_ref = CP.PropsSI('P', 'T', T_iu_ref, 'Q', 0, self.ref)
 
-        # 응축 온도 = 실내온도 + 접근온도차
-        T_cond = self.T_ia + self.dT_cond
-        P_cond = CP.PropsSI('P', 'T', T_cond, 'Q', 0, self.ref)
+            # 증발기(실외기) 온도/압력
+            T_ou_ref = T0 - self.dT_ou_ref
+            P_ou_ref = CP.PropsSI('P', 'T', T_ou_ref, 'Q', 1, self.ref)
 
-        # --- 2. 사이클의 각 지점(State 1, 2, 3, 4) 물성치 계산 ---
-        # State 1: 압축기 입구 (포화 증기)
-        h1 = CP.PropsSI('H', 'P', P_evap, 'Q', 1, self.ref)  # J/kg
-        s1 = CP.PropsSI('S', 'P', P_evap, 'Q', 1, self.ref)  # J/kg-K
-        rho1 = CP.PropsSI('D', 'P', P_evap, 'Q', 1, self.ref) # kg/m^3
+            # --- 2. 사이클의 각 지점(State 1, 2, 3, 4) 물성치 계산 ---
+            # State 1: 압축기 입구 (저압의 포화 증기)
+            #          증발기(실외기) 출구에 해당
+            h1 = CP.PropsSI('H', 'P', P_ou_ref, 'Q', 1, self.ref)
+            s1 = CP.PropsSI('S', 'P', P_ou_ref, 'Q', 1, self.ref)
+            rho1 = CP.PropsSI('D', 'P', P_ou_ref, 'Q', 1, self.ref)
 
-        # State 2: 압축기 출구 (과열 증기)
-        '''
-        등엔트로피 과정 -> 일로 공급된 것이 모두 외부 열손실 없이 내부에너지 증가로 사용됨
-        TdS = dU + PdV => dS=0 -> dU = -PdV -> 즉, 압축기에서 일로 공급된 것이 모두 내부에너지 증가로 사용됨
-        하지만 실제 압축기에서는 마찰 및 열손실등으로 공급한 압축기 일의 일부가 내부에너지 증가로 사용되지 않고 열로 손실됨
-        따라서 단열효율(η_isen)을 적용하여 실제 압축기 출구의 엔탈피(h2)를 계산
-        '''
-        # 등엔트로피 압축 후의 엔탈피(h2s) 계산
-        h2_isen = CP.PropsSI('H', 'P', P_cond, 'S', s1, self.ref) 
-        # 실제 압축 후의 엔탈피(h2) 계산 (단열효율 적용)
-        h2 = h1 + (h2_isen - h1) / self.eta_comp_isen
+            # State 2: 압축기 출구 (고압의 과열 증기)
+            #          저압(P_evap)에서 고압(P_cond)으로 압축
+            h2_isen = CP.PropsSI('H', 'P', P_iu_ref, 'S', s1, self.ref) 
+            h2 = h1 + (h2_isen - h1) / self.eta_cmp_isen
+            
+            # State 3: 응축기 출구 (고압의 포화 액체)
+            #          응축기(실내기) 출구에 해당
+            h3 = CP.PropsSI('H', 'P', P_iu_ref, 'Q', 0, self.ref)
 
-        # State 3: 응축기 출구 (포화 액체)
-        h3 = CP.PropsSI('H', 'P', P_cond, 'Q', 0, self.ref)
+            # State 4: 팽창밸브 출구 (저압의 액체+기체 혼합물)
+            h4 = h3
 
-        # State 4: 팽창밸브 출구 (이상 팽창, 등엔탈피 과정)
-        h4 = h3
+            # --- 3. 성능 지표 계산 ---
+            m_dot_ref = cmp_rps * self.disp_cmp * rho1 * self.eta_cmp_dV
+            
+            # 실내기(응축기) 방출 열량 (난방 능력) -> 음수(-)
+            Q_iu = -(m_dot_ref * (h2 - h3))
+            
+            # 실외기(증발기) 흡수 열량
+            Q_ou = m_dot_ref * (h1 - h4)
+            
+            # 압축기 사용 전력
+            E_cmp = m_dot_ref * (h2 - h1)
+            
+        elif self.mode == 'cooling':
+            T0 = cu.C2K(T0)
+            
+            # --- 1. 증발 및 응축 온도/압력 계산 (이 부분은 올바름) ---
+            # 실외기(응축기) 온도/압력
+            T_ou_ref = T0 + self.dT_ou_ref
+            P_ou_ref = CP.PropsSI('P', 'T', T_ou_ref, 'Q', 0, self.ref)
 
-        # --- 3. 질량 유량 및 성능 지표 계산 ---
-        # 질량 유량 (m_dot) = 회전수(회전수/s) * 행정체적(1회전당 흡입량 m3/회전수) * 흡입밀도(kg/m3) * 체적효율(실제 흡입량/이론 흡입량)
-        m_dot = cmp_rps * self.disp_cmp  * rho1 * self.eta_comp_vol
+            # 실내기(증발기) 온도/압력
+            T_iu_ref = self.T_ia - self.dT_iu_ref
+            P_iu_ref = CP.PropsSI('P', 'T', T_iu_ref, 'Q', 1, self.ref)
 
-        # 응축기 방출 열에너지율
-        Q_cond = m_dot * (h2 - h3) # W
-        
-        # 증발기 흡수 열에너지율
-        Q_evap = m_dot * (h1 - h4) # W
-        
-        # 압축기 사용 전력
-        E_cmp = m_dot * (h2 - h1) # W
+            # --- 2. 사이클의 각 지점(State 1, 2, 3, 4) 물성치 계산 (수정된 부분) ---
+            # State 1: 압축기 입구 (저압의 포화 증기)
+            #          실내기(증발기) 출구에 해당
+            h1 = CP.PropsSI('H', 'P', P_iu_ref, 'Q', 1, self.ref)
+            s1 = CP.PropsSI('S', 'P', P_iu_ref, 'Q', 1, self.ref)
+            rho1 = CP.PropsSI('D', 'P', P_iu_ref, 'Q', 1, self.ref)
+
+            # State 2: 압축기 출구 (고압의 과열 증기)
+            #          저압(P_iu_ref)에서 고압(P_ou_ref)으로 압축
+            h2_isen = CP.PropsSI('H', 'P', P_ou_ref, 'S', s1, self.ref) 
+            h2 = h1 + (h2_isen - h1) / self.eta_cmp_isen
+            
+            # State 3: 응축기 출구 (고압의 포화 액체)
+            #          실외기(응축기) 출구에 해당
+            h3 = CP.PropsSI('H', 'P', P_ou_ref, 'Q', 0, self.ref)
+            
+            # State 4: 팽창밸브 출구 (저압의 액체+기체 혼합물)
+            h4 = h3
+
+            # --- 3. 성능 지표 계산 (변수명 통일) ---
+            m_dot_ref = cmp_rps * self.disp_cmp * rho1 * self.eta_cmp_dV
+            
+            # 실내기(증발기) 흡수 열량 (냉방 능력) -> 양수(+)
+            Q_iu = m_dot_ref * (h1 - h4)
+            
+            # 실외기(응축기) 방출 열량
+            Q_ou = m_dot_ref * (h2 - h3)
+            
+            # 압축기 사용 전력
+            E_cmp = m_dot_ref * (h2 - h1)
+        else:
+            raise ValueError('Invalid mode. Mode should be either "heating" or "cooling".')
 
         ##########################################################################
         '''
@@ -752,31 +540,34 @@ class HeatPumpModel:
         Q = U * A * LMTD, U = f(dV_fan)           - (열교환기 측)
         Q = c_a * V_dot_air (T_a_in - T_a_out)    - (공기 측)
         '''
-        dV_fan_cond = self._solve_for_fan_airflow(Q_cond_target, self.T_ia, T_cond, self.A_cond, self.U_coeff_cond)
-        fan_power_cond = self.fan_system.get_power(self.indoor_fan, dV_fan_cond) if dV_fan_cond else 0
+        dV_iu_fan = self._solve_for_fan_airflow(Q_iu, self.T_ia, T_iu_ref, self.A_iu, self.U_coeff_iu)
+        dV_ou_fan = self._solve_for_fan_airflow(Q_ou, cu.K2C(T0), T_ou_ref, self.A_ou, self.U_coeff_ou)
+        E_iu_fan = self.fan_system.get_power(self.indoor_fan, dV_iu_fan) 
+        E_ou_fan = self.fan_system.get_power(self.outdoor_fan, dV_ou_fan)
         ##########################################################################
         
-        E_tot = E_cmp + E_fan # W
+        E_tot = E_cmp + E_iu_fan + E_ou_fan
         
         # COP (Coefficient of Performance -> system energy efficiency)
-        cop = Q_cond / E_tot if E_tot > 0 else 0
+        cop = Q_iu / E_tot if E_tot > 0 else 0
 
         return {
-            "Q_cond": Q_cond, # W
-            "Q_evap": Q_evap, # W
-            "E_cmp": E_cmp, # W
-            "E_fan": E_fan, # W
-            "E_tot": E_tot,
-            "cop": cop,
-            "m_dot_kg_s": m_dot,
-            "T_evap": T_evap,
-            "P_evap_kPa": P_evap / 1000.0,
-            "T_cond": T_cond,
-            "P_cond_kPa": P_cond / 1000.0,
+            'Q_iu': Q_iu, # W
+            'Q_ou': Q_ou, # W
+            'E_cmp': E_cmp, # W
+            'E_iu_fan': E_iu_fan, # W
+            'E_ou_fan': E_ou_fan, # W
+            'E_tot': E_tot,
+            'cop': cop,
+            'm_dot_ref_kg_s': m_dot_ref,
+            'T_ou_ref': T_ou_ref,
+            'P_ou_ref_kPa': P_ou_ref * cu.Pa2kPa,
+            'T_iu_ref': T_iu_ref,
+            'P_iu_ref_kPa': P_iu_ref * cu.Pa2kPa,
         }
 
     def find_optimal_operation(self, required_heating_load_kW, T0):
-        """
+        '''
         주어진 난방 부하와 외기온도 조건에서 총 전력사용를 최소화하는
         압축기 및 팬 운전 조건을 찾습니다.
 
@@ -786,7 +577,7 @@ class HeatPumpModel:
 
         Returns:
             dict: 최적화 결과 또는 에러 메시지.
-        """
+        '''
         # 최적화 변수: x[0] = 압축기 회전수(rps), x[1] = 팬 풍량(m^3/s)
         
         # 1. 목적 함수: 총 전력 사용량 (최소화 대상)
@@ -800,7 +591,7 @@ class HeatPumpModel:
             comp_speed, fan_airflow = x
             perf = self._calculate_cycle_performance(comp_speed, fan_airflow, T0)
             # solver가 0을 만족하는 해를 찾으므로 (계산값 - 목표값) 형태로 반환
-            return perf["Q_cond"] - required_heating_load_kW
+            return perf["Q_iu"] - required_heating_load_kW
 
         # 변수의 경계 조건 (최소/최대 운전 범위)
         # 압축기: 10 ~ 100 rps (600 ~ 6000 rpm), 팬: 0.1 ~ 3.0 m^3/s
@@ -824,203 +615,590 @@ class HeatPumpModel:
             
             # 보기 쉽게 결과 정리
             output = {
-                "success": True,
-                "message": "최적 운전점을 찾았습니다.",
-                "required_load_kW": required_heating_load_kW,
-                "T0": T0,
-                "optimal_compressor_speed_rps": round(optimal_comp_speed, 2),
-                "optimal_compressor_speed_rpm": round(optimal_comp_speed * 60, 0),
-                "optimal_dV_fan": round(optimal_fan_airflow, 3),
-                "performance": {
-                    "Calculated_Q_cond": round(final_performance["Q_cond"], 3),
-                    "COP": round(final_performance["cop"], 3),
-                    "E_tot": round(final_performance["E_tot"], 3),
-                    "E_cmp": round(final_performance["E_cmp"], 3),
-                    "E_fan": round(final_performance["E_fan"], 3),
-                    "Evaporating_Temp_C": round(final_performance["T_evap"], 2),
-                    "Condensing_Temp_C": round(final_performance["T_cond"], 2),
+                'success': True,
+                'message': '최적 운전점을 찾았습니다.',
+                'required_load_kW': required_heating_load_kW,
+                'T0': T0,
+                'optimal_compressor_speed_rps': round(optimal_comp_speed, 2),
+                'optimal_compressor_speed_rpm': round(optimal_comp_speed * 60, 0),
+                'optimal_dV_fan': round(optimal_fan_airflow, 3),
+                'performance': {
+                    'Calculated_Q_iu': round(final_performance["Q_iu"], 3),
+                    'COP': round(final_performance["cop"], 3),
+                    'E_tot': round(final_performance["E_tot"], 3),
+                    'E_cmp': round(final_performance["E_cmp"], 3),
+                    'E_fan': round(final_performance["E_fan"], 3),
+                    'Evaporating_Temp_C': round(final_performance["T_ou_ref"], 2),
+                    'Condensing_Temp_C': round(final_performance["T_iu_ref"], 2),
                 }
             }
             return output
         else:
             return {
-                "success": False,
-                "message": f"최적화에 실패했습니다: {result.message}"
+                'success': False,
+                'message': f'최적화에 실패했습니다: {result.message}'
             }
 
 
-def plot_cycle_diagrams(refrigerant, states):
-    """
-    계산된 사이클 상태(1,2,3,4)를 바탕으로 p-h, T-h 선도를 그립니다.
-    """
-    # colors
-    color1 = 'dm.blue5'
-    color2 = 'dm.red5'
-    color3 = 'dm.black'
-
-    ymin1, ymax1, yint1 = 0, 10**4, 0
-    ymin2, ymax2, yint2 = -40, 80, 20
-    xmin, xmax, xint = 0, 500, 100
-
-    # --- 임계/포화 데이터 준비 ---
-    # (CoolProp 순서는 PropsSI('키', 유체명) 입니다)
-    T_critical = cu.K2C(CP.PropsSI('Tcrit',  refrigerant))
-    P_critical = CP.PropsSI('Pcrit',  refrigerant) / 1000  # kPa (참고용, 여기선 미사용)
-
-    temps = np.linspace(cu.K2C(CP.PropsSI('Tmin', refrigerant)) + 1, T_critical, 200)
-    h_liq = [CP.PropsSI('H', 'T', cu.C2K(T), 'Q', 0, refrigerant) / 1000 for T in temps]
-    h_vap = [CP.PropsSI('H', 'T', cu.C2K(T), 'Q', 1, refrigerant) / 1000 for T in temps]
-    p_sat = [CP.PropsSI('P', 'T', cu.C2K(T), 'Q', 0, refrigerant) / 1000 for T in temps]
-
-    # 상태값(kPa, kJ/kg, °C)
-    p = [states[i]['P'] for i in range(1, 5)]
-    h = [states[i]['H'] for i in range(1, 5)]
-    T = [states[i]['T'] for i in range(1, 5)]
-
-    # 사이클 경로(닫기)
-    h_cycle = h + [h[0]]
-    p_cycle = p + [p[0]]
-    T_cycle = T + [T[0]]
-
-    # --- Figure & Axes ---
-    LW = np.arange(0.5, 3.0, 0.25)
-    nrows, ncols = 1, 2
-    fig, ax = plt.subplots(figsize=(dm.cm2in(20), dm.cm2in(7)), nrows=nrows, ncols=ncols)
-    ax = np.atleast_1d(ax).ravel()  # 1D 인덱싱
-
-    # 축별 메타데이터(인덱스로 접근)
-    xlabels = ['Enthalpy [kJ/kg]', 'Enthalpy [kJ/kg]']
-    ylabels = ['Pressure (log scale) [kPa]', 'Temperature [°C]']
-    yscales = ['log', 'linear']
-    xlims   = [(xmin, xmax), (xmin, xmax)]
-    ylims   = [(ymin1, ymax1), (ymin2, ymax2)]
-
-    # 포화선/사이클 Y데이터 선택자
-    satY_list   = [p_sat, temps]          # idx=0: p_sat vs h, idx=1: T(temps) vs h
-    cycleY_list = [p_cycle, T_cycle]
-
-    # 상태 텍스트 Y좌표 함수(축별로 다르게)
-    def state_y(idx, i):
-        return p[i]*1.1 if idx == 0 else (T[i] + yint2*0.1)
-
-    # 공통 범례 스타일
-    legend_kw = dict(
-        loc='upper left',
-        bbox_to_anchor=(0.0, 0.99),
-        handlelength=1.5,
-        labelspacing=0.5,
-        columnspacing=2,
-        ncol=1,
-        frameon=False,
-        fontsize=dm.fs(-1)
-    )
-
-    # --- 2중 for문으로 그리기 ---
-    for r in range(nrows):
-        for c in range(ncols):
-            idx = r * ncols + c
-            axi = ax[idx]
-
-            # 포화선
-            axi.plot(h_liq, satY_list[idx],  color=color1, label='Saturated Liquid', linewidth=LW[2])
-            axi.plot(h_vap, satY_list[idx],  color=color2, label='Saturated Vapor',  linewidth=LW[2])
-            # 사이클 경로
-            axi.plot(h_cycle, cycleY_list[idx], color=color3, label='Heat Pump Cycle',
-                     linewidth=LW[1], marker='o', linestyle=':', markersize=2)
-
-            # 상태 라벨
-            for i in range(4):
-                axi.text(h[i]*1.01, state_y(idx, i), f'State {i+1}',
-                         fontsize=dm.fs(-1), ha='center', va='bottom')
-
-            # 축 설정
-            axi.set_xlabel(xlabels[idx], fontsize=dm.fs(0))
-            axi.set_ylabel(ylabels[idx], fontsize=dm.fs(0))
-            axi.set_yscale(yscales[idx])
-            axi.set_xlim(*xlims[idx])
-            axi.set_ylim(*ylims[idx])
-            axi.legend(**legend_kw)
-
-    dm.simple_layout(fig, margins=(0.05, 0.05, 0.05, 0.05), bbox=(0, 1, 0, 1), verbose=False)
-    plt.savefig('../../figure/HeatPump_model/HeatPump_Cycle_Diagram.png', dpi=600)
-    dm.save_and_show(fig)
-    
-
-# --- 메인 실행 블록 ---
-if __name__ == '__main__':
-    # 1. 히트펌프 모델 객체 생성
-    my_heat_pump = HeatPumpModel(
-        refrigerant='R410A',
-        disp_cmp =0.000045,
-        eta_cmp_isen =0.75,
-        eta_cmp_volumetric =0.9,
-        coeff_fan_power =500,
-        dT_cond =5.0,
-        evaporator_temp_K=5.0,
-        T_ia=20.0
-    )
-
-    # 2. 시뮬레이션 조건 설정
-    load_condition = {"required_heating_load_kW": 5.0, "T0": 2.0}
-    
-    # 3. 최적 운전점 탐색
-    optimal_result = my_heat_pump.find_optimal_operation(**load_condition)
-
-    if optimal_result["success"]:
-        print("--- 최적 운전 결과 ---")
-        # ... (이전과 동일한 결과 출력 부분) ...
-        print(f"COP: {optimal_result['performance']['COP']}")
-        print(f"난방 능력 (kW): {optimal_result['performance']['Calculated_Q_cond']}")
-        print(f"총 전력 사용량 (kW): {optimal_result['performance']['E_tot']}")
-        print(f"압축기 전력 사용량 (kW): {optimal_result['performance']['E_cmp']}")
-        print(f" 팬 전력 사용량 (kW): {optimal_result['performance']['E_fan']}")
-        print(f"증발 온도 (°C): {optimal_result['performance']['Evaporating_Temp_C']}")
-        print(f"응축 온도 (°C): {optimal_result['performance']['Condensing_Temp_C']}")
-        print(f"팬 풍량 (m3/s): {optimal_result['optimal_dV_fan']}")
-        print(f"압축기 회전수 (RPM): {optimal_result['optimal_compressor_speed_rpm']}")
-
-        # 4. 그래프 그리기를 위한 상태값 계산 및 저장
-        # 최적화된 속도로 다시 한번 사이클 계산을 수행하여 각 지점의 물성치 확보
-        opt_speed = optimal_result['optimal_compressor_speed_rps']
-        opt_airflow = optimal_result['optimal_dV_fan']
-
-        # 각 상태의 압력(P), 엔탈피(H), 온도(T)를 계산
-        P_evap = CP.PropsSI('P', 'T', cu.C2K(optimal_result['performance']['Evaporating_Temp_C']), 'Q', 1, my_heat_pump.refrigerant)
-        P_cond = CP.PropsSI('P', 'T', cu.C2K(optimal_result['performance']['Condensing_Temp_C']), 'Q', 0, my_heat_pump.refrigerant)
-
-        states_data = {}
-        # State 1
-        states_data[1] = {
-            'P': P_evap / 1000, # Pa -> kPa
-            'H': CP.PropsSI('H', 'P', P_evap, 'Q', 1, my_heat_pump.refrigerant) / 1000, # J/kg -> kJ/kg
-            'T': cu.K2C(CP.PropsSI('T', 'P', P_evap, 'Q', 1, my_heat_pump.refrigerant))
-        }
-        # State 2
-        s1 = CP.PropsSI('S', 'P', P_evap, 'Q', 1, my_heat_pump.refrigerant)
-        h2s = CP.PropsSI('H', 'P', P_cond, 'S', s1, my_heat_pump.refrigerant)
-        h2 = (states_data[1]['H']*1000 + (h2s - states_data[1]['H']*1000) / my_heat_pump.eta_comp_isen)
-        states_data[2] = {
-            'P': P_cond / 1000,
-            'H': h2 / 1000,
-            'T': cu.K2C(CP.PropsSI('T', 'P', P_cond, 'H', h2, my_heat_pump.refrigerant))
-        }
-        # State 3
-        states_data[3] = {
-            'P': P_cond / 1000,
-            'H': CP.PropsSI('H', 'P', P_cond, 'Q', 0, my_heat_pump.refrigerant) / 1000, # J/kg -> kJ/kg
-            'T': cu.K2C(CP.PropsSI('T', 'P', P_cond, 'Q', 0, my_heat_pump.refrigerant))
-        }
-        # State 4
-        states_data[4] = {
-            'P': P_evap / 1000, # Pa -> kPa     
-            'H': states_data[3]['H'], # h4 = h3
-            'T': cu.K2C(CP.PropsSI('T', 'P', P_evap, 'H', states_data[3]['H']*1000, my_heat_pump.refrigerant))
-        }
-
-        # 5. 그래프 그리기 함수 호출
-        plot_cycle_diagrams(my_heat_pump.refrigerant, states_data)
+@dataclass
+class GroundSourceHeatPumpBoiler2:
+    '''
+    물리적 원리에 기반한 지열워 히트펌프 성능 계산 및 최적 운전점 탐색 클래스.
+    '''
+    def __init__(
+        self,
         
-    else:
-        print(f"계산 실패: {optimal_result['message']}")
+        # 냉매 종류
+        refrigerant  = 'R410A',
+        
+        # 압축기 관련 파라미터
+        disp_cmp     = 0.0005,
+        eta_cmp_isen = 0.7,
+        eta_cmp_dV   = 0.85,
+        
+        # 온도 관련 파라미터
+        T_f_bh_in    = 15.0,
+        Tg           = 15.0,
+        
+        # 열교환기 관련 파라미터
+        UA_HX_tank       = 500, # W/K
+        UA_HX_water_loop = 500, # W/K
+    
+        ######################################################
+        # # Tank size [m]
+        # r0 = 0.2,
+        # H = 0.8,
+        
+        # # Tank layer thickness [m]
+        # x_shell = 0.01,
+        # x_ins   = 0.10,
+    
+        # # Tank thermal conductivity [W/mK]
+        # k_shell = 25, 
+        # k_ins   = 0.03, 
+
+        # # Overall heat transfer coefficient [W/m²K]
+        # h_o = 15, 
+        ######################################################
+    
+        # Borehole parameters
+        D_b = 0, # Borehole depth [m]
+        H_b = 200, # Borehole height [m]
+        r_b = 0.08, # Borehole radius [m]
+        R_b = 0.108, # Effective borehole thermal resistance [mK/W]
+
+        # Fluid parameters
+        dV_f = 24, # Volumetric flow rate of fluid [L/min]
+
+        # Ground parameters
+        k_g   = 2.0,
+        c_g   = 800,
+        rho_g = 2000,
+
+        # Pump of ground heat exchanger
+        E_pmp  = 200,
+        ):
+        '''
+        히트펌프의 고정된 물리적 파라미터를 초기화합니다.
+
+        Args:
+            refrigerant (str)         : 사용할 냉매 이름 (CoolProp 형식).
+            disp_cmp (float)          : 압축기 행정 체적 (1회전 당 흡입량) [m^3].
+            eta_cmp_isen (float)      : 압축기 단열 효율. - 단열 효율은 압축 과정에서 발생하는 에너지 손실이 얼마나 적은가를 나타내는 지표
+            eta_cmp_dV (float): 압축기 체적 효율. - 압축기가 한 번 회전할 때 이론적으로 빨아들일 수 있는 냉매량 대비, 실제로 얼마나 빨아들였는가를 나타내는 지표
+            dT_ref_tank (float)       : 저탕조 접근 온도차 (응축온도 - 저탕조 온도) [K]. 
+            dT_ref_HX (float)         : 열교환기 접근 온도차 (지중온도 - 증발온도) [K].
+            T_w_tank (  float)         : 저탕조 목표 온도 [°C].
+            T_f_HX (float)            : 지중온도 [°C].
+            T0 (float or None)        : 초기 외기 온도 [°C].
+                                        None인 경우, 시뮬레이션 시간 동안 외기 온도를 0°C로 가정.
+            Tg (float)                : 지중온도 [°C].
+            Q_ref_tank (array or None): 저탕조 목표 열 교환율 [W].
+                                        None인 경우, 시뮬레이션 시간 동안 열 교환율을 0W로 가정.
+                                        배열인 경우, 길이가 시뮬레이션 스텝 수와 일치해야 함.
+            dt_s (int)                : 시뮬레이션 시간 간격 [초].
+            time_h (int)              : 시뮬레이션 총 시간 [시간].
+        '''
+
+        self.ref          = refrigerant
+        self.disp_cmp     = disp_cmp
+        self.eta_cmp_isen = eta_cmp_isen
+        self.eta_cmp_dV   = eta_cmp_dV
+        
+        self.Tg        = Tg
+        self.T_f_bh_in = T_f_bh_in
+        
+        self.UA_HX_tank       = UA_HX_tank
+        self.UA_HX_water_loop = UA_HX_water_loop
+        
+        # self.r0 = r0
+        # self.H = H
+        
+        # self.x_shell = x_shell
+        # self.x_ins   = x_ins
+        # self.k_shell = k_shell
+        # self.k_ins   = k_ins
+        # self.h_o     = h_o
+        
+        self.D_b = D_b
+        self.H_b = H_b
+        self.r_b = r_b
+        self.R_b = R_b
+        
+        self.dV_f  = dV_f  # L/min -> m^3/s
+        self.k_g   = k_g
+        self.c_g   = c_g
+        self.alp_g = k_g / (c_g * rho_g)
+        self.rho_g = rho_g
+        self.E_pmp = E_pmp
+        
+        # Unit conversion
+        self.Tg    = cu.C2K(self.Tg)
+        self.T_f_bh_in = cu.C2K(self.T_f_bh_in)
+        self.dV_f  = self.dV_f * cu.L2m3/cu.m2s  # L/min -> m^3/s
+        
+        self.Q_LOAD_OFF_ATOL = 500.0     # [W] 이하면 완전 OFF
+        
+    def _off_result(self, T_w_tank):
+        """장치 OFF 상태의 결과 패키징(모든 열량/전력 0, 펌프도 OFF 가정)."""
+        T_w_K = cu.C2K(T_w_tank)
+        T_f_in = self.T_f_bh_in
+
+        # 포화점은 '참조값'으로만 계산(그려도 되고 안 그려도 됨)
+        try:
+            P1 = CP.PropsSI('P', 'T', T_f_in, 'Q', 1, self.ref)
+            P3 = CP.PropsSI('P', 'T', T_w_K,  'Q', 0, self.ref)
+            h1 = CP.PropsSI('H', 'P', P1, 'Q', 1, self.ref); s1 = CP.PropsSI('S', 'P', P1, 'Q', 1, self.ref)
+            h3 = CP.PropsSI('H', 'P', P3, 'Q', 0, self.ref); s3 = CP.PropsSI('S', 'P', P3, 'Q', 0, self.ref)
+        except Exception:
+            # 혹시 범위 밖이면 NaN으로
+            P1=P3=h1=h3=s1=s3=np.nan
+
+        result = {
+            'Q_ref_tank': 0.0, 'Q_ref_HX': 0.0,
+            'Q_LMTD_tank': 0.0, 'Q_LMTD_HX': 0.0,
+            'Q_load': 0.0,
+            'E_cmp': 0.0, 'E_cmp_eff': 0.0,
+            'E_pmp_eff': 0.0,               # 펌프도 OFF
+            'cmp_rps': 0.0, 'm_dot_ref': 0.0,
+            'T1': T_f_in, 'T2': T_f_in, 'T3': T_w_K, 'T4': T_w_K,
+            'T_f_bh_in': T_f_in, 'T_f_bh_out': T_f_in,
+            'P1': P1, 'P2': P3, 'P3': P3, 'P4': P1,
+            'h1': h1, 'h2': h1, 'h3': h3, 'h4': h3,
+            's1': s1, 's2': s1, 's3': s3, 's4': s3,
+            'is_on': False,
+        }
+        return result
+    
+    def _calculate_cycle_performance(self, dT_ref_tank, dT_ref_HX, T_w_tank, Q_load):
+        '''
+        EX) 난방 모드 기준 사이클 다이어그램
+        
+        주어진 운전 조건(압축기/팬 속도, 외기온도)에서 사이클 성능을 계산하는 내부 함수.
+        (저온/저압 가스)                                (고온/고압 가스)
+        (1) -------------------- [ 압축기 ] --------------------> (2)
+        ^                                                        |
+        |                                                        v
+      [열교환기]                                                [저탕조]
+      (열 흡수 ❄️)                                           (열 방출 🔥)
+        ^                                                        |
+        |                                                        v
+        (4) <----------------- [ 팽창밸브 ] <------------------- (3)
+        (저온/저압 액체+가스)                                   (고압 액체)
+        '''
+        
+        T_w_tank = cu.C2K(T_w_tank)
+        T_f_bh_in = self.T_f_bh_in
+        
+        # --- 1. 증발 및 응축 온도/압력 계산 ---
+        # 난방 모드: 실내기 = 응축기, 실외기 = 증발기
+        
+        # 응축기(실내기) 온도/압력
+        T3 = T_w_tank + dT_ref_tank # T3 
+        P3 = CP.PropsSI('P', 'T', T3, 'Q', 0, self.ref) # P3
+
+        # 증발기(열교환기) 온도/압력
+        T1 = T_f_bh_in - dT_ref_HX
+        P1 = CP.PropsSI('P', 'T', T1, 'Q', 1, self.ref)
+
+        # --- 2. 사이클의 각 지점(State 1, 2, 3, 4) 물성치 계산 ---
+        # State 1: 압축기 입구 (저압의 포화 증기)
+        h1   = CP.PropsSI('H', 'P', P1, 'Q', 1, self.ref)
+        s1   = CP.PropsSI('S', 'P', P1, 'Q', 1, self.ref)
+        rho1 = CP.PropsSI('D', 'P', P1, 'Q', 1, self.ref)
+
+        # State 2: 압축기 출구 (고압의 과열 증기)
+        h2_isen = CP.PropsSI('H', 'P', P3, 'S', s1, self.ref) 
+        h2 = h1 + (h2_isen - h1) / self.eta_cmp_isen
+        
+        T2 = CP.PropsSI('T', 'P', P3, 'H', h2, self.ref)
+        P2 = P3
+        s2 = CP.PropsSI('S', 'P', P3, 'H', h2, self.ref)
+        
+        # State 3: 응축기 출구 (고압의 포화 액체)
+        h3 = CP.PropsSI('H', 'P', P3, 'Q', 0, self.ref)
+        s3 = CP.PropsSI('S', 'P', P3, 'Q', 0, self.ref)
+
+        # State 4: 팽창밸브 출구 (저압의 액체+기체 혼합물)
+        h4 = h3
+        P4 = P1
+        T4 = CP.PropsSI('T', 'P', P1, 'H', h4, self.ref)
+        s4 = CP.PropsSI('S', 'P', P1, 'H', h4, self.ref)
+
+        # --- 3. 성능 지표 계산 ---
+        # Q_load를 만족시키기 위해 필요한 냉매 유량(m_dot_ref)을 역산
+        # Q_load와 (h3 - h2)는 모두 음수이므로 m_dot_ref은 양수가 됨
+        h3 - h2
+        if (h3 - h2) == 0: return None
+        m_dot_ref = Q_load / (h3 - h2) # (Q_load < 0, (h3 - h2) < 0) -> m_dot_ref > 0 [kg/s]
+        
+        # 계산된 m_dot_ref을 만들기 위해 필요한 압축기 회전수(cmp_rps)를 역산
+        denominator = self.disp_cmp * rho1 * self.eta_cmp_dV
+        if denominator == 0: return None
+        cmp_rps = m_dot_ref / denominator # [1/s]
+        
+        # 계산된 값들로 나머지 성능 지표 계산
+        Q_ref_tank = m_dot_ref * (h3 - h2) # 이 값은 Q_load와 거의 동일
+        Q_ref_HX   = m_dot_ref * (h1 - h4)
+        E_cmp      = m_dot_ref * (h2 - h1)
+        
+        # --- 4. LMTD 기반 열량 계산 (현실 제약 조건) ---
+        # 저탕조 측 (응축기)
+        delta_T1_tank = T2 - T_w_tank
+        delta_T2_tank = T3 - T_w_tank
+        # 0 또는 음수 온도차 방지
+        if delta_T1_tank <= 1e-6 or delta_T2_tank <= 1e-6 or abs(delta_T1_tank - delta_T2_tank) < 1e-6:
+             Q_LMTD_tank = -np.inf # 물리적으로 불가능한 경우 패널티
+        else:
+             LMTD_tank = (delta_T1_tank - delta_T2_tank) / np.log(delta_T1_tank / delta_T2_tank)
+             Q_LMTD_tank = self.UA_HX_tank * LMTD_tank
+
+        # 지중열 측 (증발기) - 대향류(Counter-flow) 모델 수정
+        m_dot_f = self.dV_f * rho_w # __init__에서 계산해도 됨
+        T_f_bh_out = T_f_bh_in + Q_ref_HX / (c_w * rho_w * self.dV_f) # 지중열 유입구 온도 + (열교환율 / (비열 * 밀도 * 유량)
+
+        delta_T1_HX = T_f_bh_in - T1
+        delta_T2_HX = T_f_bh_out - T4
+        # 0 또는 음수 온도차 방지
+        if delta_T1_HX <= 1e-6 or delta_T2_HX <= 1e-6 or abs(delta_T1_HX - delta_T2_HX) < 1e-6:
+            Q_LMTD_HX = np.inf # 물리적으로 불가능한 경우 패널티
+        else:
+            LMTD_HX = (delta_T1_HX - delta_T2_HX) / np.log(delta_T1_HX / delta_T2_HX)
+            Q_LMTD_HX = self.UA_HX_water_loop * LMTD_HX
+        
+        result = {
+            'is_on'    : True,
+            
+            'Q_ref_tank' : Q_ref_tank,    # W
+            'Q_ref_HX'   : Q_ref_HX,      # W
+            'Q_LMTD_tank': Q_LMTD_tank,   # W
+            'Q_LMTD_HX'  : Q_LMTD_HX,     # W
+            
+            'Q_load'   : Q_load,      # W
+            'E_cmp'    : E_cmp,       # W
+            'cmp_rps'  : cmp_rps,     # rps
+            'm_dot_ref': m_dot_ref,   # kg/s
+            
+            'T1': T1,   # K
+            'T2': T2,   # K
+            'T3': T3,   # K
+            'T4': T4,   # K
+            
+            'T_f_bh_in' : T_f_bh_in,    # K
+            'T_f_bh_out': T_f_bh_out,   # K
+            
+            'P1': P1,   # kPa
+            'P2': P2,   # kPa
+            'P3': P3,   # kPa
+            'P4': P4,   # kPa
+            
+            'h1': h1, # J/kg
+            'h2': h2, # J/kg
+            'h3': h3, # J/kg
+            'h4': h4, # J/kg
+            
+            's1': s1, # J/kgK
+            's2': s2, # J/kgK
+            's3': s3, # J/kgK
+            's4': s4, # J/kgK
+        }
+        self.__dict__.update(result)
+        return result
+
+    def _find_ref_loop_optimal_operation(self, T_w_tank, Q_load):
+        '''
+        dT에 따라서, 결국 LMTD를 만족하는 dT들의 조합이 존재한다.
+        근데 이때 dT(dT_ref_tank, dT_ref_HX)에 따라서, Ecmp가 최소가 되어야하므로,
+        dT(dT_ref_tank, dT_ref_HX)에 따른 냉매의 유량(m_dot_ref) 변화, dT에 따른 h2-h1의 변화가 복합적으로 Ecmp를 결정하므로
+        어떠한 dT의 조합들에 대해서 E_cmp를 최소화시키는 운전점이 존재하고 그 지점을 찾는 것이다.
+s
+        Args:
+            T_w_tank (float): 저탕조 목표 온도 [°C].
+            Q_load (float): 저탕조 목표 열 교환율 [W]. (난방 부하, 음수 값)
+
+        Returns:
+            dict: 최적화 결과 또는 에러 메시지.
+        '''
+        # 최적화 변수: x[0] = 압축기 회전수(rps), x[1] = 냉매 저탕조 온도차(K), x[2] = 냉매-열교환기 온도차(K)
+        
+        # --- 0) OFF/소부하 처리 ---
+        Q_req = float(Q_load)
+        if abs(Q_req) <= self.Q_LOAD_OFF_ATOL:
+            return self._off_result(T_w_tank)
+        
+        # 1. 목적 함수: 총 전력 사용량 (최소화 대상)
+        
+        def objective(x):
+            dT_ref_HX, dT_ref_tank = x
+            perf = self._calculate_cycle_performance(
+                dT_ref_tank=dT_ref_tank, dT_ref_HX=dT_ref_HX,
+                T_w_tank=T_w_tank, Q_load=Q_load,
+            )
+            return perf["E_cmp"]
+
+        # 🎯 제약 조건 함수들 정의
+        def constraint_tank(x):
+            '''
+            Q_LMTD_tank: 주어진 T2, T3와 T_w_tank에 기반해 계산된 냉매-저탕조 온수 열 교환율 [W]
+            Q_ref_tank: 냉매 사이클 계산으로부터 얻어진 냉매-저탕조 열 교환율 [W]
+            제약 조건: Q_LMTD_tank >= |Q_ref_tank| ↔  Q_LMTD_tank + Q_ref_tank >= 0
+            '''
+            dT_ref_HX, dT_ref_tank = x
+            perf = self._calculate_cycle_performance(dT_ref_tank, dT_ref_HX, T_w_tank, Q_load)
+            # Q_ref_tank는 난방에서 음수이므로, |Q_ref_tank| = -Q_ref_tank
+            return perf['Q_LMTD_tank'] + perf['Q_ref_tank'] # (양수) + (음수)
+
+        def constraint_hx(x):
+            dT_ref_HX, dT_ref_tank = x
+            perf = self._calculate_cycle_performance(dT_ref_tank, dT_ref_HX, T_w_tank, Q_load)
+            return perf['Q_LMTD_HX'] - perf['Q_ref_HX'] # (양수) - (양수)
+        
+        bounds = [(0.1, 30.0), (0.1, 30.0)]
+        initial_guess = [5, 5]
+
+        # 제약 조건 리스트 생성
+        cons = [
+                {'type': 'eq', 'fun': constraint_tank}, # ineq: Q_LMTD_tank - |Q_ref_tank| >= 0
+                {'type': 'eq', 'fun': constraint_hx},
+            ]
+
+        # 최적화 실행 (constraints 인자 추가)
+        result = minimize(objective, initial_guess, method='SLSQP',
+                          bounds=bounds, constraints=cons, options={'disp': False})
+
+        if result.success:
+            optimal_dT_ref_HX, optimal_dT_ref_tank = result.x
+            final_performance = self._calculate_cycle_performance(
+                dT_ref_tank=optimal_dT_ref_tank, dT_ref_HX=optimal_dT_ref_HX,
+                T_w_tank=T_w_tank, Q_load=Q_load
+            )
+            return final_performance
+        else:
+            # 최적화 실패 시, 실패 원인 분석
+            fail_reason = result.message  # 기본적인 실패 메시지
+
+            # result.status 코드를 통해 좀 더 구체적인 원인 파악
+            # (scipy 문서 참조: https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.OptimizeResult.html#scipy.optimize.OptimizeResult )
+            if result.status == 1:
+                fail_reason += " (Iteration limit reached - 반복 횟수 초과)"
+            elif result.status == 2:
+                fail_reason += " (Precision loss - 정밀도 손실)"
+            elif result.status == 3:
+                fail_reason += " (Objective/constraint function error - 함수 계산 오류)"
+            elif result.status == 4:
+                fail_reason += " (Iteration limit reached - 반복 횟수 초과)" # SLSQP에선 1과 4가 비슷하게 쓰일 수 있음
+            elif result.status == 8:
+                 fail_reason += " (Infeasible constraints - 제약 조건 만족 불가)"
+            elif result.status == 9:
+                 fail_reason += " (Iteration limit reached - 반복 횟수 초과)" # SLSQP 특정
+
+            # 최종 지점에서의 제약 조건 값 확인 (어떤 제약이 위반되었는지 추정)
+            try:
+                final_x = result.x if hasattr(result, 'x') else initial_guess
+                c_tank_val = constraint_tank(final_x)
+                c_hx_val = constraint_hx(final_x)
+                fail_reason += f"\n  - 최종 제약 조건 값: Tank={c_tank_val:.3f}, HX={c_hx_val:.3f}"
+                if c_tank_val < -1e-6 or c_hx_val < -1e-6: # 부등식 제약 조건 위반 (0보다 작음)
+                     fail_reason += " (제약 조건 위반 가능성 높음)"
+            except Exception as e:
+                fail_reason += f"\n  - 최종 제약 조건 확인 중 오류 발생: {e}"
+
+            print(f'최적화에 실패했습니다:\n  - 원인: {fail_reason}')
+            return None
+
+    def plot_cycle_diagrams(self, result, save_path=None):
+        '''
+        계산된 사이클 상태(1,2,3,4)를 바탕으로 p-h, T-h 선도를 그립니다.
+        '''
+        # colors
+        color1 = 'dm.blue5'
+        color2 = 'dm.red5'
+        color3 = 'dm.black'
+
+        ymin1, ymax1, yint1 = 0, 10**4, 0
+        ymin2, ymax2, yint2 = -20, 120, 20
+        xmin, xmax, xint = 0, 500, 100
+
+        # --- 임계/포화 데이터 준비 ---
+        # (CoolProp 순서는 PropsSI('키', 유체명) 입니다)
+        T_critical = cu.K2C(CP.PropsSI('Tcrit',  self.ref))
+        P_critical = CP.PropsSI('Pcrit',  self.ref) / 1000  # kPa (참고용, 여기선 미사용)
+
+        temps = np.linspace(cu.K2C(CP.PropsSI('Tmin', self.ref)) + 1, T_critical, 200)
+        h_liq = [CP.PropsSI('H', 'T', cu.C2K(T), 'Q', 0, self.ref) / 1000 for T in temps]
+        h_vap = [CP.PropsSI('H', 'T', cu.C2K(T), 'Q', 1, self.ref) / 1000 for T in temps]
+        p_sat = [CP.PropsSI('P', 'T', cu.C2K(T), 'Q', 0, self.ref) / 1000 for T in temps]
+
+        # 상태값(kPa, kJ/kg, °C)
+        p = np.array([result[f'P{i}'] for i in range(1, 5)])*cu.Pa2kPa
+        h = np.array([result[f'h{i}'] for i in range(1, 5)])*cu.J2kJ
+        T = np.array([result[f'T{i}'] for i in range(1, 5)]); T = cu.K2C(T)
+
+        # 사이클 경로(닫기)
+        h_cycle = np.concatenate([h, h[:1]])
+        p_cycle = np.concatenate([p, p[:1]])
+        T_cycle = np.concatenate([T, T[:1]])
+
+        # --- Figure & Axes ---
+        LW = np.arange(0.5, 3.0, 0.25)
+        nrows, ncols = 1, 2
+        fig, axes = plt.subplots(figsize=(dm.cm2in(16), dm.cm2in(7)), nrows=nrows, ncols=ncols)
+        ax = axes.flatten()
+        # 축별 메타데이터(인덱스로 접근)
+        xlabels = ["Enthalpy [kJ/kg]", "Enthalpy [kJ/kg]"]
+        ylabels = ["Pressure (log scale) [kPa]", "Temperature [°C]"]
+        yscales = ["log", "linear"]
+        xlims   = [(xmin, xmax), (xmin, xmax)]
+        ylims   = [(ymin1, ymax1), (ymin2, ymax2)]
+
+        # 포화선/사이클 Y데이터 선택자
+        satY_list   = [p_sat, temps]          # idx=0: p_sat vs h, idx=1: T(temps) vs h
+        cycleY_list = [p_cycle, T_cycle]
+
+        # 상태 텍스트 Y좌표 함수(축별로 다르게)
+        def state_y(idx, i):
+            return p[i]*1.1 if idx == 0 else (T[i] + yint2*0.1)
+
+        # 공통 범례 스타일
+        legend_kw = dict(
+            loc='upper left',
+            bbox_to_anchor=(0.0, 0.99),
+            handlelength=1.5,
+            labelspacing=0.5,
+            columnspacing=2,
+            ncol=1,
+            frameon=False,
+            fontsize=dm.fs(-1)
+        )
+
+        # --- 2중 for문으로 그리기 ---
+        for r in range(nrows):
+            for c in range(ncols):
+                idx = r * ncols + c
+                axi = ax[idx]
+
+                # 포화선
+                axi.plot(h_liq, satY_list[idx],  color=color1, label='Saturated Liquid', linewidth=LW[2])
+                axi.plot(h_vap, satY_list[idx],  color=color2, label='Saturated Vapor',  linewidth=LW[2])
+                # 사이클 경로
+                axi.plot(h_cycle, cycleY_list[idx], color=color3, label='Heat Pump Cycle',
+                        linewidth=LW[1], marker='o', linestyle=':', markersize=2)
+
+                # 상태 라벨
+                for i in range(4):
+                    axi.text(h[i]*1.01, state_y(idx, i), f'State {i+1}',
+                            fontsize=dm.fs(-1), ha='center', va='bottom')
+
+                # 축 설정
+                axi.set_xlabel(xlabels[idx], fontsize=dm.fs(0))
+                axi.set_ylabel(ylabels[idx], fontsize=dm.fs(0))
+                axi.set_yscale(yscales[idx])
+                axi.set_xlim(*xlims[idx])
+                axi.set_ylim(*ylims[idx])
+                axi.legend(**legend_kw)
+
+        dm.simple_layout(fig, margins=(0.05, 0.05, 0.05, 0.05), bbox=(0, 1, 0, 1), verbose=False)
+        if save_path is not None:
+            plt.savefig(save_path, dpi=600)
+        dm.save_and_show(fig)
+
+   
+#%%
+# --- 메인 실행 블록 ---
+# if __name__ == '__main__':
+#     # 1. 히트펌프 모델 객체 생성
+#     my_heat_pump = AirSourceHeatPump(
+#         refrigerant='R410A',
+#         disp_cmp =0.000045,
+#         eta_cmp_isen =0.75,
+#         eta_cmp_dV =0.9,
+#         coeff_fan_power =500,
+#         dT_iu_ref =5.0,
+#         evaporator_temp_K=5.0,
+#         T_ia=20.0
+#     )
+
+#     # 2. 시뮬레이션 조건 설정
+#     load_iuition = {'required_heating_load_kW': 5.0, 'T0': 2.0}
+    
+#     # 3. 최적 운전점 탐색
+#     optimal_result = my_heat_pump.find_optimal_operation(**load_iuition)
+
+#     if optimal_result["success"]:
+#         print('--- 최적 운전 결과 ---')
+#         # ... (이전과 동일한 결과 출력 부분) ...
+#         print(f'COP: {optimal_result["performance"]["COP"]}')
+#         print(f'난방 능력 (kW): {optimal_result["performance"]["Calculated_Q_iu"]}')
+#         print(f'총 전력 사용량 (kW): {optimal_result["performance"]["E_tot"]}')
+#         print(f'압축기 전력 사용량 (kW): {optimal_result["performance"]["E_cmp"]}')
+#         print(f' 팬 전력 사용량 (kW): {optimal_result["performance"]["E_fan"]}')
+#         print(f'증발 온도 (°C): {optimal_result["performance"]["Evaporating_Temp_C"]}')
+#         print(f'응축 온도 (°C): {optimal_result["performance"]["Condensing_Temp_C"]}')
+#         print(f'팬 풍량 (m3/s): {optimal_result["optimal_dV_fan"]}')
+#         print(f'압축기 회전수 (RPM): {optimal_result["optimal_compressor_speed_rpm"]}')
+
+#         # 4. 그래프 그리기를 위한 상태값 계산 및 저장
+#         # 최적화된 속도로 다시 한번 사이클 계산을 수행하여 각 지점의 물성치 확보
+#         opt_speed = optimal_result["optimal_compressor_speed_rps"]
+#         opt_airflow = optimal_result["optimal_dV_fan"]
+
+#         # 각 상태의 압력(P), 엔탈피(H), 온도(T)를 계산
+#         P_ou_ref = CP.PropsSI('P', 'T', cu.C2K(optimal_result["performance"]["Evaporating_Temp_C"]), 'Q', 1, my_heat_pump.refrigerant)
+#         P_iu_ref = CP.PropsSI('P', 'T', cu.C2K(optimal_result["performance"]["Condensing_Temp_C"]), 'Q', 0, my_heat_pump.refrigerant)
+
+#         states_data = {}
+#         # State 1
+#         states_data[1] = {
+#             'P': P_ou_ref / 1000, # Pa -> kPa
+#             'H': CP.PropsSI('H', 'P', P_ou_ref, 'Q', 1, my_heat_pump.refrigerant) / 1000, # J/kg -> kJ/kg
+#             'T': cu.K2C(CP.PropsSI('T', 'P', P_ou_ref, 'Q', 1, my_heat_pump.refrigerant))
+#         }
+#         # State 2
+#         s1 = CP.PropsSI('S', 'P', P_ou_ref, 'Q', 1, my_heat_pump.refrigerant)
+#         h2s = CP.PropsSI('H', 'P', P_iu_ref, 'S', s1, my_heat_pump.refrigerant)
+#         h2 = (states_data[1]["H"]*1000 + (h2s - states_data[1]["H"]*1000) / my_heat_pump.eta_comp_isen)
+#         states_data[2] = {
+#             'P': P_iu_ref / 1000,
+#             'H': h2 / 1000,
+#             'T': cu.K2C(CP.PropsSI('T', 'P', P_iu_ref, 'H', h2, my_heat_pump.refrigerant))
+#         }
+#         # State 3
+#         states_data[3] = {
+#             'P': P_iu_ref / 1000,
+#             'H': CP.PropsSI('H', 'P', P_iu_ref, 'Q', 0, my_heat_pump.refrigerant) / 1000, # J/kg -> kJ/kg
+#             'T': cu.K2C(CP.PropsSI('T', 'P', P_iu_ref, 'Q', 0, my_heat_pump.refrigerant))
+#         }
+#         # State 4
+#         states_data[4] = {
+#             'P': P_ou_ref / 1000, # Pa -> kPa     
+#             'H': states_data[3]["H"], # h4 = h3
+#             'T': cu.K2C(CP.PropsSI('T', 'P', P_ou_ref, 'H', states_data[3]["H"]*1000, my_heat_pump.refrigerant))
+#         }
+
+#         # 5. 그래프 그리기 함수 호출
+#         plot_cycle_diagrams(my_heat_pump.refrigerant, states_data)
+        
+#     else:
+#         print(f'계산 실패: {optimal_result["message"]}')
  
 # %%
