@@ -481,7 +481,34 @@ def _add_loop_advection_terms(a, b, c, d, in_idx, out_idx, G_loop, T_loop_in):
         # outlet 노드 (out_idx)
         a[out_idx] -= G_loop
         b[out_idx] += G_loop
+
+def calc_exergy_flow(G, T, T0, eps=1e-6):
+    """
+    물질 흐름(advection)에 의한 엑서지 유량을 계산합니다.
+    Ex_flow = m_dot * ex = (G / c_w) * [c_w * (T - T0) - c_w * T0 * ln(T / T0)]
     
+    Parameters:
+    -----------
+    G : float
+        열용량 유량 (m_dot * c_w) [W/K]
+    T : float
+        흐름의 온도 [K]
+    T0 : float
+        기준(환경) 온도 (T_dead_state) [K]
+    eps : float
+        log(0)을 피하기 위한 작은 값
+
+    Returns:
+    --------
+    float
+        엑서지 유량 [W]
+    """
+    T = max(T, eps)
+    T0 = max(T0, eps)
+    
+    # G * ( (T - T0) - T0 * ln(T/T0) )
+    return G * ((T - T0) - T0 * np.log(T / T0))
+
 class StratifiedTankTDMA:
     '''
     To do: 부시네스크 근사에 의한 물블록간 순환 유량계산 알고리즘에서 C_d(유량계수)를 자동으로 계산하는
@@ -535,9 +562,10 @@ class StratifiedTankTDMA:
         
     # --- 추가: 유틸리티 헬퍼 (클래스 바깥에 둬도 됨) -----------------------------
 
+
         
     def step(self,
-             T, dt, T_in, dV, T_amb,
+             T, dt, T_in, dV, T_amb, T0,
              Q_heater_node=None, Q_heater_W=0.0,
              loop_outlet_node=None, loop_inlet_node=None,
              dV_loop=0.0, Q_loop=0.0):
@@ -559,6 +587,94 @@ class StratifiedTankTDMA:
         for i in range(N - 1):
             Q_mix = calc_boussinesq_mixing_flow(T[i], T[i+1], self.A, self.dz, self.C_d_mix)
             G_mix[i] = rho_w * c_w * Q_mix
+            
+        # ---- 1. 엑서지 소비율 계산 (TDMA 계산 전) --------------------
+        # (T는 현재 시점 T[n]을 사용)
+        
+        Ex_con_cond = np.zeros(N)
+        Ex_con_mix = np.zeros(N)
+        Ex_con_main = np.zeros(N)
+        Ex_con_loop = np.zeros(N)
+        
+        for i in range(N):
+            # --- 1a. 전도(Conduction)에 의한 엑서지 소비 ---
+            # (i)와 (i-1) 경계면 exergy outflow
+            if i > 0:
+                Q = K * (T[i] - T[i-1])
+                if Q > eps:
+                    # Ex_con = Q * T0 * (1/T_cold - 1/T_hot)
+                    T_surface = (T[i-1] + T[i]) / 2.0
+                    Ex_con_cond[i] -= (1- T0/T_surface) * Q
+            
+            # (i)와 (i+1) 경계면 exergy inflow
+            if i < N - 1:
+                Q = K * (T[i+1] - T[i])
+                if Q > eps:
+                    T_surface = (T[i] + T[i+1]) / 2.0
+                    Ex_con_cond[i] += (1- T0/T_surface) * Q
+
+            # --- 1b. 부시네스크 혼합(Mixing)에 의한 엑서지 소비 ---
+            Ex_in_mix = 0.0
+            Ex_out_mix = 0.0
+            if i > 0 and G_mix[i-1] > 0: # (i-1)과 (i) 사이 혼합
+                Ex_in_mix += calc_exergy_flow(G_mix[i-1], T[i-1], T0) # i-1 -> i
+                Ex_out_mix += calc_exergy_flow(G_mix[i-1], T[i], T0)  # i -> i-1
+            if i < N - 1 and G_mix[i] > 0: # (i)와 (i+1) 사이 혼합
+                Ex_in_mix += calc_exergy_flow(G_mix[i], T[i+1], T0) # i+1 -> i
+                Ex_out_mix += calc_exergy_flow(G_mix[i], T[i], T0)  # i -> i+1
+            Ex_con_mix[i] = Ex_in_mix - Ex_out_mix
+            
+            # --- 1c. 주 유동(Main Flow)에 의한 엑서지 소비 ---
+            Ex_in_main = 0.0
+            Ex_out_main = 0.0
+            if G > 0:
+                # 유입 (Inflow)
+                if i == N - 1: # 최하단 노드
+                    Ex_in_main = calc_exergy_flow(G, T_in, T0)
+                else: # 0 ~ N-2 노드
+                    Ex_in_main = calc_exergy_flow(G, T[i+1], T0)
+
+                # 유출 (Outflow)
+                Ex_out_main = calc_exergy_flow(G, T[i], T0)
+                
+            Ex_con_main[i] = Ex_in_main - Ex_out_main
+        
+        # --- 1d. 루프 유동(Loop Flow)에 의한 엑서지 소비 ---
+        if (G_loop > 0.0) and (loop_outlet_node is not None) and (loop_inlet_node is not None):
+            out_idx = int(loop_outlet_node) - 1
+            in_idx  = int(loop_inlet_node)  - 1
+            if 0 <= out_idx < N and 0 <= in_idx < N and out_idx != in_idx:
+                T_stream_out = T[out_idx]
+                T_loop_in = T_stream_out + Q_loop / max(G_loop, eps)
+
+                # 1. 입구 노드(in_idx)에서의 혼합 소비
+                Ex_con_loop[in_idx] += calc_exergy_flow(G_loop, T_loop_in, T0) - calc_exergy_flow(G_loop, T[in_idx], T0)
+
+                # 2. 루프 경로 내부에서의 이송 소비
+                if in_idx > out_idx: # 상향 흐름 (in -> in-1 -> ... -> out)
+                    for k in range(in_idx - 1, out_idx - 1, -1): # k = in-1 ... out
+                        T_in_k = T[k+1] if k < N-1 else T_loop_in # 수정: in_idx는 위에서 처리
+                        if k == in_idx - 1: T_in_k = T[in_idx] # in_idx에서 나가는 유동
+                        else: T_in_k = T[k+1]
+
+                        Ex_in_k = calc_exergy_flow(G_loop, T_in_k, T0)
+                        Ex_out_k = calc_exergy_flow(G_loop, T[k], T0)
+                        Ex_con_loop[k] += Ex_in_k - Ex_out_k
+                else: # 하향 흐름 (in -> in+1 -> ... -> out)
+                    for k in range(in_idx + 1, out_idx + 1): # k = in+1 ... out
+                        if k == in_idx + 1: T_in_k = T[in_idx] # in_idx에서 나가는 유동
+                        else: T_in_k = T[k-1]
+
+                        Ex_in_k = calc_exergy_flow(G_loop, T_in_k, T0)
+                        Ex_out_k = calc_exergy_flow(G_loop, T[k], T0)
+                        Ex_con_loop[k] += Ex_in_k - Ex_out_k
+        
+        exergy_consumption = {
+            "conduction": Ex_con_cond,
+            "mixing"    : Ex_con_mix,
+            "main_flow" : Ex_con_main,
+            "loop_flow" : Ex_con_loop
+        }
 
         # ---- TDMA 계수 기본 구성 ----------------------------------------------------
         a = np.zeros(N); b = np.zeros(N); c = np.zeros(N); d = np.zeros(N)
@@ -608,7 +724,9 @@ class StratifiedTankTDMA:
 
         # ---- 선형계 풀이 ------------------------------------------------------------
         T_next = TDMA(a, b, c, d)
-        return T_next
+        return T_next, exergy_consumption
+    
+
     
     def info(self, as_dict: bool = False, precision: int = 3):
         """
