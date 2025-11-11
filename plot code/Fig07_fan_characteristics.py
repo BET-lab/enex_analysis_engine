@@ -101,3 +101,4 @@ for ax, fan, label, flow_range, ylim_p, yticks_p, ylim_e, yticks_e, ylim_pow, yt
 plt.savefig('../figure/Fig. 7.png', dpi=600)
 plt.savefig('../figure/Fig. 7.pdf', dpi=600)
 dm.util.save_and_show(fig)
+# %%

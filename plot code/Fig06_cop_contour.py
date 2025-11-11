@@ -127,3 +127,4 @@ ax_heating.text(0.01, 1.09, '(b) Heating mode', transform=ax_heating.transAxes,
 plt.savefig('../figure/Fig. 6.png', dpi=600)
 plt.savefig('../figure/Fig. 6.svg', dpi=600, transparent=True)
 dm.util.save_and_show(fig)
+# %%

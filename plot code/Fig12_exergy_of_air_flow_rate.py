@@ -149,3 +149,4 @@ plt.savefig('../figure/Fig. 12.png', dpi=600)
 plt.savefig('../figure/Fig. 12.svg', dpi=600, transparent=True)
 
 dm.save_and_show(fig)
+# %%

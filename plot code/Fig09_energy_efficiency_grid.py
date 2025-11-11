@@ -259,3 +259,5 @@ for ax in axes:
 plt.savefig('../figure/Fig. 9.png', dpi=600)
 plt.savefig('../figure/Fig. 9.pdf', dpi=600)
 dm.util.save_and_show(fig)
+
+# %%

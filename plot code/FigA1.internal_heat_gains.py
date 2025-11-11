@@ -74,3 +74,4 @@ legend = ax.legend(
 plt.savefig('../figure/Fig.A1.png', dpi=600)
 plt.savefig('../figure/Fig.A1.pdf', dpi=600)
 dm.util.save_and_show(fig)
+# %%

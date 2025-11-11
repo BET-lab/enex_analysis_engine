@@ -246,3 +246,5 @@ cbar.ax.set_ylabel('Carnot efficiency ($1 - T_0/T_{set}$) [ - ]',
 plt.savefig('../figure/Fig. 11.png', dpi=600)
 plt.savefig('../figure/Fig. 11.pdf', dpi=600)
 dm.util.save_and_show(fig)
+
+# %%

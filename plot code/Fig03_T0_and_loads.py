@@ -69,3 +69,4 @@ ax[1].set_ylim(0, 30)  # y축 범위 고정
 plt.savefig('../figure/Fig. 3.png', dpi=600)
 plt.savefig('../figure/Fig. 3.pdf', dpi=600)
 dm.util.save_and_show(fig)
+# %%

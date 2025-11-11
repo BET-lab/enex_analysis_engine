@@ -4,6 +4,7 @@ import enex_analysis as enex
 import matplotlib.pyplot as plt
 import dartwork_mpl as dm
 import numpy as np
+import pandas as pd
 import matplotlib.gridspec as gridspec
 from data_setting import get_weekday_df
 from enex_analysis.plot_style import fs, pad
@@ -154,7 +155,7 @@ for c in range(2):
 
     # 부하 선택(난방/냉방)
     if month in HEATING_MONTHS:
-        load_series = mdf['DistrictHeatingWater:Facility [J](TimeStep)'] * enex.s2h * enex.W2kW
+        load_series = mdf['DistrictHeatingWater:Facility [J](TimeStep) '] * enex.s2h * enex.W2kW
         load_label  = 'Heating load [kW]'
         color_load  = COLOR_LOAD_HEAT
     else:
@@ -285,3 +286,4 @@ plt.subplots_adjust(**MARGINS)
 plt.savefig('../figure/Fig. 13.png', dpi=600)
 plt.savefig('../figure/Fig. 13.pdf', dpi=600)
 dm.util.save_and_show(fig)
+# %%

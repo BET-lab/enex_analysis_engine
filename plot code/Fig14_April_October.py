@@ -154,7 +154,7 @@ for c in range(2):
 
     # 부하 선택(난방/냉방)
     if month in HEATING_MONTHS:
-        load_series = mdf['DistrictHeatingWater:Facility [J](TimeStep)'] * enex.s2h * enex.W2kW
+        load_series = mdf['DistrictHeatingWater:Facility [J](TimeStep) '] * enex.s2h * enex.W2kW
         load_label  = 'Heating load [kW]'
         color_load  = COLOR_LOAD_HEAT
     else:
@@ -287,3 +287,4 @@ for c in range(2):
 plt.savefig('../figure/Fig. 14.png', dpi=600)
 plt.savefig('../figure/Fig. 14.pdf', dpi=600)
 dm.util.save_and_show(fig)
+# %%
