@@ -249,8 +249,8 @@ for c in range(2):
     ax4.set_yticks(np.arange(EXGY_YMIN, EXGY_YMAX + 1e-9, EXGY_YTICK))
 
     ax3.set_xlabel('Hour of day [hour]', fontsize=fs['label'])
-    ax3.set_ylabel('Energy efficiency [ - ]', fontsize=fs['label'])
-    ax4.set_ylabel('Exergy efficiency [%]', fontsize=fs['label'])
+    ax3.set_ylabel('Energy efficiency (COP$_{sys}$) [ - ]', fontsize=fs['label'])
+    ax4.set_ylabel('Exergy efficiency ($\eta_{X,sys}$) [%]', fontsize=fs['label'])
     
     # 틱 폰트/간격
     ax3.tick_params(axis='x', which='both', labelsize=fs['tick'], pad=pad['tick'])
@@ -285,5 +285,8 @@ plt.subplots_adjust(**MARGINS)
 # =========================
 plt.savefig('../figure/Fig. 13.png', dpi=600)
 plt.savefig('../figure/Fig. 13.pdf', dpi=600)
+plt.savefig('../figure/Fig. 13.svg', dpi=600, transparent=True)
 dm.util.save_and_show(fig)
+
+
 # %%

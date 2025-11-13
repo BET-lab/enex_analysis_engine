@@ -4,6 +4,7 @@ import enex_analysis as enex
 import matplotlib.pyplot as plt
 import dartwork_mpl as dm
 import numpy as np
+import pandas as pd
 import matplotlib.gridspec as gridspec
 from data_setting import get_weekday_df
 from enex_analysis.plot_style import fs, pad
@@ -256,8 +257,8 @@ for c in range(2):
     ax4.set_yticks(np.arange(EXGY_YMIN, EXGY_YMAX + 1e-9, EXGY_YTICK))
 
     ax3.set_xlabel('Hour of day [hour]', fontsize=fs['label'])
-    ax3.set_ylabel('Energy efficiency [ - ]', fontsize=fs['label'])
-    ax4.set_ylabel('Exergy efficiency [%]', fontsize=fs['label'])
+    ax3.set_ylabel('Energy efficiency (COP$_{sys}$) [ - ]', fontsize=fs['label'])
+    ax4.set_ylabel('Exergy efficiency ($\eta_{X,sys}$) [%]', fontsize=fs['label'])
 
     # 좌/우 스파인/색상/틱 색 정리
     ax3.spines['right'].set_visible(False)
@@ -286,5 +287,6 @@ for c in range(2):
 # =========================
 plt.savefig('../figure/Fig. 14.png', dpi=600)
 plt.savefig('../figure/Fig. 14.pdf', dpi=600)
+plt.savefig('../figure/Fig. 14.svg', dpi=600, transparent=True)
 dm.util.save_and_show(fig)
 # %%
