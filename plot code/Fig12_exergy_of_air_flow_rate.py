@@ -14,7 +14,7 @@ y_minor_between = 1   # Y축: 메이저 틱 사이 마이너 2개
 
 
 xmin, xmax, xint, xmar = -10, 40, 5, 0
-ymin, ymax, yint, ymar =  0, 6, 1, 0
+ymin, ymax, yint, ymar =  0, 5, 1, 0
 
 # constant
 c_a = 1005 # Specific heat capacity of air [J/kgK]
@@ -64,11 +64,11 @@ for row in range(nrows):
         lw = 1
         line1, = ax.plot(
             T_range, y1, 
-            c= 'dm.red4', lw=lw, label=f'Exergy rate of unit air flow rate in winter ($T_0$ = - {abs(T0_cooling)} °C)',
+            c= 'dm.red4', lw=lw, label=f'In winter ($T_0$ = - {abs(T0_cooling)} °C)',
         )
         line2, = ax.plot(
             T_range, y2,
-            c= 'dm.blue3', lw=lw, label=f'Exergy rate of unit air flow rate in summer ($T_0$ = {T0_heating} °C)',
+            c= 'dm.blue3', lw=lw, label=f'In summer ($T_0$ = {T0_heating} °C)',
         )
         # T_set°C
         ds_lw = 0.5 # dashed line width
@@ -121,7 +121,7 @@ for row in range(nrows):
 
         # 7) 축/눈금/범위 등 그래프 요소
         ax.set_xlabel('Indoor air temperature [°C]', labelpad = pad['label'], fontsize=fs['label'])
-        ax.set_ylabel('Exergy rate in air flow [kW/(m$^3$/s)]', labelpad = pad['label'], fontsize=fs['label'])
+        ax.set_ylabel('Exergy rate per unit air flow [kW/(m$^3$/s)]', labelpad = pad['label'], fontsize=fs['label'])
         ax.set_xlim(xmin, xmax)
         ax.set_ylim(ymin, ymax)
 
@@ -141,7 +141,7 @@ for row in range(nrows):
         # 8) 범례
         handles = [line1, line2]
         labels = [h.get_label() for h in handles]
-        ax.legend(handles, labels, loc='upper left', fontsize=fs['legend'], frameon=False, handletextpad=1)
+        ax.legend(handles, labels, loc='upper left', fontsize=fs['legend'], frameon=False, handletextpad=0.5)
 
 # 9) 레이아웃 최적화 (tight_layout 사용 금지)
 dm.simple_layout(fig)
@@ -150,3 +150,4 @@ plt.savefig('../figure/Fig. 12.svg', dpi=600, transparent=True)
 
 dm.save_and_show(fig)
 # %%
+
