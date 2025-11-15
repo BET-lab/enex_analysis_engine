@@ -187,6 +187,8 @@ def calculate_ASHP_cooling_COP(T_a_int_out, T_a_ext_in, Q_r_int, Q_r_max, COP_re
     - COP_ref : the reference COP at the standard conditions
     '''
     PLR = Q_r_int / Q_r_max
+    if PLR < 0.2:
+        PLR = 0.2    
     EIR_by_T = 0.38 + 0.02 * cu.K2C(T_a_int_out) + 0.01 * cu.K2C(T_a_ext_in)
     EIR_by_PLR = 0.22 + 0.50 * PLR + 0.26 * PLR**2
     COP = PLR * COP_ref / (EIR_by_T * EIR_by_PLR)
@@ -206,6 +208,8 @@ def calculate_ASHP_heating_COP(T0, Q_r_int, Q_r_max):
     - PLR : Part Load Ratio
     '''
     PLR = Q_r_int / Q_r_max
+    if PLR < 0.2:
+        PLR = 0.2    
     COP = -7.46 * (PLR - 0.0047 * cu.K2C(T0) - 0.477)**2 + 0.0941 * cu.K2C(T0) + 4.34
     return COP
 
@@ -299,12 +303,19 @@ class Fan:
             'efficiency' : [0.43, 0.48, 0.52, 0.55, 0.60, 0.65, 0.68, 0.66, 0.63, 0.52], # [-]
             'fan type' : 'centrifugal',
         }
+        # self.fan2 = {
+        #     'flow rate'  : [0.5, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.5, 3.0], # [m3/s]
+        #     'pressure'   : [137, 138, 143, 168, 182, 191, 198, 200, 201, 170, 160], # [Pa]
+        #     'efficiency' : [0.45, 0.49, 0.57, 0.62, 0.67, 0.69, 0.68, 0.67, 0.63, 0.40, 0.48], # [-]
+        #     'fan type' : 'centrifugal',
+        # }
         self.fan2 = {
-            'flow rate'  : [0.5, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.5], # [m3/s]
-            'pressure'   : [137, 138, 143, 168, 182, 191, 198, 200, 201, 170], # [Pa]
-            'efficiency' : [0.45, 0.49, 0.57, 0.62, 0.67, 0.69, 0.68, 0.67, 0.63, 0.40], # [-]
+            'flow rate'  : [0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0], # [m3/s]
+            'pressure'   : [244, 241, 239, 242, 260, 290, 305, 340, 345, 350, 320, 230], # [Pa]
+            'efficiency' : [0.44, 0.47, 0.50, 0.52, 0.56, 0.58, 0.63, 0.67, 0.65, 0.60, 0.55, 0.31], # [-]
             'fan type' : 'centrifugal',
-        },
+        }
+
         self.fan3 = { # https://ventilatorry.ru/downloads/ebmpapst/datasheet/w3g710-go81-01-en-datasheet-ebmpapst.pdf
             'flow rate' : [0/cu.h2s, 6245/cu.h2s, 8330/cu.h2s, 10410/cu.h2s, 12610/cu.h2s], # [m3/s]
             'power' : [0, 100, 238, 465, 827], # [-]
@@ -1799,7 +1810,7 @@ class AirSourceHeatPump_cooling:
     def __post_init__(self):
         # fan
         self.fan_int = Fan().fan1
-        self.fan_ext = Fan().fan3
+        self.fan_ext = Fan().fan2
 
         # COP
         self.Q_r_max = 9000 # [W]
@@ -1808,8 +1819,8 @@ class AirSourceHeatPump_cooling:
         self.T0      = 32 # environmental temperature [°C]
         self.T_a_room = 20 # room air temperature [°C]
         
-        self.T_r_int     = self.T_a_room - 10 # internal unit refrigerant temperature [°C]
-        self.T_a_int_out = self.T_a_room - 5 # internal unit air outlet temperature [°C]
+        self.T_r_int     = self.T_a_room - 15 # internal unit refrigerant temperature [°C]
+        self.T_a_int_out = self.T_a_room - 10 # internal unit air outlet temperature [°C]
         
         self.T_a_ext_out = self.T0 + 10 # external unit air outlet temperature [°C]
         self.T_r_ext     = self.T0 + 15 # external unit refrigerant temperature [°C]
@@ -1845,6 +1856,9 @@ class AirSourceHeatPump_cooling:
         # fan power
         self.E_fan_int = Fan().get_power(self.fan_int, self.dV_int) # power input of internal unit fan [W]
         self.E_fan_ext = Fan().get_power(self.fan_ext, self.dV_ext) # power input of external unit fan [W]
+
+        # System COP
+        self.COP_sys = self.Q_r_int / (self.E_fan_int + self.E_fan_ext + self.E_cmp)
 
         # exergy result 
         self.X_a_int_in  = c_a * rho_a * self.dV_int * ((self.T_a_int_in - self.T0) - self.T0 * math.log(self.T_a_int_in / self.T0))
@@ -1930,7 +1944,7 @@ class AirSourceHeatPump_heating:
 
         # fan
         self.fan_int = Fan().fan1
-        self.fan_ext = Fan().fan3
+        self.fan_ext = Fan().fan2
 
         # COP
         self.Q_r_max = 9000 # maximum heating capacity [W]
@@ -1942,8 +1956,8 @@ class AirSourceHeatPump_heating:
         self.T_r_int = self.T_a_room + 15 # internal unit refrigerant temperature [°C]
         self.T_a_int_out = self.T_a_room + 10 # internal unit air outlet temperature [°C]
         
-        self.T_a_ext_out = self.T0 - 5 # external unit air outlet temperature [°C]
-        self.T_r_ext = self.T0 - 10 # external unit refrigerant temperature [°C]
+        self.T_a_ext_out = self.T0 - 10 # external unit air outlet temperature [°C]
+        self.T_r_ext = self.T0 - 15 # external unit refrigerant temperature [°C]
 
         # load
         self.Q_r_int = 6000 # [W]
@@ -1974,6 +1988,9 @@ class AirSourceHeatPump_heating:
         # fan power
         self.E_fan_int = Fan().get_power(self.fan_int, self.dV_int) # power input of internal unit fan [W]
         self.E_fan_ext = Fan().get_power(self.fan_ext, self.dV_ext) # power input of external unit fan [W]
+
+        # System COP
+        self.COP_sys = self.Q_r_int / (self.E_fan_int + self.E_fan_ext + self.E_cmp)
 
         # exergy result 
         self.X_a_int_in  = c_a * rho_a * self.dV_int * ((self.T_a_int_in - self.T0) - self.T0 * math.log(self.T_a_int_in / self.T0))
