@@ -8,4 +8,6 @@ Theoretical foundations of energy-exergy analysis.
    
    thermodynamics
    exergy-analysis
-   ashpb_model
+   ashp_boiler
+   gshp_boiler
+   hybrid_systems

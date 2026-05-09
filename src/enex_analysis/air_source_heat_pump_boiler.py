@@ -4,8 +4,11 @@ Resolves a vapour-compression refrigerant cycle coupled to an outdoor-air
 evaporator with a VSD fan and a lumped-capacitance hot-water tank.
 At each time step the model finds the minimum-power operating point
 (compressor + fan) via bounded 1-D optimisation (Brent's method) over
-the evaporator approach temperature difference.  The condenser approach
-temperature is determined analytically from the target heat load.
+the evaporator approach temperature difference.
+
+.. note::
+   수학적 모델링, 시스템 다이어그램 및 시뮬레이션 결과 등 상세 이론적 배경은
+   :doc:`/theory/ashp_boiler` 를 참조하세요.
 
 Optional subsystems (injected via constructor):
 - ``SolarThermalCollector`` — tank-circuit or mains-preheat placement
@@ -524,7 +527,7 @@ class AirSourceHeatPumpBoiler:
             result = None
             with contextlib.suppress(Exception):
                 result = self._calc_state(
-                    dT_ref_evap=opt_result.x,
+                    dT_ref_evap=float(getattr(opt_result, "x", 5.0)),
                     T_tank_w=T_tank_w,
                     T0=T0,
                     Q_ref_cond=Q_ref_cond,
@@ -565,16 +568,15 @@ class AirSourceHeatPumpBoiler:
                 result is not None
                 and isinstance(result, dict)
                 and "opt_result" in locals()
-                and hasattr(opt_result, "success")
             ):
-                result["converged"] = opt_result.success
+                result["converged"] = getattr(opt_result, "success", False)
 
-        if result is not None:
-            # Steady state doesn't have tank loss because we don't solve tank mass/energy balance
-            result["Q_tank_loss [W]"] = 0.0
-            result["tank_level [-]"] = 1.0  # steady-state: always_full
+        if result is None or not isinstance(result, dict):
+            raise RuntimeError("Simulation failed to produce a valid result dictionary.")
 
-
+        # Steady state doesn't have tank loss because we don't solve tank mass/energy balance
+        result["Q_tank_loss [W]"] = 0.0
+        result["tank_level [-]"] = 1.0  # steady-state: always_full
 
         if return_dict:
             return result
@@ -682,7 +684,7 @@ class AirSourceHeatPumpBoiler:
                 flow_state=flow_state,
             )
             hp_result = self._calc_state(
-                opt.x,
+                float(getattr(opt, "x", 5.0)),
                 T_tank_w,
                 Q_ref_cond,
                 ctx.T0,
@@ -1032,8 +1034,8 @@ class AirSourceHeatPumpBoiler:
                 T_tank_w_K=T_tank_w_K,
                 tank_level=tank_level,
                 dV_mix_w_out=self.dhw_flow_m3s[n],
-                I_DN=(I_DN_schedule[n] if _use_solar else 0.0),
-                I_dH=(I_dH_schedule[n] if _use_solar else 0.0),
+                I_DN=(I_DN_schedule[n] if _use_solar and I_DN_schedule is not None else 0.0),
+                I_dH=(I_dH_schedule[n] if _use_solar and I_dH_schedule is not None else 0.0),
                 T_sup_w_K=T_sup_w_K_n,
             )
 
@@ -1093,8 +1095,10 @@ class AirSourceHeatPumpBoiler:
 
             try:
                 res = root_scalar(residual_1d, bracket=[cu.C2K(0.0), cu.C2K(100.0)], method="brentq")
-                if res.converged and not np.isnan(res.root):
-                    T_tank_w_K = res.root
+                converged = getattr(res, "converged", False)
+                root_val = getattr(res, "root", np.nan)
+                if converged and not np.isnan(root_val):
+                    T_tank_w_K = float(root_val)
                     ier = 1
                 else:
                     raise ValueError(f"Not converged or NaN: {res}")

@@ -1,4 +1,4 @@
-from enex_analysis.air_source_heat_pump_ref_cycle import AirSourceHeatPump_cooling, AirSourceHeatPump_heating
+from enex_analysis.enex_engine import AirSourceHeatPump_cooling, AirSourceHeatPump_heating
 
 
 def simulate_ashp_step(args):

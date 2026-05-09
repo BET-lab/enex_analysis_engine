@@ -1,28 +1,14 @@
 Subsystems
 ==========
 
-Documentation for auxiliary subsystems such as Solar Arrays, Thermal Collectors, and UV Lamps.
+Documentation for auxiliary subsystems, tanks, and treatment units.
 
-PhotovoltaicSystem
-------------------
+.. autosummary::
+   :toctree: generated/
+   :recursive:
 
-.. autoclass:: enex_analysis.subsystems.PhotovoltaicSystem
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-SolarThermalCollector
----------------------
-
-.. autoclass:: enex_analysis.subsystems.SolarThermalCollector
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-UVLamp
-------
-
-.. autoclass:: enex_analysis.subsystems.UVLamp
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   enex_analysis.subsystems
+   enex_analysis.tank_stratification_model
+   enex_analysis.hx_fan
+   enex_analysis.uv_treatment
+   enex_analysis.g_function

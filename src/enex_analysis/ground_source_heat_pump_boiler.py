@@ -9,6 +9,10 @@ analytically.
 
 Borehole thermal response is tracked with pygfunction-based multi-borehole
 g-functions, enabling robust long-term ground temperature drift modeling.
+
+.. note::
+   수학적 모델링, 시스템 가정 및 성능 평가와 관련된 이론적 배경은
+   :doc:`/theory/gshp_boiler` 를 참조하세요.
 """
 
 from __future__ import annotations
@@ -340,7 +344,8 @@ class GroundSourceHeatPumpBoiler:
         T_tank_w_K = cu.C2K(T_tank_w)
 
         # The source temperature leaving BHE and entering HP
-        T_source_K = float(getattr(self, "T_bhe_f_out_K", cu.C2K(15.0)))
+        _t_bhe_f_out_k = getattr(self, "T_bhe_f_out_K", None)
+        T_source_K = float(_t_bhe_f_out_k) if _t_bhe_f_out_k is not None else cu.C2K(15.0)
 
         m_dot_cp_b = self.dV_b_f_m3s * rho_w * c_w
         T_evap_in_K = T_source_K + (self.E_pmp / m_dot_cp_b)

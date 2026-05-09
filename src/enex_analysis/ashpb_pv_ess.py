@@ -9,6 +9,9 @@ Energy routing (all logic lives here, subsystems are pure physics):
 3. Inverter conversion loss applied to DC supply
 4. Grid import covers any remaining AC shortfall
 
+.. note::
+   Theoretical overview, system boundaries, and orchestration logic for
+   hybrid systems are detailed in :doc:`/theory/hybrid_systems`.
 """
 
 from __future__ import annotations
