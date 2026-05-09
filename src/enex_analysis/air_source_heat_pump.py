@@ -51,7 +51,8 @@ class AirSourceHeatPump:
         # 1. Refrigerant / cycle / compressor -----------
         ref: str = "R32",
         V_disp_cmp: float = 0.0001,
-        eta_cmp_isen: float | Callable = 0.80,
+        eta_cmp_isen: float | Callable = 0.85,
+        eta_cmp_vol: float | Callable = 1.0,
         dT_superheat: float = 3.0,
         dT_subcool: float = 3.0,
         # 2. Heat exchanger UA ---------------------------
@@ -94,7 +95,8 @@ class AirSourceHeatPump:
         # --- 1. Refrigerant / cycle / compressor ---
         self.ref: str = ref
         self.V_disp_cmp: float = V_disp_cmp
-        self.eta_cmp_isen: float = eta_cmp_isen
+        self.eta_cmp_isen: float | Callable = eta_cmp_isen
+        self.eta_cmp_vol: float | Callable = eta_cmp_vol
         self.dT_superheat: float = dT_superheat
         self.dT_subcool: float = dT_subcool
         self.min_lift_K: float = 20
@@ -253,10 +255,20 @@ class AirSourceHeatPump:
         Q_ref_cond: float = m_dot_ref * (h_cmp_out - h_exp_in) if is_active else 0.0
         Q_ref_evap: float = m_dot_ref * (h_cmp_in - h_exp_out) if is_active else 0.0
         E_cmp: float = m_dot_ref * (h_cmp_out - h_cmp_in) if is_active else 0.0
-        cmp_rps: float = (
-            m_dot_ref / (self.V_disp_cmp * cycle_states["rho_ref_cmp_in [kg/m3]"])
-            if is_active else 0.0
-        )
+        
+        if is_active:
+            P_evap = cycle_states["P_ref_cmp_in [Pa]"]
+            P_cond = cycle_states["P_ref_cmp_out [Pa]"]
+            val_eta_cmp_vol = (
+                self.eta_cmp_vol(P_cond / P_evap)
+                if callable(self.eta_cmp_vol)
+                else self.eta_cmp_vol
+            )
+            cmp_rps: float = m_dot_ref / (
+                self.V_disp_cmp * cycle_states["rho_ref_cmp_in [kg/m3]"] * val_eta_cmp_vol
+            )
+        else:
+            cmp_rps = 0.0
 
         # Reject negative compressor power (unphysical)
         if is_active and E_cmp <= 0:
@@ -452,6 +464,8 @@ class AirSourceHeatPump:
         T_a_room: float | None = None,
         *,
         return_dict: bool = True,
+        postprocess: bool = True,
+        verbose: bool = True,
     ) -> dict | pd.DataFrame:
         """Run a steady-state performance snapshot.
 
@@ -465,6 +479,10 @@ class AirSourceHeatPump:
             Room air temperature [°C]. Uses constructor default if None.
         return_dict : bool
             If True return dict; else single-row DataFrame.
+        postprocess : bool
+            If True, apply postprocess_exergy to the output.
+        verbose : bool
+            If True, print warnings upon convergence failure.
 
         Returns
         -------
@@ -499,15 +517,16 @@ class AirSourceHeatPump:
                     T_a_room=T_a_room,
                 )
 
-            if result is None or not isinstance(result, dict):
-                warnings.warn(
-                    f"analyze_steady: optimization failed "
-                    f"(Q_r_iu={Q_r_iu:.0f}W, T0={T0:.1f}°C, "
-                    f"T_a_room={T_a_room:.1f}°C). "
-                    "Returning HP-off state.",
-                    RuntimeWarning,
-                    stacklevel=2,
-                )
+            if result is None or not result.get("converged", False):
+                if verbose:
+                    warnings.warn(
+                        f"analyze_steady: optimization or HX calculation failed "
+                        f"(Q_r_iu={Q_r_iu:.0f}W, T0={T0:.1f}°C, "
+                        f"T_a_room={T_a_room:.1f}°C). "
+                        "Returning HP-off state.",
+                        RuntimeWarning,
+                        stacklevel=2,
+                    )
                 result = self._calc_state(
                     dT_ref_evap=5.0,
                     dT_ref_cond=5.0,
@@ -517,18 +536,22 @@ class AirSourceHeatPump:
                 )
                 if result is not None:
                     result["converged"] = False
+            else:
+                # Both _calc_state valid and HX converged. Check opt success.
+                opt_success = getattr(opt_result, "success", False)
+                result["converged"] = opt_success and result.get("converged", True)
 
-            if (
-                result is not None
-                and isinstance(result, dict)
-                and "opt_result" in locals()
-                and hasattr(opt_result, "success")
-            ):
-                result["converged"] = opt_result.success
+        if result is None:
+            result = {}
+
+        if postprocess and result:
+            df_temp = pd.DataFrame([result])
+            df_temp = self.postprocess_exergy(df_temp)
+            result = df_temp.iloc[0].to_dict()
 
         if return_dict:
             return result
-        return pd.DataFrame([result])
+        return pd.DataFrame([result]) if result else pd.DataFrame()
 
     # =============================================================
     # Dynamic simulation
@@ -603,38 +626,15 @@ class AirSourceHeatPump:
             T0_n: float = T0_schedule[n]
             T_a_room_n: float = T_a_room_arr[n]
 
-            if Q_r_iu_n == 0:
-                hp_result = self._calc_state(
-                    dT_ref_evap=5.0,
-                    dT_ref_cond=5.0,
-                    Q_r_iu=0.0,
-                    T0=T0_n,
-                    T_a_room=T_a_room_n,
-                )
-            else:
-                opt = self._optimize_operation(
-                    Q_r_iu=Q_r_iu_n,
-                    T0=T0_n,
-                    T_a_room=T_a_room_n,
-                )
-                hp_result = self._calc_state(
-                    dT_ref_evap=opt.x[0],
-                    dT_ref_cond=opt.x[1],
-                    Q_r_iu=Q_r_iu_n,
-                    T0=T0_n,
-                    T_a_room=T_a_room_n,
-                )
-
-            if hp_result is None or not hp_result.get("converged", False):
-                hp_result = self._calc_state(
-                    dT_ref_evap=5.0,
-                    dT_ref_cond=5.0,
-                    Q_r_iu=0.0,
-                    T0=T0_n,
-                    T_a_room=T_a_room_n,
-                )
-                if hp_result is not None:
-                    hp_result["converged"] = False
+            # Use analyze_steady for robust calculation and fallback handling
+            hp_result = self.analyze_steady(
+                Q_r_iu=Q_r_iu_n,
+                T0=T0_n,
+                T_a_room=T_a_room_n,
+                return_dict=True,
+                postprocess=False,  # Exergy postprocessing applied in bulk at the end
+                verbose=False,      # Suppress warnings during long dynamic loops
+            )
 
             # Add time columns
             hp_result["time [s]"] = t_s
