@@ -11,7 +11,7 @@ Energy routing (all logic lives here, subsystems are pure physics):
 
 .. note::
    Theoretical overview, system boundaries, and orchestration logic for
-   hybrid systems are detailed in :doc:`/theory/hybrid_systems`.
+   hybrid systems are detailed in :doc:`/theory/systems/hybrid_systems`.
 """
 
 from __future__ import annotations

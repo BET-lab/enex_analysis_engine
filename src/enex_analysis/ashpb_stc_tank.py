@@ -9,7 +9,7 @@ with no dependency on ``step()``, ``assemble_results()``, or
 
 .. note::
    Theoretical overview, system boundaries, and orchestration logic for
-   hybrid systems are detailed in :doc:`/theory/hybrid_systems`.
+   hybrid systems are detailed in :doc:`/theory/systems/hybrid_systems`.
 
 Usage
 -----

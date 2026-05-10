@@ -1,18 +1,38 @@
-"""Ground source heat pump boiler — physics-based cycle model.
+"""Integrated System Model: Ground Source Heat Pump Boiler (GSHPB).
 
-Resolves a vapour-compression refrigerant cycle coupled to a borehole heat
-exchanger (BHE) on the evaporator side and a lumped-capacitance hot-water
-tank on the condenser side. At each time step the model finds the
-minimum-power operating point via 1D Brent optimization over the evaporator
-approach temperature difference, while the condenser temperature is solved
-analytically.
+This system class orchestrates the dynamic interaction between distinct thermodynamic
+sub-components to simulate the overall heating performance. While implemented as an
+integrated model, its physical calculations represent the behavior of:
 
-Borehole thermal response is tracked with pygfunction-based multi-borehole
-g-functions, enabling robust long-term ground temperature drift modeling.
+1. **Refrigerant Cycle (Vapor-Compression):**
+   Evaluates thermodynamic states using CoolProp, enforcing superheat/subcool margins.
+2. **Heat Pump Compressor:**
+   Models the compression process using isentropic and volumetric efficiencies to compute
+   the actual discharge enthalpy and mass flow rate. The compressor power is determined
+   from the enthalpy difference and the mass flow rate.
+3. **Expansion Valve:**
+   Modeled as an isenthalpic expansion device (constant enthalpy) that throttles the
+   refrigerant from the condensing pressure down to the evaporating pressure.
+4. **Heat Exchangers (Condenser & Evaporator):**
+
+   - **Condenser:** Placed inside the hot-water tank (hydronic), utilizing a static 
+     overall heat transfer coefficient (UA_cond_design).
+   - **Evaporator:** Coupled to a borehole heat exchanger (BHE) fluid loop, acting as
+     a secondary heat exchanger to absorb heat from the circulating ground fluid.
+5. **Thermal Storage Tank:**
+   Modeled with lumped-capacitance and DHW mixing logic.
+6. **Ground Source Heat Exchanger (Borefield):**
+   A dynamic multi-borehole simulation using pygfunction-based g-functions. It tracks 
+   the transient thermal response of the ground, enabling robust modeling of long-term 
+   ground temperature drift due to continuous heat extraction.
+
+At each time step the model finds the minimum-power operating point via 1D Brent
+optimization over the evaporator approach temperature difference, while the
+condenser temperature is solved analytically.
 
 .. note::
-   수학적 모델링, 시스템 가정 및 성능 평가와 관련된 이론적 배경은
-   :doc:`/theory/gshp_boiler` 를 참조하세요.
+   이 통합 시스템의 작동 원리와 개별 서브 컴포넌트 모델링에 대한 상세 이론적 배경은
+   :doc:`/theory/systems/gshp_boiler` 및 :doc:`/theory/components/index` 를 참조하세요.
 """
 
 from __future__ import annotations
@@ -118,6 +138,7 @@ class GroundSourceHeatPumpBoiler:
         # 10. Simulation scope (for precomputing g-functions)
         t_max_s: float = 8760 * 3600,
         dt_s: float = 3600,
+        boundary_condition: str = "uniform_temperature",
     ) -> None:
 
         self.tank_physical = {
@@ -180,13 +201,13 @@ class GroundSourceHeatPumpBoiler:
         self.dV_b_f_m3s = dV_b_f_lpm * cu.L2m3 / cu.m2s
 
         if R_b is None:
-            from .g_function import calc_borehole_thermal_resistance
+            from .g_function import calc_local_borehole_thermal_resistance, calc_effective_borehole_thermal_resistance
 
             n_boreholes = max(1, self.N_1 * self.N_2)
             m_flow_total = self.dV_b_f_m3s * rho_w
             m_flow_pipe = m_flow_total / n_boreholes
 
-            self.R_b = calc_borehole_thermal_resistance(
+            R_b_local, R_a = calc_local_borehole_thermal_resistance(
                 k_s=self.k_s,
                 k_g=k_g,
                 k_p=k_p,
@@ -199,6 +220,14 @@ class GroundSourceHeatPumpBoiler:
                 mu_f=mu_w,
                 cp_f=c_w,
                 k_f=k_w,
+            )
+            self.R_b = calc_effective_borehole_thermal_resistance(
+                R_b=R_b_local,
+                R_a=R_a,
+                H=self.H_b,
+                m_flow_pipe=m_flow_pipe,
+                cp_f=c_w,
+                boundary_condition=boundary_condition,
             )
         else:
             self.R_b = R_b

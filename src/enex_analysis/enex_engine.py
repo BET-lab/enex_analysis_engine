@@ -864,6 +864,7 @@ class GroundSourceHeatPump:
     # 7. Runtime Inputs (per-timestep)
     Q_r_iu: float = 0.0
     T0: float = 20.0
+    boundary_condition: str = "uniform_temperature"
 
     def __post_init__(self):
         # Initialize historical and temporal states
@@ -874,10 +875,14 @@ class GroundSourceHeatPump:
         # Calculate Effective Borehole Thermal Resistance R_b
         # Using water properties at approx 15-20 degC
         m_flow_pipe = (self.dV_f * cu.L2m3 * cu.s2m * rho_f) / 2.0 # Mass flow per pipe [kg/s]
-        self.R_b = gf.calc_borehole_thermal_resistance(
+        R_b_local, R_a = gf.calc_local_borehole_thermal_resistance(
             k_s=self.k_g, k_g=self.k_grout, k_p=self.k_p,
             r_b=self.r_b, r_out=self.r_out, r_in=self.r_in, D_s=self.D_s,
             m_flow_pipe=m_flow_pipe, rho_f=rho_f, mu_f=0.00114, cp_f=c_f, k_f=k_w
+        )
+        self.R_b = gf.calc_effective_borehole_thermal_resistance(
+            R_b=R_b_local, R_a=R_a, H=self.H_b, m_flow_pipe=m_flow_pipe,
+            cp_f=c_f, boundary_condition=self.boundary_condition
         )
 
         # Fan parameters (VSD model)

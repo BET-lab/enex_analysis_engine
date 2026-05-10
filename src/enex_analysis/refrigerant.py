@@ -116,9 +116,17 @@ def calc_ref_state(
         val_eta_cmp_isen = eta_cmp_isen
 
     h_ref_cmp_out = h_ref_cmp_in + (h2_isen - h_ref_cmp_in) / val_eta_cmp_isen
-    T_ref_cmp_out_K = CP.PropsSI("T", "P", P_cond, "H", h_ref_cmp_out, refrigerant)
+    try:
+        T_ref_cmp_out_K = CP.PropsSI("T", "P", P_cond, "H", h_ref_cmp_out, refrigerant)
+        s_ref_cmp_out = CP.PropsSI("S", "P", P_cond, "H", h_ref_cmp_out, refrigerant)
+    except ValueError:
+        # If H is too high, it exceeds Tmax of CoolProp (e.g. 652.5K for R32).
+        Tmax = CP.PropsSI("TMAX", "", 0, "", 0, refrigerant)
+        T_ref_cmp_out_K = Tmax - 1.0
+        h_ref_cmp_out = CP.PropsSI("H", "P", P_cond, "T", T_ref_cmp_out_K, refrigerant)
+        s_ref_cmp_out = CP.PropsSI("S", "P", P_cond, "T", T_ref_cmp_out_K, refrigerant)
+
     P_ref_cmp_out = P_cond
-    s_ref_cmp_out = CP.PropsSI("S", "P", P_cond, "H", h_ref_cmp_out, refrigerant)
 
     # 3.5단계: State 2* (응축기 포화 증기 도달 지점) 계산
     T_ref_cond_sat_v_K = T_ref_cond_sat_l_K

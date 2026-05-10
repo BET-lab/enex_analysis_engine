@@ -1,16 +1,36 @@
-"""Air source heat pump boiler — physics-based cycle model.
+"""Integrated System Model: Air Source Heat Pump Boiler (ASHPB).
 
-Resolves a vapour-compression refrigerant cycle coupled to an outdoor-air
-evaporator with a VSD fan and a lumped-capacitance hot-water tank.
-At each time step the model finds the minimum-power operating point
+This system class orchestrates the dynamic interaction between distinct thermodynamic
+sub-components to simulate the overall heating performance. While implemented as an
+integrated model, its physical calculations represent the behavior of:
+
+1. **Refrigerant Cycle (Vapor-Compression):**
+   Evaluates thermodynamic states using CoolProp, enforcing superheat/subcool margins.
+2. **Heat Pump Compressor:**
+   Models the compression process using isentropic and volumetric efficiencies to compute
+   the actual discharge enthalpy and mass flow rate. The compressor power is determined
+   from the enthalpy difference and the mass flow rate.
+3. **Expansion Valve:**
+   Modeled as an isenthalpic expansion device (constant enthalpy) that throttles the
+   refrigerant from the condensing pressure down to the evaporating pressure.
+4. **Heat Exchangers (Condenser & Evaporator):**
+
+   - **Condenser:** Placed inside the tank (hydronic), utilizing a static overall heat
+     transfer coefficient (UA_cond_design).
+   - **Evaporator:** Air-coupled outdoor unit, utilizing a dynamic overall heat transfer
+     coefficient (UA_evap) that scales non-linearly with fan airflow (Colburn j-factor analogy).
+5. **Thermal Storage Tank:**
+   Modeled with lumped-capacitance and DHW mixing logic.
+
+At each time step, the model finds the minimum-power operating point
 (compressor + fan) via bounded 1-D optimisation (Brent's method) over
 the evaporator approach temperature difference.
 
 .. note::
-   수학적 모델링, 시스템 다이어그램 및 시뮬레이션 결과 등 상세 이론적 배경은
-   :doc:`/theory/ashp_boiler` 를 참조하세요.
+   이 통합 시스템의 작동 원리와 개별 서브 컴포넌트 모델링에 대한 상세 이론적 배경은
+   :doc:`/theory/systems/ashp_boiler` 및 :doc:`/theory/components/index` 를 참조하세요.
 
-Optional subsystems (injected via constructor):
+Optional sub-components (injected via constructor):
 - ``SolarThermalCollector`` — tank-circuit or mains-preheat placement
 - (future) ``PVPanel`` — photovoltaic integration
 
@@ -69,8 +89,8 @@ class AirSourceHeatPumpBoiler:
         V_disp_cmp: float = 0.0002,
         eta_cmp_isen: float | Callable | None = None,
         eta_cmp_vol: float | Callable | None = None,
-        eta_cmp_motor: float = 0.9,
-        eta_cmp_inv: float = 0.95,
+        eta_cmp_motor: float | Callable = 0.9,
+        eta_cmp_inv: float | Callable = 0.95,
         dT_superheat: float = 5.0,
         dT_subcool: float = 5.0,
         # 2. Heat exchanger -----------------------------
@@ -139,8 +159,16 @@ class AirSourceHeatPumpBoiler:
         else:
             self.eta_cmp_vol = lambda r: 0.95 - 0.05 * r
 
-        self.eta_cmp_motor: float = eta_cmp_motor
-        self.eta_cmp_inv: float = eta_cmp_inv
+        self.eta_cmp_motor: float | Callable = eta_cmp_motor
+        self.eta_cmp_inv: float | Callable = eta_cmp_inv
+        
+        # Check callable signatures for motor efficiency if 2-variable function is used
+        self._eta_motor_args = 0
+        if callable(self.eta_cmp_motor):
+            import inspect
+            sig = inspect.signature(self.eta_cmp_motor)
+            self._eta_motor_args = len(sig.parameters)
+
         self.dT_superheat: float = dT_superheat
         self.dT_subcool: float = dT_subcool
         self.hp_capacity: float = hp_capacity
@@ -314,8 +342,19 @@ class AirSourceHeatPumpBoiler:
         )
         Q_ref_cond_calc: float = m_dot_ref * (cs["h_ref_cmp_out [J/kg]"] - cs["h_ref_exp_in [J/kg]"]) if is_active else 0.0
         Q_ref_evap: float = m_dot_ref * (cs["h_ref_cmp_in [J/kg]"] - cs["h_ref_exp_out [J/kg]"]) if is_active else 0.0
-        E_cmp: float = (m_dot_ref * (cs["h_ref_cmp_out [J/kg]"] - cs["h_ref_cmp_in [J/kg]"]) / (self.eta_cmp_motor * self.eta_cmp_inv)) if is_active else 0.0
         cmp_rps: float = (m_dot_ref / (self.V_disp_cmp * cs["rho_ref_cmp_in [kg/m3]"] * eta_vol_val)) if is_active else 0.0
+
+        if callable(self.eta_cmp_motor):
+            if self._eta_motor_args == 2:
+                eta_motor_val = self.eta_cmp_motor(ratio_P_cmp, cmp_rps)
+            else:
+                eta_motor_val = self.eta_cmp_motor(ratio_P_cmp)
+        else:
+            eta_motor_val = self.eta_cmp_motor
+            
+        eta_inv_val = self.eta_cmp_inv(ratio_P_cmp) if callable(self.eta_cmp_inv) else self.eta_cmp_inv
+
+        E_cmp: float = (m_dot_ref * (cs["h_ref_cmp_out [J/kg]"] - cs["h_ref_cmp_in [J/kg]"]) / (eta_motor_val * eta_inv_val)) if is_active else 0.0
 
         HX_perf_ou: dict = calc_HX_perf_for_target_heat(
             Q_ref_target=(Q_ref_evap if is_active else 0.0),

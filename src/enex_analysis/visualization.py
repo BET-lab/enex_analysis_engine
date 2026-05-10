@@ -1,8 +1,8 @@
-from functools import lru_cache
-
 """
 Visualization and summary output functions.
 """
+
+from functools import lru_cache
 
 import CoolProp.CoolProp as CP
 import dartwork_mpl as dm
@@ -322,14 +322,49 @@ def _draw_cycle_lines_and_annotations(
 def _get_saturation_curves(refrigerant: str):
     T_min = CP.PropsSI("Tmin", refrigerant)
     T_crit = CP.PropsSI("Tcrit", refrigerant)
-    temps_K = np.linspace(T_min + 1, T_crit, 2000)
+    temps_K = np.linspace(T_min + 1, T_crit - 0.5, 10000)
     temps = [cu.K2C(T) for T in temps_K]
     h_liq = [CP.PropsSI("H", "T", T, "Q", 0, refrigerant) / 1000 for T in temps_K]
     h_vap = [CP.PropsSI("H", "T", T, "Q", 1, refrigerant) / 1000 for T in temps_K]
     p_sat = [CP.PropsSI("P", "T", T, "Q", 0, refrigerant) / 1000 for T in temps_K]
     s_liq = [CP.PropsSI("S", "T", T, "Q", 0, refrigerant) / 1000 for T in temps_K]
     s_vap = [CP.PropsSI("S", "T", T, "Q", 1, refrigerant) / 1000 for T in temps_K]
+    try:
+        h_crit = CP.PropsSI("H", "T", T_crit, "Q", 0, refrigerant) / 1000
+        p_crit = CP.PropsSI("P", "T", T_crit, "Q", 0, refrigerant) / 1000
+        s_crit = CP.PropsSI("S", "T", T_crit, "Q", 0, refrigerant) / 1000
+        temps.append(cu.K2C(T_crit))
+        h_liq.append(h_crit)
+        h_vap.append(h_crit)
+        p_sat.append(p_crit)
+        s_liq.append(s_crit)
+        s_vap.append(s_crit)
+    except Exception:
+        pass
     return temps, h_liq, h_vap, p_sat, s_liq, s_vap
+
+REF_LIMITS = {
+    "R410A": {
+        "th": {"xmin": 0, "xmax": 700, "ymin": -40, "ymax": 140},
+        "ph": {"xmin": 0, "xmax": 700, "ymin": 100, "ymax": 10000},
+        "ts": {"xmin": 0.0, "xmax": 3.0, "ymin": -40, "ymax": 140},
+    },
+    "R134a": {
+        "th": {"xmin": 0, "xmax": 600, "ymin": -40, "ymax": 120},
+        "ph": {"xmin": 0, "xmax": 600, "ymin": 100, "ymax": 10000},
+        "ts": {"xmin": 0.0, "xmax": 2.5, "ymin": -40, "ymax": 120},
+    },
+    "R32": {
+        "th": {"xmin": 0, "xmax": 800, "ymin": -40, "ymax": 200},
+        "ph": {"xmin": 0, "xmax": 800, "ymin": 100, "ymax": 10000},
+        "ts": {"xmin": 0.0, "xmax": 3.0, "ymin": -40, "ymax": 200},
+    },
+    "R290": {
+        "th": {"xmin": 0, "xmax": 850, "ymin": -40, "ymax": 140},
+        "ph": {"xmin": 0, "xmax": 850, "ymin": 100, "ymax": 10000},
+        "ts": {"xmin": 0.0, "xmax": 3.0, "ymin": -40, "ymax": 140},
+    }
+}
 
 
 def plot_th_diagram(
@@ -343,7 +378,7 @@ def plot_th_diagram(
 ) -> None:
     """Plot T-h diagram on given axis."""
     color1, color2, color3, color4, line_color = "oc.blue5", "oc.red5", "black", "oc.gray6", "oc.gray5"
-    xmin, xmax, ymin, ymax = 0, 600, -40, 120
+    limits = REF_LIMITS.get(refrigerant, {"th": {"xmin": 200, "xmax": 750, "ymin": -40, "ymax": 160}})["th"]
 
     temps, h_liq, h_vap, _, _, _ = _get_saturation_curves(refrigerant)
 
@@ -372,7 +407,7 @@ def plot_th_diagram(
 
     pts_x = {"1_star": h1_star, "1": h1, "2": h2, "2_star": h2_star, "3_star": h3_star, "3": h3, "4": h4}
     pts_y = {"1_star": T1_star, "1": T1, "2": T2, "2_star": T2_star, "3_star": T3_star, "3": T3, "4": T4}
-    is_on = result.get("hp_is_on", result.get("is_on", False))
+    is_on = bool(result.get("hp_is_on", result.get("is_on", False)))
     # T-h 다이어그램: x축=엔탈피[kJ/kg], y축=온도[°C]
     # 두 축의 단위가 달라 tol_y_atol을 별도로 지정:
     # - h 기준(tol_atol): 0.5 kJ/kg → 포화 구간 좁은 엔탈피 차 허용
@@ -425,8 +460,12 @@ def plot_th_diagram(
 
     ax.set_xlabel("Enthalpy [kJ/kg]")
     ax.set_ylabel("Temperature [°C]")
-    ax.set_xlim(xmin, xmax)
-    ax.set_ylim(ymin, ymax)
+    ax.set_xlim(limits["xmin"], limits["xmax"])
+    ax.set_ylim(limits["ymin"], limits["ymax"])
+
+    import matplotlib.ticker as ticker
+    if refrigerant == "R32":
+        ax.yaxis.set_major_locator(ticker.MultipleLocator(40))
 
     legend_handles = [
         ax.plot([], [], color=color1, linewidth=dm.lw(0), label="Sat. liquid")[0],
@@ -465,7 +504,7 @@ def plot_ph_diagram(
 ) -> None:
     """Plot P-h diagram on given axis."""
     color1, color2, color3, color4, line_color = "oc.blue5", "oc.red5", "black", "oc.gray6", "oc.gray4"
-    xmin, xmax, ymin, ymax = 0, 600, 100, 10**4
+    limits = REF_LIMITS.get(refrigerant, {"ph": {"xmin": 200, "xmax": 750, "ymin": 100, "ymax": 10000}})["ph"]
 
     temps, h_liq, h_vap, _, _, _ = _get_saturation_curves(refrigerant)
     p_sat = [CP.PropsSI("P", "T", cu.C2K(T), "Q", 0, refrigerant) / 1000 for T in temps]
@@ -497,12 +536,12 @@ def plot_ph_diagram(
     pts_x = {"1_star": h1_star, "1": h1, "2": h2, "2_star": h2_star, "3_star": h3_star, "3": h3, "4": h4}
     pts_y = {"1_star": P1_star, "1": P1, "2": P2, "2_star": P2_star, "3_star": P3_star, "3": P3, "4": P4}
     is_on = result.get("hp_is_on", result.get("is_on", False))
-    _draw_cycle_lines_and_annotations(ax, pts_x, pts_y, is_on, color1, color2, line_color, color3, color4, tol_atol=0.1)
+    _draw_cycle_lines_and_annotations(ax, pts_x, pts_y, is_on, color1, color2, line_color, color3, color4, tol_atol=0.5, tol_y_atol=None)
 
     ax.set_xlabel("Enthalpy [kJ/kg]")
     ax.set_ylabel("Pressure [kPa]")
-    ax.set_xlim(xmin, xmax)
-    ax.set_ylim(ymin, ymax)
+    ax.set_xlim(limits["xmin"], limits["xmax"])
+    ax.set_ylim(limits["ymin"], limits["ymax"])
     ax.set_yscale("log")
 
     legend_handles = [
@@ -542,7 +581,7 @@ def plot_ts_diagram(
 ) -> None:
     """Plot T-s diagram on given axis with super heating/cooling considered."""
     color1, color2, color3, color4, line_color = "oc.blue5", "oc.red5", "black", "oc.gray6", "oc.gray5"
-    xmin, xmax, ymin, ymax = 0, 2.0, -40, 120
+    limits = REF_LIMITS.get(refrigerant, {"ts": {"xmin": 1.0, "xmax": 3.0, "ymin": -40, "ymax": 160}})["ts"]
 
     temps, _, _, _, s_liq, s_vap = _get_saturation_curves(refrigerant)
 
@@ -574,7 +613,7 @@ def plot_ts_diagram(
     pts_y = {"1_star": T1_star, "1": T1, "2": T2, "2_star": T2_star, "3_star": T3_star, "3": T3, "4": T4}
     is_on = result.get("hp_is_on", result.get("is_on", False))
     _draw_cycle_lines_and_annotations(
-        ax, pts_x, pts_y, is_on, color1, color2, line_color, color3, color4, tol_atol=0.05
+        ax, pts_x, pts_y, is_on, color1, color2, line_color, color3, color4, tol_atol=0.05, tol_y_atol=0.5
     )
 
     trans = ax.get_yaxis_transform()
@@ -619,8 +658,13 @@ def plot_ts_diagram(
 
     ax.set_xlabel("Entropy [kJ/(kg·K)]")
     ax.set_ylabel("Temperature [°C]")
-    ax.set_xlim(xmin, xmax)
-    ax.set_ylim(ymin, ymax)
+    ax.set_xlim(limits["xmin"], limits["xmax"])
+    ax.set_ylim(limits["ymin"], limits["ymax"])
+
+    import matplotlib.ticker as ticker
+    ax.xaxis.set_major_locator(ticker.MultipleLocator(0.5))
+    if refrigerant == "R32":
+        ax.yaxis.set_major_locator(ticker.MultipleLocator(40))
 
     legend_handles = [
         ax.plot([], [], color=color1, linewidth=dm.lw(0), label="Sat. liquid")[0],

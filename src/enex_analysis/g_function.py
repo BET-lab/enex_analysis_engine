@@ -398,7 +398,7 @@ def air_prandtl_number(T_K):
     return 0.71
 
 
-def calc_borehole_thermal_resistance(
+def calc_local_borehole_thermal_resistance(
     k_s: float,
     k_g: float,
     k_p: float,
@@ -411,8 +411,8 @@ def calc_borehole_thermal_resistance(
     mu_f: float,
     cp_f: float,
     k_f: float,
-) -> float:
-    """Calculate the local borehole thermal resistance [mK/W] using pygfunction multipole method.
+) -> tuple[float, float]:
+    """Calculate the local borehole thermal resistance and internal thermal resistance [mK/W] using pygfunction multipole method.
 
     Assumes a Single U-tube configuration.
 
@@ -445,8 +445,10 @@ def calc_borehole_thermal_resistance(
 
     Returns
     -------
-    float
-        Local borehole thermal resistance [mK/W].
+    tuple[float, float]
+        (R_b, R_a)
+        R_b: Local borehole thermal resistance [mK/W].
+        R_a: Internal thermal resistance between the two pipes [mK/W].
     """
     if not HAS_PYGFUNCTION:
         raise ImportError("pygfunction is not installed.")
@@ -476,7 +478,62 @@ def calc_borehole_thermal_resistance(
     # Create Single U-tube
     pipe = gt.pipes.SingleUTube(pos, r_in, r_out, borehole, k_s, k_g, R_fp)
 
-    return pipe.local_borehole_thermal_resistance()
+    R_b = pipe.local_borehole_thermal_resistance()
+    # In pygfunction, _Rd is the delta-circuit thermal resistance matrix
+    # The resistance between the two pipes (node 0 and node 1) is _Rd[0, 1]
+    R_a = pipe._Rd[0, 1]
+
+    return R_b, R_a
+
+
+def calc_effective_borehole_thermal_resistance(
+    R_b: float,
+    R_a: float,
+    H: float,
+    m_flow_pipe: float,
+    cp_f: float,
+    boundary_condition: str = "uniform_temperature",
+) -> float:
+    """Calculate the effective borehole thermal resistance [mK/W].
+
+    Parameters
+    ----------
+    R_b : float
+        Local borehole thermal resistance [mK/W]
+    R_a : float
+        Internal thermal resistance between the two pipes [mK/W]
+    H : float
+        Borehole depth [m]
+    m_flow_pipe : float
+        Mass flow rate per pipe [kg/s]
+    cp_f : float
+        Fluid specific heat capacity [J/kgK]
+    boundary_condition : str
+        Boundary condition for the calculation.
+        Options: 'uniform_temperature' or 'uniform_heat_flux'.
+
+    Returns
+    -------
+    float
+        Effective borehole thermal resistance [mK/W].
+    """
+    if m_flow_pipe <= 0:
+        return R_b
+
+    if boundary_condition == "uniform_temperature":
+        # Hellström (1991) analytical solution for uniform borehole wall temperature
+        eta = (H / (m_flow_pipe * cp_f)) * np.sqrt(1.0 / (2.0 * R_b)**2 + 1.0 / (R_b * R_a))
+        if eta < 1e-6:
+            return R_b
+        return R_b * eta / np.tanh(eta)
+
+    elif boundary_condition == "uniform_heat_flux":
+        # Hellström approximation for uniform heat flux
+        # R_b* = R_b + H^2 / (3 * R_a * (2 * m_flow * cp)^2)
+        return R_b + (H**2) / (3.0 * R_a * (2.0 * m_flow_pipe * cp_f)**2)
+
+    else:
+        raise ValueError("boundary_condition must be 'uniform_temperature' or 'uniform_heat_flux'")
 
 
 def calc_submerged_coil_thermal_resistance(
