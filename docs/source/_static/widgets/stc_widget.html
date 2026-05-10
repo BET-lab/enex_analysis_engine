@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STC Interactive Widget</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 15px;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+        .widget-container {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        .header h3 {
+            margin: 0;
+            color: #007bff;
+        }
+        .control-group {
+            margin-bottom: 15px;
+        }
+        .control-group label {
+            display: flex;
+            justify-content: space-between;
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+        input[type=range] {
+            width: 100%;
+            margin-top: 5px;
+        }
+        .result-box {
+            margin-top: 25px;
+            padding: 15px;
+            background-color: #e9ecef;
+            border-radius: 6px;
+            text-align: center;
+            border-left: 5px solid #28a745;
+        }
+        .result-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #28a745;
+            margin: 10px 0;
+        }
+        .details {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 10px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+
+<div class="widget-container">
+    <div class="header">
+        <h3>Solar Thermal Collector (STC) Simulator</h3>
+        <p style="margin: 5px 0 0 0; font-size: 0.9em; color: #555;">Adjust parameters to see the dynamic outlet temperature.</p>
+    </div>
+
+    <div class="control-group">
+        <label>Solar Irradiance (I_sol) <span id="val-irrad">800 W/m²</span></label>
+        <input type="range" id="in-irrad" min="0" max="1200" step="10" value="800">
+    </div>
+
+    <div class="control-group">
+        <label>Collector Area (A_stc) <span id="val-area">2.0 m²</span></label>
+        <input type="range" id="in-area" min="1" max="10" step="0.5" value="2.0">
+    </div>
+
+    <div class="control-group">
+        <label>Water Flow Rate <span id="val-flow">5.0 LPM</span></label>
+        <input type="range" id="in-flow" min="0.5" max="20" step="0.5" value="5.0">
+    </div>
+
+    <div class="control-group">
+        <label>Inlet Temp (T_in) <span id="val-tin">20.0 °C</span></label>
+        <input type="range" id="in-tin" min="5" max="80" step="1" value="20">
+    </div>
+
+    <div class="control-group">
+        <label>Ambient Temp (T_0) <span id="val-t0">15.0 °C</span></label>
+        <input type="range" id="in-t0" min="-10" max="40" step="1" value="15">
+    </div>
+
+    <div class="result-box">
+        <div>Estimated Outlet Temperature (T_out)</div>
+        <div class="result-value" id="out-temp">-- °C</div>
+        <div class="details" id="out-details">
+            Heat Absorbed: -- W <br>
+            Efficiency: -- %
+        </div>
+    </div>
+</div>
+
+<script>
+    // Constants
+    const c_w = 4184; // J/kgK
+    const rho_w = 1000; // kg/m3
+    const alpha = 0.95; // Absorptivity
+    const U_val = 4.0; // W/m2K (overall heat loss coeff approx)
+
+    function updatePhysics() {
+        // Read inputs
+        const I_sol = parseFloat(document.getElementById('in-irrad').value);
+        const A_stc = parseFloat(document.getElementById('in-area').value);
+        const flow_lpm = parseFloat(document.getElementById('in-flow').value);
+        const T_in = parseFloat(document.getElementById('in-tin').value);
+        const T_0 = parseFloat(document.getElementById('in-t0').value);
+
+        // Update labels
+        document.getElementById('val-irrad').innerText = I_sol + ' W/m²';
+        document.getElementById('val-area').innerText = A_stc.toFixed(1) + ' m²';
+        document.getElementById('val-flow').innerText = flow_lpm.toFixed(1) + ' LPM';
+        document.getElementById('val-tin').innerText = T_in.toFixed(1) + ' °C';
+        document.getElementById('val-t0').innerText = T_0.toFixed(1) + ' °C';
+
+        // Math
+        const dV_m3s = flow_lpm / 60000.0;
+        const G = c_w * rho_w * dV_m3s;
+        const AU = A_stc * U_val;
+        const Q_sol = I_sol * A_stc * alpha;
+
+        let T_out = T_in;
+        let Q_useful = 0;
+        let efficiency = 0;
+
+        if (G > 0) {
+            const ksi = Math.exp(-AU / G);
+            // Analytic solution
+            T_out = ksi * T_in + (1 - ksi) * T_0 + (1 - ksi) * Q_sol / AU;
+            Q_useful = G * (T_out - T_in);
+            if (I_sol > 0) {
+                efficiency = (Q_useful / (I_sol * A_stc)) * 100;
+                efficiency = Math.max(0, efficiency); // Can be negative if heat loss > absorbed
+            }
+        }
+
+        // Render
+        document.getElementById('out-temp').innerText = T_out.toFixed(2) + ' °C';
+        document.getElementById('out-details').innerHTML = 
+            'Useful Heat (Q_out): ' + Q_useful.toFixed(0) + ' W <br>' +
+            'Absorbed Solar (Q_sol): ' + Q_sol.toFixed(0) + ' W <br>' +
+            'Thermal Efficiency: ' + (I_sol > 0 ? efficiency.toFixed(1) : 0) + ' %';
+    }
+
+    // Attach listeners
+    const inputs = document.querySelectorAll('input[type=range]');
+    inputs.forEach(input => {
+        input.addEventListener('input', updatePhysics);
+    });
+
+    // Initial render
+    updatePhysics();
+</script>
+
+</body>
+</html>

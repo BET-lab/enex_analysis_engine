@@ -25,12 +25,6 @@ This Python library enables simultaneous energy (first-law) and exergy (second-l
 
         Comprehensive guides and tutorials for using the library.
 
-    .. grid-item-card:: 💡 Examples
-        :link: examples/index
-        :link-type: doc
-
-        Practical examples demonstrating real-world applications.
-
     .. grid-item-card:: 🔧 API Reference
         :link: api/index
         :link-type: doc

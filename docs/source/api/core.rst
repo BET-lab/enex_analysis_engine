@@ -34,3 +34,8 @@ Core Functions
    enex_analysis.enex_functions
    enex_analysis.dynamic_context
    enex_analysis.simulation_runner
+
+.. toctree::
+   :hidden:
+
+   generated/enex_analysis.simulation_runner

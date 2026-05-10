@@ -11,13 +11,14 @@ System Overview
 The energy-exergy analysis engine supports various hybrid combinations that integrate renewable energy subsystems with the base air-source and ground-source heat pump boilers. These hybrid configurations aim to enhance the overall system Coefficient of Performance (COP) and reduce the thermodynamic irrationality associated with utilizing high-grade energy for low-grade heating demands.
 
 Currently, the engine provides comprehensive modeling for two major classes of renewable subsystems:
-1. **Solar Thermal Collectors (STC)**
-2. **Photovoltaic Arrays with Energy Storage Systems (PV + ESS)**
 
-Solar Thermal Collector (STC) Integrations
-------------------------------------------
+1. **Solar Thermal Collectors (STC)**: See :doc:`../components/solar_thermal`.
+2. **Photovoltaic Arrays with Energy Storage Systems (PV + ESS)**: See :doc:`../components/pv_ess`.
 
-Solar Thermal Collectors (STCs) directly capture solar irradiance to provide thermal energy. The integration topology of the STC relative to the main storage tank significantly impacts the system's exergy efficiency and activation dynamics.
+STC Integration Topologies
+--------------------------
+
+The integration topology of the STC relative to the main storage tank significantly impacts the system's exergy efficiency and activation dynamics.
 
 Tank-Circuit Placement (``_stc_tank``)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -37,26 +38,7 @@ In the mains-preheat configuration, the STC is placed on the cold water supply l
 - **Activation Logic:** The STC operates whenever there is sufficient solar irradiance and a DHW draw event occurs (which triggers makeup water flow).
 - **Exergy Boundary:** The preheated water enters the main tank at a higher exergy level than the mains water, effectively reducing the necessary heat load on the heat pump's condenser.
 
-Photovoltaic and Energy Storage Systems (PV + ESS)
---------------------------------------------------
+PV+ESS Integration Logic
+------------------------
 
-PV systems generate electricity from solar irradiance, while ESS (batteries) allow for temporal shifting of this generated power.
-
-- **Operation:** The PV array generates DC electricity which is inverted to AC to offset the electrical demand of the heat pump compressor, outdoor unit fans, and circulation pumps.
-- **Energy Storage:** Excess PV generation (when PV output exceeds the HP demand) is stored in the ESS up to its maximum capacity. Conversely, when the HP demand exceeds PV generation, the ESS discharges to cover the deficit.
-- **Grid Interaction:** If the combined PV generation and ESS discharge cannot meet the HP demand, the remaining power is drawn from the grid. If the PV generation exceeds both the HP demand and the ESS charging capacity, the excess is curtailed or exported.
-
-Mathematical Resolution
------------------------
-
-In all hybrid configurations, the orchestration of the sub-systems is performed implicitly during the 1-minute time step resolution:
-
-.. math::
-
-   C_\text{tank} \frac{dT_\text{w,tank}}{dt} = Q_\text{HP} + Q_\text{STC} + Q_\text{flow} - Q_\text{loss}
-
-For the PV+ESS module, the electrical balance is evaluated after the thermodynamic cycle optimization:
-
-.. math::
-
-   E_\text{grid} = E_\text{tot} - E_\text{PV,used} - E_\text{ESS,discharge}
+In PV+ESS hybrid models, the system dynamically balances the heat pump's electrical load against the available PV generation and ESS charge status. The complete logic is integrated at each 1-minute time step to determine the final grid dependency (:math:`E_\text{grid}`).

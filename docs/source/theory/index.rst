@@ -1,13 +1,11 @@
-Theory & Background
-===================
+Systems
+=======
 
-Theoretical foundations of energy-exergy analysis.
+Documentation for system models and components.
 
 .. toctree::
    :maxdepth: 2
    
-   thermodynamics
-   exergy-analysis
-   ashp_boiler
-   gshp_boiler
-   hybrid_systems
+   components/index
+   systems/index
+   scenarios/index
