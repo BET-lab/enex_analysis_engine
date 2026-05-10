@@ -516,13 +516,24 @@ def calc_effective_borehole_thermal_resistance(
     -------
     float
         Effective borehole thermal resistance [mK/W].
+
+    References
+    ----------
+    .. [1] Hellström, G. (1991). Ground Heat Storage: Thermal Analyses of Duct Storage Systems
+           (Ph.D. thesis). University of Lund, Sweden.
+    .. [2] Lamarche, L., Kajl, S., & Beauchamp, B. (2010). A review of methods to evaluate
+           borehole thermal resistances in geothermal heat-pump systems. Geothermics, 39(2), 187-200.
+           DOI: 10.1016/j.geothermics.2010.03.003
+    .. [3] Javed, S., & Spitler, J. D. (2016). Accuracy of borehole thermal resistance
+           calculation methods for grouted single U-tube ground heat exchangers.
+           Applied Energy, 182, 161-176. DOI: 10.1016/j.apenergy.2016.08.054
     """
     if m_flow_pipe <= 0:
         return R_b
 
     if boundary_condition == "uniform_temperature":
         # Hellström (1991) analytical solution for uniform borehole wall temperature
-        eta = (H / (m_flow_pipe * cp_f)) * np.sqrt(1.0 / (2.0 * R_b)**2 + 1.0 / (R_b * R_a))
+        eta = (H / (m_flow_pipe * cp_f)) * (1.0 / (2.0 * R_b)) * np.sqrt(1.0 + (4.0 * R_b) / R_a)
         if eta < 1e-6:
             return R_b
         return R_b * eta / np.tanh(eta)
