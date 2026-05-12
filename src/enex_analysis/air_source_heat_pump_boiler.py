@@ -320,6 +320,84 @@ class AirSourceHeatPumpBoiler:
 
         is_active: bool = Q_ref_cond > 0.0
 
+        if not is_active:
+            # Flow state (explicit parameter, no side-effect reads)
+            dV_tank_w_out: float = flow_state["dV_tank_w_out [m3/s]"]
+            dV_tank_w_in: float = flow_state["dV_tank_w_in [m3/s]"]
+            dV_mix_sup_w_in: float = flow_state["dV_mix_sup_w_in [m3/s]"]
+            dV_mix_w_out_val: float = flow_state["dV_mix_w_out [m3/s]"]
+
+            if dV_mix_w_out_val == 0:
+                T_mix_w_out_val: float = np.nan
+                T_mix_w_out_val_K: float = np.nan
+            else:
+                mix: dict = calc_mixing_valve_temp(
+                    T_tank_w_K,
+                    self.T_sup_w_K,
+                    self.T_mix_w_out_K,
+                )
+                T_mix_w_out_val = mix["T_mix_w_out"]
+                T_mix_w_out_val_K = mix["T_mix_w_out_K"]
+
+            # Energy balance: Q_tank_w_in + Q_ref_cond = Q_tank_w_out + Q_tank_loss + dU_tank/dt
+            Q_tank_w_in: float = calc_energy_flow(G=c_w * rho_w * dV_tank_w_in, T=self.T_tank_w_in_K, T0=T0_K)
+            Q_tank_w_out: float = calc_energy_flow(G=c_w * rho_w * dV_tank_w_out, T=T_tank_w_K, T0=T0_K)
+            Q_mix_sup_w_in: float = calc_energy_flow(G=c_w * rho_w * dV_mix_sup_w_in, T=self.T_sup_w_K, T0=T0_K)
+            Q_mix_w_out: float = calc_energy_flow(G=c_w * rho_w * dV_mix_w_out_val, T=T_mix_w_out_val_K, T0=T0_K)
+
+            cs: dict = calc_ref_state(
+                T_evap_K=T_evap_sat_K,
+                T_cond_K=T_cond_sat_K,
+                refrigerant=self.ref,
+                eta_cmp_isen=self.eta_cmp_isen,
+                mode="heating",
+                dT_superheat=self.dT_superheat,
+                dT_subcool=0.0,
+                is_active=False,
+            )
+            
+            result: dict = cs.copy()
+            result.update(
+                {
+                    "hp_is_on": False,
+                    "converged": True,
+                    # Temperatures [°C]
+                    "T_ou_a_in [°C]": T0,
+                    "T_ou_a_mid [°C]": T0,
+                    "T_ou_a_out [°C]": T0,
+                    "T_tank_w [°C]": T_tank_w,
+                    "T_sup_w [°C]": self.T_sup_w,
+                    "T_tank_w_in [°C]": self.T_tank_w_in,
+                    "T_mix_w_out [°C]": T_mix_w_out_val,
+                    "T0 [°C]": T0,
+                    # Volume flow rates [m3/s]
+                    "dV_ou_a [m3/s]": 0.0,
+                    "v_ou_a [m/s]": 0.0,
+                    "dV_mix_w_out [m3/s]": (dV_mix_w_out_val if dV_mix_w_out_val > 0 else np.nan),
+                    "dV_tank_w_out [m3/s]": (dV_tank_w_out if dV_tank_w_out > 0 else np.nan),
+                    "dV_tank_w_in [m3/s]": (dV_tank_w_in if dV_tank_w_in > 0 else np.nan),
+                    "dV_mix_sup_w_in [m3/s]": (dV_mix_sup_w_in if dV_mix_sup_w_in > 0 else np.nan),
+                    "m_dot_ref [kg/s]": 0.0,
+                    "cmp_rpm [rpm]": 0.0,
+                    # Energy rates [W]
+                    "E_ou_fan [W]": 0.0,
+                    "Q_ref_evap [W]": 0.0,
+                    "Q_ou_a [W]": 0.0,
+                    "E_cmp [W]": 0.0,
+                    "Q_ref_cond [W]": 0.0,
+                    "Q_tank_w_in [W]": Q_tank_w_in,
+                    "Q_tank_w_out [W]": Q_tank_w_out,
+                    "Q_mix_sup_w_in [W]": Q_mix_sup_w_in,
+                    "Q_mix_w_out [W]": Q_mix_w_out,
+                    "E_tot [W]": 0.0,
+                    # COP metrics
+                    "cop_ref [-]": np.nan,
+                    "cop_sys [-]": np.nan,
+                }
+            )
+            return result
+
+        # --- Active state calculations ---
         pinch_min: float = 0.5
         actual_dT_subcool: float = min(self.dT_subcool, max(0.0, dT_ref_cond - pinch_min))
 
@@ -331,18 +409,16 @@ class AirSourceHeatPumpBoiler:
             mode="heating",
             dT_superheat=self.dT_superheat,
             dT_subcool=actual_dT_subcool,
-            is_active=is_active,
+            is_active=True,
         )
 
-        ratio_P_cmp = cs["P_ref_cmp_out [Pa]"] / cs["P_ref_cmp_in [Pa]"] if is_active and cs["P_ref_cmp_in [Pa]"] > 0 else 1.0
+        ratio_P_cmp = cs["P_ref_cmp_out [Pa]"] / cs["P_ref_cmp_in [Pa]"] if cs["P_ref_cmp_in [Pa]"] > 0 else 1.0
         eta_vol_val = self.eta_cmp_vol(ratio_P_cmp) if callable(self.eta_cmp_vol) else self.eta_cmp_vol
 
-        m_dot_ref: float = (
-            Q_ref_cond / (cs["h_ref_cmp_out [J/kg]"] - cs["h_ref_exp_in [J/kg]"]) if is_active else 0.0
-        )
-        Q_ref_cond_calc: float = m_dot_ref * (cs["h_ref_cmp_out [J/kg]"] - cs["h_ref_exp_in [J/kg]"]) if is_active else 0.0
-        Q_ref_evap: float = m_dot_ref * (cs["h_ref_cmp_in [J/kg]"] - cs["h_ref_exp_out [J/kg]"]) if is_active else 0.0
-        cmp_rps: float = (m_dot_ref / (self.V_disp_cmp * cs["rho_ref_cmp_in [kg/m3]"] * eta_vol_val)) if is_active else 0.0
+        m_dot_ref: float = Q_ref_cond / (cs["h_ref_cmp_out [J/kg]"] - cs["h_ref_exp_in [J/kg]"])
+        Q_ref_cond_calc: float = m_dot_ref * (cs["h_ref_cmp_out [J/kg]"] - cs["h_ref_exp_in [J/kg]"])
+        Q_ref_evap: float = m_dot_ref * (cs["h_ref_cmp_in [J/kg]"] - cs["h_ref_exp_out [J/kg]"])
+        cmp_rps: float = m_dot_ref / (self.V_disp_cmp * cs["rho_ref_cmp_in [kg/m3]"] * eta_vol_val)
 
         if callable(self.eta_cmp_motor):
             if self._eta_motor_args == 2:
@@ -354,17 +430,17 @@ class AirSourceHeatPumpBoiler:
             
         eta_inv_val = self.eta_cmp_inv(ratio_P_cmp) if callable(self.eta_cmp_inv) else self.eta_cmp_inv
 
-        E_cmp: float = (m_dot_ref * (cs["h_ref_cmp_out [J/kg]"] - cs["h_ref_cmp_in [J/kg]"]) / (eta_motor_val * eta_inv_val)) if is_active else 0.0
+        E_cmp: float = m_dot_ref * (cs["h_ref_cmp_out [J/kg]"] - cs["h_ref_cmp_in [J/kg]"]) / (eta_motor_val * eta_inv_val)
 
         HX_perf_ou: dict = calc_HX_perf_for_target_heat(
-            Q_ref_target=(Q_ref_evap if is_active else 0.0),
+            Q_ref_target=Q_ref_evap,
             T_ou_a_in_C=T0,
             T_ref_evap_sat_K=cs["T_ref_evap_sat_K"],
             T_ref_cond_sat_l_K=cs["T_ref_cond_sat_l_K"],
             A_cross=self.A_cross_ou,
             UA_design=self.UA_evap_design,
             dV_fan_design=self.dV_ou_fan_a_design,
-            is_active=is_active,
+            is_active=True,
         )
 
         if HX_perf_ou.get("converged", True) is False:
@@ -374,7 +450,7 @@ class AirSourceHeatPumpBoiler:
             }
 
         dV_ou_a: float = HX_perf_ou["dV_fan"]
-        v_ou_a: float = dV_ou_a / self.A_cross_ou if is_active else 0.0
+        v_ou_a: float = dV_ou_a / self.A_cross_ou
         T_ou_a_mid: float = HX_perf_ou["T_ou_a_mid"]
         Q_ou_a: float = HX_perf_ou["Q_ou_air"]
 
@@ -382,10 +458,10 @@ class AirSourceHeatPumpBoiler:
             dV_fan=dV_ou_a,
             fan_params=self.fan_params_ou,
             vsd_coeffs=self.vsd_coeffs_ou,
-            is_active=is_active,
+            is_active=True,
         )
 
-        T_ou_a_out: float = T_ou_a_mid + E_ou_fan / (c_a * rho_a * dV_ou_a) if is_active else T0
+        T_ou_a_out: float = T_ou_a_mid + E_ou_fan / (c_a * rho_a * dV_ou_a)
 
         # --- Flow state (explicit parameter, no side-effect reads) ---
         dV_tank_w_out: float = flow_state["dV_tank_w_out [m3/s]"]
@@ -415,7 +491,7 @@ class AirSourceHeatPumpBoiler:
 
         result.update(
             {
-                "hp_is_on": (Q_ref_cond_calc > 0),
+                "hp_is_on": True,
                 "converged": True,
                 # Temperatures [°C]
                 "T_ou_a_in [°C]": T0,
@@ -447,8 +523,8 @@ class AirSourceHeatPumpBoiler:
                 "Q_mix_w_out [W]": Q_mix_w_out,
                 "E_tot [W]": E_cmp + E_ou_fan,
                 # COP metrics (analogous to X_eff_ref / X_eff_sys)
-                "cop_ref [-]": (Q_ref_cond_calc / E_cmp if (is_active and E_cmp > 0) else np.nan),
-                "cop_sys [-]": (Q_ref_cond_calc / (E_cmp + E_ou_fan) if (is_active and (E_cmp + E_ou_fan) > 0) else np.nan),
+                "cop_ref [-]": (Q_ref_cond_calc / E_cmp if E_cmp > 0 else np.nan),
+                "cop_sys [-]": (Q_ref_cond_calc / (E_cmp + E_ou_fan) if (E_cmp + E_ou_fan) > 0 else np.nan),
             }
         )
 
