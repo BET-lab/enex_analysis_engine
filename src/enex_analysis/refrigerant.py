@@ -120,11 +120,11 @@ def calc_ref_state(
         T_ref_cmp_out_K = CP.PropsSI("T", "P", P_cond, "H", h_ref_cmp_out, refrigerant)
         s_ref_cmp_out = CP.PropsSI("S", "P", P_cond, "H", h_ref_cmp_out, refrigerant)
     except ValueError:
-        # If H is too high, it exceeds Tmax of CoolProp (e.g. 652.5K for R32).
-        Tmax = CP.PropsSI("TMAX", "", 0, "", 0, refrigerant)
-        T_ref_cmp_out_K = Tmax - 1.0
-        h_ref_cmp_out = CP.PropsSI("H", "P", P_cond, "T", T_ref_cmp_out_K, refrigerant)
-        s_ref_cmp_out = CP.PropsSI("S", "P", P_cond, "T", T_ref_cmp_out_K, refrigerant)
+        # If H is too high, it exceeds Tmax of CoolProp (e.g. 435K for R32).
+        # We MUST NOT modify h_ref_cmp_out as it breaks the energy balance.
+        # Just set T and s to NaN.
+        T_ref_cmp_out_K = np.nan
+        s_ref_cmp_out = np.nan
 
     P_ref_cmp_out = P_cond
 

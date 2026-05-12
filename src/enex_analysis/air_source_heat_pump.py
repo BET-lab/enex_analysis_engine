@@ -51,8 +51,9 @@ class AirSourceHeatPump:
         # 1. Refrigerant / cycle / compressor -----------
         ref: str = "R32",
         V_disp_cmp: float = 0.0001,
-        eta_cmp_isen: float | Callable = 0.85,
-        eta_cmp_vol: float | Callable = 1.0,
+        eta_cmp_isen: float | Callable | None = None,
+        eta_cmp_vol: float | Callable | None = None,
+        eta_cmp_mech: float | Callable = 0.855,
         dT_superheat: float = 3.0,
         dT_subcool: float = 3.0,
         # 2. Heat exchanger UA ---------------------------
@@ -95,8 +96,9 @@ class AirSourceHeatPump:
         # --- 1. Refrigerant / cycle / compressor ---
         self.ref: str = ref
         self.V_disp_cmp: float = V_disp_cmp
-        self.eta_cmp_isen: float | Callable = eta_cmp_isen
-        self.eta_cmp_vol: float | Callable = eta_cmp_vol
+        self.eta_cmp_isen: float | Callable | None = eta_cmp_isen
+        self.eta_cmp_vol: float | Callable | None = eta_cmp_vol
+        self.eta_cmp_mech: float | Callable = eta_cmp_mech
         self.dT_superheat: float = dT_superheat
         self.dT_subcool: float = dT_subcool
         self.min_lift_K: float = 20
@@ -207,68 +209,114 @@ class AirSourceHeatPump:
             mode = "cooling"
             T_evap_sat_K = T_a_room_K - dT_ref_evap     # evap below room
             T_cond_sat_K = T0_K + dT_ref_cond            # cond above outdoor
-            Q_ref_iu = Q_r_iu                             # evap heat = cooling load
+            actual_dT_subcool = self.dT_subcool
         elif Q_r_iu < 0:
             # Heating mode: indoor = condenser, outdoor = evaporator
             mode = "heating"
             T_evap_sat_K = T0_K - dT_ref_evap            # evap below outdoor
             T_cond_sat_K = T_a_room_K + dT_ref_cond      # cond above room
-            Q_ref_iu = abs(Q_r_iu)                        # cond heat = heating load
+            actual_dT_subcool = self.dT_subcool
         else:
             mode = "off"
             T_evap_sat_K = T0_K
             T_cond_sat_K = T0_K
-            Q_ref_iu = 0.0
+            actual_dT_subcool = 0.0
 
         # Guard: evap must be below cond with required minimal lift
         if is_active and (T_cond_sat_K - T_evap_sat_K) <= self.min_lift_K:
             return None
 
-        cycle_states: dict = calc_ref_state(
+        import inspect
+        def _eval_eff(eff, r_p, rps) -> float:
+            if eff is None:
+                return 1.0
+            if callable(eff):
+                sig = inspect.signature(eff)
+                if len(sig.parameters) == 2:
+                    return float(eff(r_p, rps))
+                return float(eff(r_p))
+            return float(eff)
+
+        cs: dict = calc_ref_state(
             T_evap_K=T_evap_sat_K,
             T_cond_K=T_cond_sat_K,
             refrigerant=self.ref,
-            eta_cmp_isen=self.eta_cmp_isen,
+            eta_cmp_isen=1.0,  # Temporary
             mode=mode,
             dT_superheat=self.dT_superheat,
-            dT_subcool=self.dT_subcool,
+            dT_subcool=actual_dT_subcool,
             is_active=is_active,
         )
 
-        # Compute mass flow and energy flows
-        h_cmp_out: float = cycle_states["h_ref_cmp_out [J/kg]"]
-        h_cmp_in: float = cycle_states["h_ref_cmp_in [J/kg]"]
-        h_exp_in: float = cycle_states["h_ref_exp_in [J/kg]"]
-        h_exp_out: float = cycle_states["h_ref_exp_out [J/kg]"]
-
-        if mode == "cooling":
-            # Q_evap = m * (h_cmp_in - h_exp_out)
-            dh_evap = h_cmp_in - h_exp_out
-            m_dot_ref = Q_ref_iu / dh_evap if (is_active and abs(dh_evap) > 1e-3) else 0.0
-        elif mode == "heating":
-            # Q_cond = m * (h_cmp_out - h_exp_in)
-            dh_cond = h_cmp_out - h_exp_in
-            m_dot_ref = Q_ref_iu / dh_cond if (is_active and abs(dh_cond) > 1e-3) else 0.0
-        else:
-            m_dot_ref = 0.0
-
-        Q_ref_cond: float = m_dot_ref * (h_cmp_out - h_exp_in) if is_active else 0.0
-        Q_ref_evap: float = m_dot_ref * (h_cmp_in - h_exp_out) if is_active else 0.0
-        E_cmp: float = m_dot_ref * (h_cmp_out - h_cmp_in) if is_active else 0.0
+        h_cmp_out: float = cs["h_ref_cmp_out [J/kg]"]
+        h_cmp_in: float = cs["h_ref_cmp_in [J/kg]"]
+        h_exp_in: float = cs["h_ref_exp_in [J/kg]"]
+        h_exp_out: float = cs["h_ref_exp_out [J/kg]"]
+        rho_in: float = cs["rho_ref_cmp_in [kg/m3]"]
+        P_evap = cs["P_ref_cmp_in [Pa]"]
+        P_cond = cs["P_ref_cmp_out [Pa]"]
         
+        ratio_P_cmp = P_cond / P_evap if is_active and P_evap > 0 else 1.0
+
         if is_active:
-            P_evap = cycle_states["P_ref_cmp_in [Pa]"]
-            P_cond = cycle_states["P_ref_cmp_out [Pa]"]
-            val_eta_cmp_vol = (
-                self.eta_cmp_vol(P_cond / P_evap)
-                if callable(self.eta_cmp_vol)
-                else self.eta_cmp_vol
+            try:
+                import CoolProp.CoolProp as CP
+                s_cmp_in = cs["s_ref_cmp_in [J/(kg·K)]"]
+                h2_isen = CP.PropsSI("H", "P", P_cond, "S", s_cmp_in, self.ref)
+            except ValueError:
+                h2_isen = h_cmp_in
+
+            def _residual_rps(rps):
+                val_eta_vol = _eval_eff(self.eta_cmp_vol, ratio_P_cmp, rps)
+                val_eta_isen = _eval_eff(self.eta_cmp_isen, ratio_P_cmp, rps)
+                h_cmp_out_local = h_cmp_in + (h2_isen - h_cmp_in) / val_eta_isen
+                
+                dh_cond_local = h_cmp_out_local - h_exp_in
+                dh_evap_local = h_cmp_in - h_exp_out
+                
+                m_dot = self.V_disp_cmp * rho_in * val_eta_vol * rps
+                if mode == "cooling":
+                    return (m_dot * dh_evap_local) - abs(Q_r_iu)
+                else:
+                    return (m_dot * dh_cond_local) - abs(Q_r_iu)
+
+            from scipy.optimize import brentq
+            try:
+                cmp_rps = brentq(_residual_rps, 10.0, 150.0)
+                converged_rps = True
+            except ValueError:
+                res_min = _residual_rps(10.0)
+                res_max = _residual_rps(150.0)
+                cmp_rps = 10.0 if abs(res_min) < abs(res_max) else 150.0
+                converged_rps = False
+
+            val_eta_vol = _eval_eff(self.eta_cmp_vol, ratio_P_cmp, cmp_rps)
+            val_eta_isen = _eval_eff(self.eta_cmp_isen, ratio_P_cmp, cmp_rps)
+            val_eta_mech = _eval_eff(self.eta_cmp_mech, ratio_P_cmp, cmp_rps)
+
+            cs = calc_ref_state(
+                T_evap_K=T_evap_sat_K,
+                T_cond_K=T_cond_sat_K,
+                refrigerant=self.ref,
+                eta_cmp_isen=val_eta_isen,
+                mode=mode,
+                dT_superheat=self.dT_superheat,
+                dT_subcool=actual_dT_subcool,
+                is_active=is_active,
             )
-            cmp_rps: float = m_dot_ref / (
-                self.V_disp_cmp * cycle_states["rho_ref_cmp_in [kg/m3]"] * val_eta_cmp_vol
-            )
+
+            h_cmp_out_final = cs["h_ref_cmp_out [J/kg]"]
+            m_dot_ref = self.V_disp_cmp * rho_in * val_eta_vol * cmp_rps
+            Q_ref_cond = m_dot_ref * (h_cmp_out_final - h_exp_in)
+            Q_ref_evap = m_dot_ref * (h_cmp_in - h_exp_out)
+            E_cmp = (m_dot_ref * (h_cmp_out_final - h_cmp_in)) / val_eta_mech
         else:
             cmp_rps = 0.0
+            m_dot_ref = 0.0
+            Q_ref_cond = 0.0
+            Q_ref_evap = 0.0
+            E_cmp = 0.0
+            converged_rps = True
 
         # Reject negative compressor power (unphysical)
         if is_active and E_cmp <= 0:
@@ -362,14 +410,14 @@ class AirSourceHeatPump:
         E_tot: float = E_cmp + E_iu_fan + E_ou_fan
 
         # Check overall convergence
-        is_converged = ou_hx.get("converged", True) and iu_hx.get("converged", True)
+        is_converged = ou_hx.get("converged", True) and iu_hx.get("converged", True) and converged_rps
 
-        result: dict = cycle_states.copy()
+        result: dict = cs.copy()
         result.update(
             {
                 "hp_is_on": is_active,
                 "mode": mode,
-                "converged": is_converged,
+                "converged": bool(is_converged),
                 # Temperatures [°C]
                 "T_ou_a_in [°C]": T0,
                 "T_ou_a_mid [°C]": T_ou_a_mid,

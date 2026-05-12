@@ -38,7 +38,7 @@ condenser temperature is solved analytically.
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Callable
 
 import CoolProp.CoolProp as CP
 import numpy as np
@@ -81,7 +81,9 @@ class GroundSourceHeatPumpBoiler:
         # 1. Refrigerant / cycle / compressor
         refrigerant: str = "R410A",
         V_disp_cmp: float = 0.0005,
-        eta_cmp_isen: float = 0.7,
+        eta_cmp_isen: float | Callable | None = None,
+        eta_cmp_vol: float | Callable | None = None,
+        eta_cmp_mech: float | Callable = 0.855,
         # 2. Heat exchanger UA
         UA_cond_design: float = 500,
         UA_evap_design: float = 500,
@@ -157,6 +159,8 @@ class GroundSourceHeatPumpBoiler:
         self.ref = refrigerant
         self.V_disp_cmp = V_disp_cmp
         self.eta_cmp_isen = eta_cmp_isen
+        self.eta_cmp_vol = eta_cmp_vol
+        self.eta_cmp_mech = eta_cmp_mech
 
         self.UA_cond = UA_cond_design
         self.UA_evap = UA_evap_design
@@ -366,53 +370,96 @@ class GroundSourceHeatPumpBoiler:
     ) -> dict | None:
         if Q_cond_load <= 0:
             return self._calc_off_state(T_tank_w, T0, flow_state)
+        
+        import inspect
+        def _eval_eff(eff, r_p, rps) -> float:
+            if eff is None:
+                return 1.0
+            if callable(eff):
+                sig = inspect.signature(eff)
+                if len(sig.parameters) == 2:
+                    return float(eff(r_p, rps))
+                return float(eff(r_p))
+            return float(eff)
 
         # 1. Analytical Condenser Approach Temperature
         dT_ref_cond = Q_cond_load / self.UA_cond
-
         T_tank_w_K = cu.C2K(T_tank_w)
-
-        # The source temperature leaving BHE and entering HP
-        _t_bhe_f_out_k = getattr(self, "T_bhe_f_out_K", None)
-        T_source_K = float(_t_bhe_f_out_k) if _t_bhe_f_out_k is not None else cu.C2K(15.0)
-
+        _t_bhe = getattr(self, "T_bhe_f_out_K", None)
+        T_b_out_K = float(_t_bhe) if _t_bhe is not None else cu.C2K(15.0)
         m_dot_cp_b = self.dV_b_f_m3s * rho_w * c_w
-        T_evap_in_K = T_source_K + (self.E_pmp / m_dot_cp_b)
-
+        T_evap_in_K = T_b_out_K + (self.E_pmp / m_dot_cp_b)
         T_ref_evap_sat_K = T_evap_in_K - dT_ref_evap
         T_ref_cond_sat_K = T_tank_w_K + dT_ref_cond
 
-        pinch_min: float = 0.5
-        actual_dT_subcool = min(self.dT_subcool, max(0.0, dT_ref_cond - pinch_min))
-
         # 2. Refrigerant Cycle Evaluation
+        cs = calc_ref_state(
+            T_evap_K=T_ref_evap_sat_K,
+            T_cond_K=T_ref_cond_sat_K,
+            refrigerant=self.ref,
+            eta_cmp_isen=1.0,
+            mode="heating",
+            dT_superheat=self.dT_superheat,
+            dT_subcool=self.dT_subcool,
+            is_active=True,
+        )
+
+        h_ref_cmp_in = cs["h_ref_cmp_in [J/kg]"]
+        h_ref_exp_in = cs["h_ref_exp_in [J/kg]"]
+        h_ref_exp_out = cs["h_ref_exp_out [J/kg]"]
+        rho_ref_cmp_in = cs["rho_ref_cmp_in [kg/m3]"]
+        P_evap = cs["P_ref_cmp_in [Pa]"]
+        P_cond = cs["P_ref_cmp_out [Pa]"]
+        ratio_P_cmp = P_cond / P_evap if P_evap > 0 else 1.0
+
+        if h_ref_cmp_in - h_ref_exp_in <= 0:
+            return None
+
         try:
-            cycle_states = calc_ref_state(
-                T_evap_K=T_ref_evap_sat_K,
-                T_cond_K=T_ref_cond_sat_K,
-                refrigerant=self.ref,
-                eta_cmp_isen=self.eta_cmp_isen,
-                dT_superheat=self.dT_superheat,
-                dT_subcool=actual_dT_subcool,
-            )
-        except Exception:
-            return None
-
-        rho_ref_cmp_in = cycle_states["rho_ref_cmp_in [kg/m3]"]
-        h_ref_cmp_in = cycle_states["h_ref_cmp_in [J/kg]"]
-        h_ref_cmp_out = cycle_states["h_ref_cmp_out [J/kg]"]
-        h_ref_exp_in = cycle_states["h_ref_exp_in [J/kg]"]
-        h_ref_exp_out = cycle_states["h_ref_exp_out [J/kg]"]
-
-        if (h_ref_cmp_out - h_ref_exp_in) <= 0:
-            return None
+            s_cmp_in = cs["s_ref_cmp_in [J/(kg·K)]"]
+            h2_isen = CP.PropsSI("H", "P", P_cond, "S", s_cmp_in, self.ref)
+        except ValueError:
+            h2_isen = h_ref_cmp_in
 
         # 3. Cycle Performance
-        m_dot_ref = Q_cond_load / (h_ref_cmp_out - h_ref_exp_in)
-        Q_ref_cond = Q_cond_load
+        def _residual_rps(rps):
+            val_eta_vol = _eval_eff(self.eta_cmp_vol, ratio_P_cmp, rps)
+            val_eta_isen = _eval_eff(self.eta_cmp_isen, ratio_P_cmp, rps)
+            h_cmp_out_local = h_ref_cmp_in + (h2_isen - h_ref_cmp_in) / val_eta_isen
+            dh_cond_local = h_cmp_out_local - h_ref_exp_in
+            m_dot = self.V_disp_cmp * rho_ref_cmp_in * val_eta_vol * rps
+            return (m_dot * dh_cond_local) - Q_cond_load
+
+        from scipy.optimize import brentq
+        try:
+            cmp_rps = brentq(_residual_rps, 10.0, 150.0)
+            converged_rps = True
+        except ValueError:
+            res_min = _residual_rps(10.0)
+            res_max = _residual_rps(150.0)
+            cmp_rps = 10.0 if abs(res_min) < abs(res_max) else 150.0
+            converged_rps = False
+
+        val_eta_vol = _eval_eff(self.eta_cmp_vol, ratio_P_cmp, cmp_rps)
+        val_eta_isen = _eval_eff(self.eta_cmp_isen, ratio_P_cmp, cmp_rps)
+        val_eta_mech = _eval_eff(self.eta_cmp_mech, ratio_P_cmp, cmp_rps)
+
+        cs = calc_ref_state(
+            T_evap_K=T_ref_evap_sat_K,
+            T_cond_K=T_ref_cond_sat_K,
+            refrigerant=self.ref,
+            eta_cmp_isen=val_eta_isen,
+            mode="heating",
+            dT_superheat=self.dT_superheat,
+            dT_subcool=self.dT_subcool,
+            is_active=True,
+        )
+
+        h_ref_cmp_out = cs["h_ref_cmp_out [J/kg]"]
+        m_dot_ref = self.V_disp_cmp * rho_ref_cmp_in * val_eta_vol * cmp_rps
+        Q_ref_cond = m_dot_ref * (h_ref_cmp_out - h_ref_exp_in)
         Q_ref_evap = m_dot_ref * (h_ref_cmp_in - h_ref_exp_out)
-        E_cmp = m_dot_ref * (h_ref_cmp_out - h_ref_cmp_in)
-        cmp_rps = m_dot_ref / (self.V_disp_cmp * rho_ref_cmp_in)
+        E_cmp = (m_dot_ref * (h_ref_cmp_out - h_ref_cmp_in)) / val_eta_mech
 
         # 4. NTU Evaporator Analysis
         NTU_evap = self.UA_evap / m_dot_cp_b
@@ -431,28 +478,28 @@ class GroundSourceHeatPumpBoiler:
 
         # Fluid enters BHE at T_bhe_f_in_K
         T_bhe_f_in_K = T_evap_in_K - Q_ref_evap / m_dot_cp_b
-        T_bhe_f_out_K = T_source_K
+        T_bhe_f_out_K = T_b_out_K
 
         T_bhe_f = (cu.K2C(T_bhe_f_in_K) + cu.K2C(T_bhe_f_out_K)) / 2
         T_bhe = T_bhe_f + Q_bhe_unit * self.R_b
 
         # 6. Assemble
-        result: dict = cycle_states.copy()
+        result: dict = cs.copy()
         result.update(
             {
                 "hp_is_on": True,
-                "converged": True,
+                "converged": bool(converged_rps),
                 "_penalty": penalty,
-                "err_Q_evap [W]": err,
-                "T_ref_evap_sat [°C]": cu.K2C(cycle_states.get("T_ref_evap_sat_K", np.nan)),
-                "T_ref_cond_sat_v [°C]": cu.K2C(cycle_states.get("T_ref_cond_sat_l_K", np.nan)),
-                "T_ref_cond_sat_l [°C]": cu.K2C(cycle_states.get("T_ref_cond_sat_l_K", np.nan)),
+                "err_Q_evap [W]": 0.0,
+                "T_ref_evap_sat [°C]": cu.K2C(cs.get("T_ref_evap_sat_K", np.nan)),
+                "T_ref_cond_sat_v [°C]": cu.K2C(cs.get("T_ref_cond_sat_l_K", np.nan)),
+                "T_ref_cond_sat_l [°C]": cu.K2C(cs.get("T_ref_cond_sat_l_K", np.nan)),
                 "T0 [°C]": T0,
-                "T_ref_cmp_in [°C]": cu.K2C(cycle_states.get("T_ref_cmp_in_K", np.nan)),
-                "T_ref_cmp_out [°C]": cu.K2C(cycle_states.get("T_ref_cmp_out_K", np.nan)),
-                "T_ref_exp_in [°C]": cu.K2C(cycle_states.get("T_ref_exp_in_K", np.nan)),
-                "T_ref_exp_out [°C]": cu.K2C(cycle_states.get("T_ref_exp_out_K", np.nan)),
-                "T_cond [°C]": cu.K2C(cycle_states.get("T_ref_cond_sat_l_K", np.nan)),
+                "T_ref_cmp_in [°C]": cu.K2C(cs.get("T_ref_cmp_in_K", np.nan)),
+                "T_ref_cmp_out [°C]": cu.K2C(cs.get("T_ref_cmp_out_K", np.nan)),
+                "T_ref_exp_in [°C]": cu.K2C(cs.get("T_ref_exp_in_K", np.nan)),
+                "T_ref_exp_out [°C]": cu.K2C(cs.get("T_ref_exp_out_K", np.nan)),
+                "T_cond [°C]": cu.K2C(cs.get("T_ref_cond_sat_l_K", np.nan)),
                 "T_tank_w [°C]": T_tank_w,
                 "T_mix_w_out [°C]": self.T_mix_w_out,
                 "T_tank_w_in [°C]": self.T_tank_w_in,
@@ -466,15 +513,15 @@ class GroundSourceHeatPumpBoiler:
                 "dV_tank_w_in [m3/s]": flow_state.get("dV_tank_w_in", 0.0),
                 "dV_tank_w_out [m3/s]": flow_state.get("dV_tank_w_out", 0.0),
                 "dV_mix_sup_w_in [m3/s]": flow_state.get("dV_mix_sup_w_in", 0.0),
-                "P_ref_evap_sat [Pa]": cycle_states.get("P_ref_cmp_in [Pa]", np.nan),
-                "P_ref_cond_sat_l [Pa]": cycle_states.get("P_ref_exp_in [Pa]", np.nan),
+                "P_ref_evap_sat [Pa]": cs.get("P_ref_cmp_in [Pa]", np.nan),
+                "P_ref_cond_sat_l [Pa]": cs.get("P_ref_exp_in [Pa]", np.nan),
                 "m_dot_ref [kg/s]": m_dot_ref,
                 "cmp_rpm [rpm]": cmp_rps * 60,
                 "h_ref_evap_sat [J/kg]": CP.PropsSI(
-                    "H", "P", cycle_states.get("P_ref_cmp_in [Pa]", 1e5), "Q", 1, self.ref
+                    "H", "P", cs.get("P_ref_cmp_in [Pa]", 1e5), "Q", 1, self.ref
                 ),
                 "h_ref_cond_sat_v [J/kg]": CP.PropsSI(
-                    "H", "P", cycle_states.get("P_ref_cmp_out [Pa]", 1e6), "Q", 1, self.ref
+                    "H", "P", cs.get("P_ref_cmp_out [Pa]", 1e6), "Q", 1, self.ref
                 ),
                 "h_ref_cond_sat_l [J/kg]": h_ref_exp_in,
                 "Q_cond_load [W]": Q_cond_load,
