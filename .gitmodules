@@ -1,0 +1,3 @@
+[submodule "src/enex_analysis/heat_pumps"]
+	path = src/enex_analysis/heat_pumps
+	url = https://github.com/bet-lab/physics_hp_models.git
