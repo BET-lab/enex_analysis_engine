@@ -22,13 +22,13 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from . import calc_util as cu
-from .constants import c_w, k_a, k_D, k_d, rho_w
-from .thermodynamics import calc_energy_flow
+from .heat_pumps.constants import c_w, k_a, k_D, k_d, rho_w
+from .heat_pumps.thermodynamics import calc_energy_flow
 
 if TYPE_CHECKING:
     import pandas as pd
 
-    from .dynamic_context import ControlState, StepContext, SubsystemExergy
+    from .heat_pumps.dynamic_context import ControlState, StepContext, SubsystemExergy
 
 
 # ------------------------------------------------------------------
@@ -602,7 +602,7 @@ class UVLamp:
         T_tank_w_in_K: float,
     ) -> dict:
         """Compute UV lamp state for one timestep."""
-        from .uv_treatment import calc_uv_lamp_power
+        from .heat_pumps.uv_treatment import calc_uv_lamp_power
 
         E_uv: float = calc_uv_lamp_power(
             ctx.current_time_s,

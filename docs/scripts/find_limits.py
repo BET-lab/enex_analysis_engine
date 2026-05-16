@@ -8,8 +8,8 @@ docs_dir = os.path.dirname(script_dir)
 src_dir = os.path.abspath(os.path.join(docs_dir, "..", "src"))
 sys.path.insert(0, src_dir)
 
-from enex_analysis.refrigerant import calc_ref_state
-import enex_analysis.calc_util as cu
+from enex_analysis.heat_pumps.refrigerant import calc_ref_state
+import enex_analysis.heat_pumps.calc_util as cu
 
 def find_limits():
     refrigerants = ["R410A", "R134a", "R32", "R290"]

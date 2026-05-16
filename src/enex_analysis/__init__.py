@@ -1,12 +1,12 @@
 """Energy and Exergy Analysis Engine package init."""
 
-from .air_source_heat_pump_boiler import (
+from .heat_pumps.air_source_heat_pump_boiler import (
     AirSourceHeatPumpBoiler,
 )
-from .ashpb_pv_ess import ASHPB_PV_ESS
-from .ashpb_stc_preheat import ASHPB_STC_preheat
-from .ashpb_stc_tank import ASHPB_STC_tank
-from .calc_util import (
+from .heat_pumps.ashpb_pv_ess import ASHPB_PV_ESS
+from .heat_pumps.ashpb_stc_preheat import ASHPB_STC_preheat
+from .heat_pumps.ashpb_stc_tank import ASHPB_STC_tank
+from .heat_pumps.calc_util import (
     C2F,
     C2K,
     F2C,
@@ -84,18 +84,18 @@ from .components.fan import (
 from .components.pump import (
     Pump,
 )
-from .constants import (
+from .heat_pumps.constants import (
     P0_PA,
     SP,
     T0_K,
 )
-from .dhw import (
+from .heat_pumps.dhw import (
     build_dhw_usage_ratio,
     calc_cold_water_temp,
     calc_total_water_use_from_schedule,
     make_dhw_schedule_from_Annex_42_profile,
 )
-from .dynamic_context import (
+from .heat_pumps.dynamic_context import (
     ControlState,
     StepContext,
     Subsystem,
@@ -112,9 +112,8 @@ from .enex_engine import (
     AirSourceHeatPump_cooling,
     AirSourceHeatPump_heating,
 )
-from .enex_functions import (
+from .heat_pumps.enex_functions import (
     G_FLS,
-    TDMA,
     air_dynamic_viscosity,
     air_prandtl_number,
     calc_ASHP_cooling_COP,
@@ -146,14 +145,14 @@ from .gas_boiler import (
 from .gas_boiler_tank import (
     GasBoilerTank,
 )
-from .ground_source_heat_pump import GroundSourceHeatPump
-from .ground_source_heat_pump_boiler import (
+from .heat_pumps.ground_source_heat_pump import GroundSourceHeatPump
+from .heat_pumps.ground_source_heat_pump_boiler import (
     GroundSourceHeatPumpBoiler,
 )
-from .gshpb_pv_ess import GSHPB_PV_ESS
-from .gshpb_stc_preheat import GSHPB_STC_preheat
-from .gshpb_stc_tank import GSHPB_STC_tank
-from .heat_transfer import (
+from .heat_pumps.gshpb_pv_ess import GSHPB_PV_ESS
+from .heat_pumps.gshpb_stc_preheat import GSHPB_STC_preheat
+from .heat_pumps.gshpb_stc_tank import GSHPB_STC_tank
+from .heat_pumps.heat_transfer import (
     TRIDIAG_MATRIX_ALGORITHM,
     calc_h_vertical_plate,
     calc_LMTD_counter_flow,
@@ -162,7 +161,7 @@ from .heat_transfer import (
     calc_UA_tank_arr,
     darcy_friction_factor,
 )
-from .refrigerant import (
+from .heat_pumps.refrigerant import (
     calc_ref_state,
     create_lmtd_constraints,
     find_ref_loop_optimal_operation,
@@ -170,28 +169,25 @@ from .refrigerant import (
 from .solar_assisted_gas_boiler import (
     SolarAssistedGasBoiler,
 )
-from .subsystems import (
+from .heat_pumps.subsystems import (
     PhotovoltaicSystem,
     SolarThermalCollector,
     UVLamp,
 )
-from .tank_stratification_model import (
-    StratifiedTankTDMA,
-)
-from .thermodynamics import (
+from .heat_pumps.thermodynamics import (
     calc_energy_flow,
     calc_exergy_flow,
     calc_refrigerant_exergy,
     convert_electricity_to_exergy,
     generate_entropy_exergy_term,
 )
-from .visualization import (
+from .heat_pumps.visualization import (
     plot_ph_diagram,
     plot_th_diagram,
     plot_ts_diagram,
     print_simulation_summary,
 )
-from .weather import (
+from .heat_pumps.weather import (
     decompose_ghi_to_poa,
     load_kma_solar_csv,
     load_kma_T0_sol_hourly_csv,
