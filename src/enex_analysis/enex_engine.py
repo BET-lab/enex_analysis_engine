@@ -839,7 +839,7 @@ class GroundSourceHeatPump:
     k_grout: float = 1.5  # Grout thermal conductivity [W/mK]
     r_out: float = 0.016  # Pipe outer radius [m] (32mm OD / 2)
     r_in: float = 0.013   # Pipe inner radius [m] (26mm ID / 2)
-    D_s: float = 0.028    # Distance from the center of the borehole to the center of the pipe [m]
+    D_s: float = 0.032    # Distance from the center of the borehole to the center of the pipe [m]
     
     # 3. Ground parameters
     k_g: float = 2.0     # Ground thermal conductivity [W/mK]
@@ -872,18 +872,17 @@ class GroundSourceHeatPump:
         self.dt_sec = self.dt_hours * 3600.0
         self.q_b_history = [0.0]
 
-        # Calculate Effective Borehole Thermal Resistance R_b
-        # Using water properties at approx 15-20 degC
-        m_flow_pipe = (self.dV_f * cu.L2m3 * cu.s2m * rho_f) / 2.0 # Mass flow per pipe [kg/s]
-        R_b_local, R_a = gf.calc_local_borehole_thermal_resistance(
+        # Calculate Effective Borehole Thermal Resistance R_b*
+        # Single U-tube (series): each pipe leg carries the full borehole flow.
+        # Using water properties at approx 15-20 degC (mu_f = 0.00114 Pa·s)
+        m_flow_borehole = self.dV_f * cu.L2m3 * cu.s2m * rho_f  # Total borehole mass flow [kg/s]
+        self.R_b = gf.calc_borehole_thermal_resistance(
             k_s=self.k_g, k_g=self.k_grout, k_p=self.k_p,
             r_b=self.r_b, r_out=self.r_out, r_in=self.r_in, D_s=self.D_s,
-            m_flow_pipe=m_flow_pipe, rho_f=rho_f, mu_f=0.00114, cp_f=c_f, k_f=k_w
+            H_b=self.H_b,
+            m_flow_borehole=m_flow_borehole, rho_f=rho_f, mu_f=0.00114, cp_f=c_f, k_f=k_w
         )
-        self.R_b = gf.calc_effective_borehole_thermal_resistance(
-            R_b=R_b_local, R_a=R_a, H=self.H_b, m_flow_pipe=m_flow_pipe,
-            cp_f=c_f, boundary_condition=self.boundary_condition
-        )
+
 
         # Fan parameters (VSD model)
         _hp_capacity = max(self.Q_rated_cooling, self.Q_rated_heating)
