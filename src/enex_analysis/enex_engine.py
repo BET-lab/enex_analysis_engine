@@ -839,7 +839,7 @@ class GroundSourceHeatPump:
     k_grout: float = 1.5  # Grout thermal conductivity [W/mK]
     r_out: float = 0.016  # Pipe outer radius [m] (32mm OD / 2)
     r_in: float = 0.013   # Pipe inner radius [m] (26mm ID / 2)
-    D_s: float = 0.05     # Shank spacing [m]
+    D_s: float = 0.028    # Distance from the center of the borehole to the center of the pipe [m]
     
     # 3. Ground parameters
     k_g: float = 2.0     # Ground thermal conductivity [W/mK]
@@ -848,12 +848,12 @@ class GroundSourceHeatPump:
     T_g: float = 15.0    # Initial ground temperature [°C]
     
     # 4. Fluid parameters
-    dV_f: float = 16.0   # Volumetric flow rate of fluid [L/min]
+    dV_f: float = 20.0   # Volumetric flow rate of fluid [L/min]
     
     # 5. Rated Performance & Design
     Q_rated_cooling: float = 20590.0 # [W]
     Q_rated_heating: float = 16450.0 # [W]
-    E_pmp: float = 250.0            # Pump power input [W]
+    E_pmp: float = 40.0            # Pump power input [W]
     dP_iu_fan_design: float = 60.0   # Design pressure drop [Pa]
     eta_iu_fan_design: float = 0.6   # Design fan efficiency
     

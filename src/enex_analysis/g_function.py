@@ -431,7 +431,7 @@ def calc_local_borehole_thermal_resistance(
     r_in : float
         Pipe inner radius [m]
     D_s : float
-        Shank spacing (half distance between pipes) [m]
+        Distance from the center of the borehole to the center of the pipe [m]
     m_flow_pipe : float
         Mass flow rate per pipe [kg/s]
     rho_f : float
