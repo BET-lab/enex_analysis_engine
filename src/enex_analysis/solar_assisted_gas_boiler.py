@@ -28,8 +28,8 @@ import pandas as pd
 from tqdm import tqdm
 
 from . import calc_util as cu
-from .heat_pumps.constants import c_w, ex_eff_NG, rho_w
-from .heat_pumps.dynamic_context import (
+from .constants import c_w, ex_eff_NG, rho_w
+from .dynamic_context import (
     ControlState,
     StepContext,
     Subsystem,
@@ -37,13 +37,13 @@ from .heat_pumps.dynamic_context import (
     determine_tank_refill_flow,
     tank_mass_energy_residual,
 )
-from .heat_pumps.dhw import build_dhw_usage_ratio
-from .heat_pumps.enex_functions import (
+from .dhw import build_dhw_usage_ratio
+from .enex_functions import (
     calc_mixing_valve_flows,
     calc_mixing_valve_temp,
 )
-from .heat_pumps.heat_transfer import calc_simple_tank_UA
-from .heat_pumps.thermodynamics import (
+from .heat_transfer import calc_simple_tank_UA
+from .thermodynamics import (
     calc_exergy_flow,
     convert_electricity_to_exergy,
 )

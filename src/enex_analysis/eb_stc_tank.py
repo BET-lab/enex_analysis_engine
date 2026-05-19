@@ -8,12 +8,12 @@ import numpy as np
 import pandas as pd
 
 from . import calc_util as cu
-from .heat_pumps.constants import c_w, rho_w
+from .constants import c_w, rho_w
 from .electric_boiler import ElectricBoiler
-from .heat_pumps.subsystems import SolarThermalCollector
+from .subsystems import SolarThermalCollector
 
 if TYPE_CHECKING:
-    from .heat_pumps.dynamic_context import ControlState, StepContext
+    from .dynamic_context import ControlState, StepContext
 
 
 class EB_STC_tank(ElectricBoiler):
@@ -164,7 +164,7 @@ class EB_STC_tank(ElectricBoiler):
         return r
 
     def _postprocess(self, df: pd.DataFrame) -> pd.DataFrame:
-        from .heat_pumps.thermodynamics import calc_exergy_flow
+        from .thermodynamics import calc_exergy_flow
 
         df = super()._postprocess(df)
         if "T_stc_w_in [°C]" not in df.columns or "T_stc_w_out [°C]" not in df.columns:

@@ -49,52 +49,52 @@ import numpy as np
 from scipy.optimize import root_scalar
 
 from . import calc_util as cu
-from .heat_pumps.constants import c_a, c_w, rho_a, rho_w
-from .heat_pumps.cop import (
+from .constants import c_a, c_w, rho_a, rho_w
+from .cop import (
     calc_ASHP_cooling_COP as calc_ASHP_cooling_COP,
 )
-from .heat_pumps.cop import (
+from .cop import (
     calc_ASHP_heating_COP as calc_ASHP_heating_COP,
 )
-from .heat_pumps.cop import (
+from .cop import (
     calc_GSHP_COP as calc_GSHP_COP,
 )
-from .heat_pumps.g_function import (
+from .g_function import (
     G_FLS as G_FLS,
 )
-from .heat_pumps.g_function import (
+from .g_function import (
     air_dynamic_viscosity as air_dynamic_viscosity,
 )
-from .heat_pumps.g_function import (
+from .g_function import (
     air_prandtl_number as air_prandtl_number,
 )
-from .heat_pumps.g_function import (
+from .g_function import (
     chi as chi,
 )
-from .heat_pumps.g_function import (
+from .g_function import (
     f as f,
 )
-from .heat_pumps.hx_fan import (
-    calc_fan_power_from_dV_fan as calc_fan_power_from_dV_fan,
-)
-from .heat_pumps.hx_fan import (
-    calc_UA_from_dV_fan as calc_UA_from_dV_fan,
-)
+# from .hx_fan import (
+#     calc_fan_power_from_dV_fan as calc_fan_power_from_dV_fan,
+# )
+# from .hx_fan import (
+#     calc_UA_from_dV_fan as calc_UA_from_dV_fan,
+# )
 
-from .heat_pumps.thermodynamics import (
+from .thermodynamics import (
     calc_energy_flow,
     calc_exergy_flow,
     calc_refrigerant_exergy,
     convert_electricity_to_exergy,
     generate_entropy_exergy_term,
 )
-from .heat_pumps.uv_treatment import (
+from .uv_treatment import (
     calc_uv_exposure_time as calc_uv_exposure_time,
 )
-from .heat_pumps.uv_treatment import (
+from .uv_treatment import (
     calc_uv_lamp_power as calc_uv_lamp_power,
 )
-from .heat_pumps.uv_treatment import (
+from .uv_treatment import (
     get_uv_params_from_turbidity as get_uv_params_from_turbidity,
 )
 
@@ -267,7 +267,7 @@ def calc_mixing_valve_flows(
 
 
 # UV functions have been moved to uv_treatment.py.
-# Re-exported above via ``from .heat_pumps.uv_treatment import …``
+# Re-exported above via ``from .uv_treatment import …``
 
 
 def calc_Orifice_flow_coefficient(D0, D1):
@@ -331,7 +331,7 @@ def calc_boussinessq_mixing_flow(T_upper, T_lower, A, dz, C_d=0.1):
     -----
     TODO: C_d value should be calculated based on physical equations.
     """
-    from .heat_pumps.constants import beta, g
+    from .constants import beta, g
 
     if T_upper < T_lower:
         # Upper is colder (higher density) -> unstable -> mixing occurs
@@ -354,11 +354,11 @@ def calc_boussinessq_mixing_flow(T_upper, T_lower, A, dz, C_d=0.1):
 
 
 # TDMA and advection-term functions have been moved to tdma.py.
-# Re-exported above via ``from .heat_pumps.tdma import …`` for backward compatibility.
+# Re-exported above via ``from .tdma import …`` for backward compatibility.
 
 
 # calc_UA_from_dV_fan has been moved to hx_fan.py.
-# Re-exported above via ``from .heat_pumps.hx_fan import …``
+# Re-exported above via ``from .hx_fan import …``
 
 
 def calc_HX_perf_for_target_heat(
@@ -510,11 +510,11 @@ def calc_HX_perf_for_target_heat(
 
 
 # calc_fan_power_from_dV_fan and check_hp_schedule_active have been moved
-# to hx_fan.py.  Re-exported above via ``from .heat_pumps.hx_fan import …``
+# to hx_fan.py.  Re-exported above via ``from .hx_fan import …``
 
 
 # get_uv_params_from_turbidity and calc_uv_exposure_time have been moved
-# to uv_treatment.py.  Re-exported above via ``from .heat_pumps.uv_treatment import …``
+# to uv_treatment.py.  Re-exported above via ``from .uv_treatment import …``
 
 
 def update_tank_temperature(T_tank_w_K, Q_gain, UA_tank, T0_K, C_tank, dt):
@@ -633,7 +633,7 @@ def calc_stc_performance(
     - 열 손실은 Q_l_stc로 명명됩니다.
     - 엔트로피 및 엑서지 계산은 제거되었으며, CSV 파일 후처리를 통해 계산해야 합니다.
     """
-    from .heat_pumps.constants import k_a
+    from .constants import k_a
 
     # U_stc 계산 (내부에서 계산)
     # Resistance [m²K/W]

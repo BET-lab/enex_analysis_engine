@@ -12,13 +12,13 @@ import pandas as pd
 from tqdm import tqdm
 
 from . import calc_util as cu
-from .heat_pumps.constants import (
+from .constants import (
     c_w,
     ex_eff_NG,
     rho_w,
 )
-from .heat_pumps.dhw import build_dhw_usage_ratio
-from .heat_pumps.enex_functions import (
+from .dhw import build_dhw_usage_ratio
+from .enex_functions import (
     calc_mixing_valve_flows,
     calc_mixing_valve_temp,
 )
@@ -340,7 +340,7 @@ class GasBoiler:
             raise ValueError("simulation_period_sec must be divisible by dt_s")
         if self.dV_w_serv_m3s < 0:
             raise ValueError("dV_w_serv_m3s must be greater than 0")
-        if dhw_usage_schedule == []:
+        if dhw_usage_schedule is None or len(dhw_usage_schedule) == 0:
             raise ValueError("dhw_usage_schedule must be provided")
 
         time = np.arange(0, simulation_period_sec, dt_s)

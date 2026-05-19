@@ -9,20 +9,20 @@ import pandas as pd
 from tqdm import tqdm
 
 from . import calc_util as cu
-from .heat_pumps.constants import c_w, rho_w
-from .heat_pumps.dynamic_context import (
+from .constants import c_w, rho_w
+from .dynamic_context import (
     ControlState,
     StepContext,
     determine_heat_source_on_off,
     determine_tank_refill_flow,
     tank_mass_energy_residual,
 )
-from .heat_pumps.dhw import build_dhw_usage_ratio
-from .heat_pumps.enex_functions import (
+from .dhw import build_dhw_usage_ratio
+from .enex_functions import (
     calc_mixing_valve_flows,
     calc_mixing_valve_temp,
 )
-from .heat_pumps.thermodynamics import calc_exergy_flow
+from .thermodynamics import calc_exergy_flow
 
 
 class ElectricBoiler:

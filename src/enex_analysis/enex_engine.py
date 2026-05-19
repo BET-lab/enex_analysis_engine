@@ -16,16 +16,16 @@ import numpy as np
 
 from . import calc_util as cu
 from . import g_function as gf
-from .heat_pumps.air_source_heat_pump_boiler import AirSourceHeatPumpBoiler
+from .air_source_heat_pump_boiler import AirSourceHeatPumpBoiler
 from .components.fan import Fan
-from .heat_pumps.constants import c_a, c_w as c_f, k_w, rho_a, rho_w as rho_f
-from .heat_pumps.cop import (
+from .constants import c_a, c_w as c_f, k_w, rho_a, rho_w as rho_f
+from .cop import (
     calc_ASHP_cooling_COP,
     calc_ASHP_heating_COP,
     calc_GSHP_COP,
 )
-from .heat_pumps.enex_functions import calc_fan_power_from_dV_fan
-from .heat_pumps.g_function import G_FLS
+from .enex_functions import calc_fan_power_from_dV_fan
+from .g_function import G_FLS
 
 # Phase 3 Refactoring: Re-exporting standalone boiler modules for backward compatibility
 

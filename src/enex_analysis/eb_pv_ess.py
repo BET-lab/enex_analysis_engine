@@ -7,7 +7,7 @@ import pandas as pd
 
 from . import calc_util as cu
 from .electric_boiler import ElectricBoiler
-from .heat_pumps.subsystems import EnergyStorageSystem, PhotovoltaicSystem
+from .subsystems import EnergyStorageSystem, PhotovoltaicSystem
 
 
 class EB_PV_ESS(ElectricBoiler):
