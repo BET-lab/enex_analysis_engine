@@ -286,8 +286,8 @@ class GasBoiler:
         flow_state = {
             "dV_w_serv": 0.0,
             "dV_w_sup_comb": 0.0,
-            "dV_w_bypassed": 0.0,
-            "alp_serv": 0.0,
+            "dV_w_sup_mix": 0.0,
+            "alp": 0.0,
             "T_serv_w_actual_K": self.T_sup_w_K,
         }
 
