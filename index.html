@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en" data-accent-color="violet" data-content_root="./">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Energy-Exergy Analysis Engine</title><link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Getting Started" href="getting-started/index.html" />
+      <link rel="canonical" href="https://bet-lab.github.io/enex_analysis_engine/" /><script>
+    function setColorMode(t){let e=document.documentElement;e.setAttribute("data-color-mode",t);let a=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,s=t;"auto"===t&&(s=a?"dark":"light"),"light"===s?(e.classList.remove("dark"),e.classList.add("light")):(e.classList.remove("light"),e.classList.add("dark"))}
+    setColorMode(localStorage._theme||"auto");
+  </script><link rel="stylesheet" type="text/css" href="_static/pygments.css?v=e1a1ceaf" />
+    <link rel="stylesheet" type="text/css" href="_static/shibuya.css?v=44020203" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
+    <link media="print" rel="stylesheet" type="text/css" href="_static/print.css?v=20ff2c19" />
+    <link rel="stylesheet" type="text/css" href="_static/css/custom.css?v=e84031eb" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --sy-f-text: "Inter", var(--sy-f-sys), var(--sy-f-cjk), sans-serif;
+  --sy-f-heading: "Inter", var(--sy-f-sys), var(--sy-f-cjk), sans-serif;
+}
+</style>
+    <meta property="og:type" content="website"/>
+  <meta property="og:url" content="https://bet-lab.github.io/enex_analysis_engine/"/>
+  <meta property="og:title" content="Energy-Exergy Analysis Engine [TEST]"/>
+    <meta name="twitter:card" content="summary"/>
+  </head>
+<body><div class="sy-head">
+  <div class="sy-head-blur"></div>
+  <div class="sy-head-inner sy-container mx-auto">
+    <a class="sy-head-brand" href="#">
+      
+      
+      <strong>Energy-Exergy Analysis Engine</strong>
+    </a>
+    <div class="sy-head-nav" id="head-nav">
+      <nav class="sy-head-links"><ul><li class="link"><a href="getting-started/index.html">Getting Started</a></li><li class="link"><a href="theory/index.html">Theory</a></li><li class="link"><a href="api/index.html">API Reference</a></li></ul></nav>
+      <div class="sy-head-extra flex items-center print:hidden"><form class="searchbox flex items-center" action="search.html" method="get">
+  <input type="text" name="q" placeholder="Search" />
+  <kbd>/</kbd>
+</form><div class="sy-head-socials">
+  <a href="https://github.com/bet-lab/enex_analysis_engine" aria-label="GitHub">
+    <iconify-icon icon="simple-icons:github"></iconify-icon>
+  </a></div></div>
+    </div>
+    <div class="sy-head-actions flex items-center shrink-0 print:hidden"><button class="js-theme theme-switch flex items-center"
+data-aria-auto="Switch to light color mode"
+data-aria-light="Switch to dark color mode"
+data-aria-dark="Switch to auto color mode">
+<i class="i-lucide theme-icon"></i>
+</button><button class="md:hidden flex items-center js-menu" aria-label="Menu" type="button" aria-controls="head-nav" aria-expanded="false">
+        <div class="hamburger">
+          <span class="hamburger_1"></span>
+          <span class="hamburger_2"></span>
+          <span class="hamburger_3"></span>
+        </div>
+      </button>
+    </div>
+  </div>
+</div>
+<div class="sy-page sy-container flex mx-auto">
+  <aside id="lside" class="sy-lside md:w-72 md:shrink-0 print:hidden">
+    <div class="sy-lside-inner md:sticky">
+      <div class="sy-scrollbar p-6">
+        <div class="globaltoc" data-expand-depth="0"><p class="caption" role="heading" aria-level="3"><span class="caption-text">Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="getting-started/index.html">Getting Started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="getting-started/installation.html">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getting-started/quickstart.html">Quick Start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getting-started/configuration.html">Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="guides/index.html">User Guides</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="guides/user-guide.html">User Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guides/io-guide.html">Input/Output Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guides/advanced-topics.html">Advanced Topics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guides/nomenclature.html">Symbol Naming Convention</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api/index.html">API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api/core.html">Core &amp; Utilities</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/generated/enex_analysis.thermodynamics.html">enex_analysis.thermodynamics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/generated/enex_analysis.refrigerant.html">enex_analysis.refrigerant</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/generated/enex_analysis.heat_transfer.html">enex_analysis.heat_transfer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/generated/enex_analysis.dhw.html">enex_analysis.dhw</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/generated/enex_analysis.cop.html">enex_analysis.cop</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/generated/enex_analysis.calc_util.html">enex_analysis.calc_util</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/generated/enex_analysis.constants.html">enex_analysis.constants</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/generated/enex_analysis.weather.html">enex_analysis.weather</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/generated/enex_analysis.enex_functions.html">enex_analysis.enex_functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/generated/enex_analysis.dynamic_context.html">enex_analysis.dynamic_context</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/generated/enex_analysis.simulation_runner.html">enex_analysis.simulation_runner</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/generated/enex_analysis.simulation_runner.html">enex_analysis.simulation_runner</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="api/engines.html">Energy System Engines</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/generated/enex_analysis.air_source_heat_pump.html">enex_analysis.air_source_heat_pump</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/generated/enex_analysis.ground_source_heat_pump.html">enex_analysis.ground_source_heat_pump</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/generated/enex_analysis.electric_boiler.html">enex_analysis.electric_boiler</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/generated/enex_analysis.gas_boiler.html">enex_analysis.gas_boiler</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/generated/enex_analysis.gas_boiler_tank.html">enex_analysis.gas_boiler_tank</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/generated/enex_analysis.solar_assisted_gas_boiler.html">enex_analysis.solar_assisted_gas_boiler</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/generated/enex_analysis.air_source_heat_pump_boiler.html">enex_analysis.air_source_heat_pump_boiler</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/generated/enex_analysis.ground_source_heat_pump_boiler.html">enex_analysis.ground_source_heat_pump_boiler</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/generated/enex_analysis.water_source_heat_pump_boiler.html">enex_analysis.water_source_heat_pump_boiler</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/generated/enex_analysis.ashpb_pv_ess.html">enex_analysis.ashpb_pv_ess</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/generated/enex_analysis.ashpb_stc_preheat.html">enex_analysis.ashpb_stc_preheat</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/generated/enex_analysis.ashpb_stc_tank.html">enex_analysis.ashpb_stc_tank</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/generated/enex_analysis.eb_pv_ess.html">enex_analysis.eb_pv_ess</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/generated/enex_analysis.eb_stc_preheat.html">enex_analysis.eb_stc_preheat</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/generated/enex_analysis.eb_stc_tank.html">enex_analysis.eb_stc_tank</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/generated/enex_analysis.gshpb_pv_ess.html">enex_analysis.gshpb_pv_ess</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/generated/enex_analysis.gshpb_stc_preheat.html">enex_analysis.gshpb_stc_preheat</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/generated/enex_analysis.gshpb_stc_tank.html">enex_analysis.gshpb_stc_tank</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/generated/enex_analysis.enex_engine.html">enex_analysis.enex_engine</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="api/subsystems.html">Subsystems</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/generated/enex_analysis.subsystems.html">enex_analysis.subsystems</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/generated/enex_analysis.tank_stratification_model.html">enex_analysis.tank_stratification_model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/generated/enex_analysis.hx_fan.html">enex_analysis.hx_fan</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/generated/enex_analysis.uv_treatment.html">enex_analysis.uv_treatment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/generated/enex_analysis.g_function.html">enex_analysis.g_function</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="api/advanced.html">Advanced &amp; Tools</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/generated/enex_analysis.tdma.html">enex_analysis.tdma</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/generated/enex_analysis.visualization.html">enex_analysis.visualization</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="theory/index.html">Systems</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="theory/components/index.html">Subsystem Components</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="theory/components/refrigerant_cycle.html">Refrigerant Cycle</a></li>
+<li class="toctree-l3"><a class="reference internal" href="theory/components/thermal_storage.html">Thermal Storage Tank</a></li>
+<li class="toctree-l3"><a class="reference internal" href="theory/components/borehole_he.html">Borehole Heat Exchanger (BHE)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="theory/components/solar_thermal.html">Solar Thermal Collector (STC)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="theory/components/pv_ess.html">Photovoltaic and Energy Storage Systems (PV + ESS)</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="theory/systems/index.html">Integrated Systems</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="theory/systems/ashp_boiler.html">Air Source Heat Pump Boiler (ASHPB)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="theory/systems/gshp_boiler.html">Ground Source Heat Pump Boiler (GSHPB)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="theory/systems/hybrid_systems.html">Hybrid Heat Pump Systems</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="theory/scenarios/index.html">Scenarios &amp; Analysis</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="theory/scenarios/pv_vs_stc.html">Photovoltaic vs. Solar Thermal Collector</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading" aria-level="3"><span class="caption-text">Project Links</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/bet-lab/enex_analysis_engine">GitHub Repository</a></li>
+</ul>
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="lside-overlay js-menu" role="button" aria-label="Close left sidebar" aria-controls="lside" aria-expanded="false"></div>
+  <aside id="rside" class="sy-rside pb-3 w-64 shrink-0 order-last">
+    <button class="rside-close js-menu xl:hidden" aria-label="Close Table of Contents" type="button" aria-controls="rside" aria-expanded="false">
+      <i class="i-lucide close"></i>
+    </button>
+    <div class="sy-scrollbar sy-rside-inner px-6 xl:top-16 xl:sticky xl:pl-0 pt-6 pb-4"><div class="localtoc"><h3>On this page</h3><ul>
+<li><a class="reference internal" href="#why-energy-exergy-analysis">Why Energy-Exergy Analysis?</a></li>
+<li><a class="reference internal" href="#core-capabilities">Core Capabilities</a><ul>
+<li><a class="reference internal" href="#unified-balance-calculations">Unified Balance Calculations</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#quick-start-example">Quick Start Example</a></li>
+<li><a class="reference internal" href="#energy-systems-supported">Energy Systems Supported</a><ul>
+</ul>
+</li>
+<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+</ul>
+</div><div id="ethical-ad-placement" data-ea-publisher="readthedocs"></div></div>
+  </aside>
+  <div class="rside-overlay js-menu" role="button" aria-label="Close Table of Contents" aria-controls="rside" aria-expanded="false"></div>
+  <main class="sy-main w-full max-sm:max-w-full print:pt-6">
+<div class="sy-breadcrumbs" role="navigation">
+  <div class="sy-breadcrumbs-inner flex items-center">
+    <div class="md:hidden mr-3">
+      <button class="js-menu" aria-label="Menu" type="button" aria-controls="lside" aria-expanded="false">
+        <i class="i-lucide menu"></i>
+      </button>
+    </div>
+    <ol class="flex-1" itemscope itemtype="https://schema.org/BreadcrumbList"><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <a itemprop="item" href="#"><span itemprop="name">Energy-Exergy Analysis Engine</span></a>
+        <span>/</span>
+        <meta itemprop="position" content="1" />
+      </li><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <strong itemprop="name">Energy-Exergy Analysis Engine [TEST]</strong>
+        <meta itemprop="position" content="2" />
+      </li></ol>
+    <div class="xl:hidden ml-1">
+      <button class="js-menu" aria-label="Show table of contents" type="button" aria-controls="rside"
+        aria-expanded="false">
+        <i class="i-lucide outdent"></i>
+      </button>
+    </div>
+  </div>
+</div><div class="flex flex-col break-words justify-between">
+      <div class="relative min-w-0 max-w-6xl px-6 pb-6 pt-8 xl:px-12">
+  <div class="copy-page-wrapper relative pb-4 lg:absolute lg:top-8 lg:right-6 xl:right-12">
+  <div id="copy-page-trigger">
+    <button
+      type="button"
+      class="js-copy px-3 py-1 inline-flex items-center gap-1"
+      data-url="https://bet-lab.github.io/enex_analysis_engine/_sources/index.rst.txt"
+    >
+      <i class="i-lucide" data-icon="copy"></i>
+      <span>Copy page</span>
+    </button>
+    <button class="js-menu px-2 py-1" type="button" aria-label="More actions"
+      aria-haspopup="menu" aria-expanded="false" aria-controls="copy-page-content">
+      <i class="i-lucide chevron-down"></i>
+    </button>
+  </div>
+  <div id="copy-page-content" role="menu" aria-orientation="vertical" aria-hidden="true">
+    <div role="presentation">
+      <div class="flex flex-col" role="group">
+        <button class="js-copy" type="button" role="menuitem"
+          data-url="https://bet-lab.github.io/enex_analysis_engine/_sources/index.rst.txt">
+          <span class="iconify-icon">
+            <i class="i-lucide" data-icon="copy"></i>
+          </span>
+          <span>Copy page</span>
+        </button>
+        <a role="menuitem" href="https://bet-lab.github.io/enex_analysis_engine/_sources/index.rst.txt" target="_blank" rel="nofollow"><iconify-icon icon="bi:code-slash"></iconify-icon>
+            <span>View Source</span></a><a role="menuitem" href="https://chatgpt.com/?hints=search&q=Read%20https%3A//bet-lab.github.io/enex_analysis_engine/_sources/index.rst.txt%20so%20I%20can%20ask%20questions%20about%20it." target="_blank" rel="nofollow">
+          <iconify-icon icon="bi:openai"></iconify-icon>
+          <span>Open in ChatGPT</span>
+        </a><a role="menuitem" href="https://claude.ai/new?q=Read%20https%3A//bet-lab.github.io/enex_analysis_engine/_sources/index.rst.txt%20so%20I%20can%20ask%20questions%20about%20it." target="_blank" rel="nofollow">
+          <iconify-icon icon="bi:claude"></iconify-icon>
+          <span>Open in Claude</span>
+        </a></div>
+    </div>
+  </div>
+</div><article class="yue" role="main">
+          <section id="energy-exergy-analysis-engine-test">
+<h1>Energy-Exergy Analysis Engine [TEST]<a class="headerlink" href="#energy-exergy-analysis-engine-test" title="Link to this heading">¶</a></h1>
+<p class="lead"><strong>Comprehensive thermodynamic modeling for diverse energy systems through unified energy-exergy analysis</strong></p>
+<p>This Python library enables simultaneous energy (first-law) and exergy (second-law) analysis of various energy conversion systems. Built for researchers, engineers, and educators who need to understand not just how much energy flows through a system, but also the quality and potential of that energy.</p>
+<div class="sd-container-fluid sd-sphinx-override sd-mb-4 docutils">
+<div class="sd-row sd-row-cols-2 sd-row-cols-xs-2 sd-row-cols-sm-2 sd-row-cols-md-2 sd-row-cols-lg-2 sd-g-3 sd-g-xs-3 sd-g-sm-3 sd-g-md-3 sd-g-lg-3 docutils">
+<div class="sd-col sd-d-flex-row docutils">
+<div class="sd-card sd-sphinx-override sd-w-100 sd-shadow-sm sd-card-hover docutils">
+<div class="sd-card-body docutils">
+<div class="sd-card-title sd-font-weight-bold docutils">
+🚀 Getting Started</div>
+<p class="sd-card-text">New to the library? Start here for installation and quick start guides.</p>
+</div>
+<a class="sd-stretched-link sd-hide-link-text reference internal" href="getting-started/index.html"><span class="doc">Getting Started</span></a></div>
+</div>
+<div class="sd-col sd-d-flex-row docutils">
+<div class="sd-card sd-sphinx-override sd-w-100 sd-shadow-sm sd-card-hover docutils">
+<div class="sd-card-body docutils">
+<div class="sd-card-title sd-font-weight-bold docutils">
+📚 User Guides</div>
+<p class="sd-card-text">Comprehensive guides and tutorials for using the library.</p>
+</div>
+<a class="sd-stretched-link sd-hide-link-text reference internal" href="guides/index.html"><span class="doc">User Guides</span></a></div>
+</div>
+<div class="sd-col sd-d-flex-row docutils">
+<div class="sd-card sd-sphinx-override sd-w-100 sd-shadow-sm sd-card-hover docutils">
+<div class="sd-card-body docutils">
+<div class="sd-card-title sd-font-weight-bold docutils">
+🔧 API Reference</div>
+<p class="sd-card-text">Complete API documentation for all classes and functions.</p>
+</div>
+<a class="sd-stretched-link sd-hide-link-text reference internal" href="api/index.html"><span class="doc">API Reference</span></a></div>
+</div>
+</div>
+</div>
+<section id="why-energy-exergy-analysis">
+<h2>Why Energy-Exergy Analysis?<a class="headerlink" href="#why-energy-exergy-analysis" title="Link to this heading">¶</a></h2>
+<p>Traditional energy analysis tells you <em>how much</em> energy is used, but not <em>how well</em> it’s used. Exergy analysis reveals the true thermodynamic efficiency by accounting for energy quality and identifying where irreversibilities occur. Together, energy-exergy analysis provides:</p>
+<p>✓ <strong>Complete thermodynamic picture</strong>: Understand both quantity (energy) and quality (exergy) of energy flows</p>
+<p>✓ <strong>Inefficiency identification</strong>: Pinpoint where and why energy is being destroyed</p>
+<p>✓ <strong>Technology comparison</strong>: Fair comparison between different energy conversion technologies</p>
+<p>✓ <strong>Optimization guidance</strong>: Identify the most promising areas for system improvement</p>
+</section>
+<section id="core-capabilities">
+<h2>Core Capabilities<a class="headerlink" href="#core-capabilities" title="Link to this heading">¶</a></h2>
+<section id="unified-balance-calculations">
+<h3>Unified Balance Calculations<a class="headerlink" href="#unified-balance-calculations" title="Link to this heading">¶</a></h3>
+<p>Every component model automatically calculates three balances:</p>
+<ol class="arabic">
+<li><p><strong>Energy Balance</strong> (First Law of Thermodynamics): Identifies energy flows and losses</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[\begin{split}\\sum \\dot{E}_{in} = \\sum \\dot{E}_{out} + \\dot{E}_{loss}\end{split}\]</div>
+</div>
+</li>
+<li><p><strong>Entropy Balance</strong> (Second Law of Thermodynamics): Quantifies irreversibilities</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[\begin{split}\\sum \\dot{S}_{in} + \\dot{S}_{gen} = \\sum \\dot{S}_{out}\end{split}\]</div>
+</div>
+</li>
+<li><p><strong>Exergy Balance</strong> (Both First and Second Law): Reveals thermodynamic inefficiencies</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[\begin{split}\\sum \\dot{X}_{in} = \\sum \\dot{X}_{out} + \\dot{X}_{destroyed}\end{split}\]</div>
+</div>
+<p>where exergy destruction is related to entropy generation:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[\begin{split}\\dot{X}_{destroyed} = T_0 \\cdot \\dot{S}_{gen}\end{split}\]</div>
+</div>
+</li>
+</ol>
+</section>
+</section>
+<section id="quick-start-example">
+<h2>Quick Start Example<a class="headerlink" href="#quick-start-example" title="Link to this heading">¶</a></h2>
+<p>Here’s a simple example to get you started:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span data-line="1"><span class="kn">import</span><span class="w"> </span><span class="nn">enex_analysis_engine</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">enex</span>
+</span><span data-line="2">
+</span><span data-line="3"><span class="c1"># Create an electric boiler instance</span>
+</span><span data-line="4"><span class="n">EB</span> <span class="o">=</span> <span class="n">enex</span><span class="o">.</span><span class="n">ElectricBoiler</span><span class="p">()</span>
+</span><span data-line="5">
+</span><span data-line="6"><span class="c1"># Set the reference temperature (in Celsius)</span>
+</span><span data-line="7"><span class="n">EB</span><span class="o">.</span><span class="n">T0</span> <span class="o">=</span> <span class="mi">10</span>
+</span><span data-line="8"><span class="n">EB</span><span class="o">.</span><span class="n">T_w_tank</span> <span class="o">=</span> <span class="mi">60</span>
+</span><span data-line="9"><span class="n">EB</span><span class="o">.</span><span class="n">T_w_sup</span> <span class="o">=</span> <span class="mi">10</span>
+</span><span data-line="10"><span class="n">EB</span><span class="o">.</span><span class="n">T_w_serv</span> <span class="o">=</span> <span class="mi">45</span>
+</span><span data-line="11"><span class="n">EB</span><span class="o">.</span><span class="n">dV_w_serv</span> <span class="o">=</span> <span class="mf">1.2</span>  <span class="c1"># L/min</span>
+</span><span data-line="12">
+</span><span data-line="13"><span class="c1"># Update the system calculations</span>
+</span><span data-line="14"><span class="n">EB</span><span class="o">.</span><span class="n">system_update</span><span class="p">()</span>
+</span><span data-line="15">
+</span><span data-line="16"><span class="c1"># Print the exergy balance</span>
+</span><span data-line="17"><span class="n">enex</span><span class="o">.</span><span class="n">print_balance</span><span class="p">(</span><span class="n">EB</span><span class="o">.</span><span class="n">exergy_balance</span><span class="p">)</span>
+</span><span data-line="18">
+</span><span data-line="19"><span class="c1"># Access results</span>
+</span><span data-line="20"><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Electric power input: </span><span class="si">{</span><span class="n">EB</span><span class="o">.</span><span class="n">E_heater</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> W&quot;</span><span class="p">)</span>
+</span><span data-line="21"><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Exergy efficiency: </span><span class="si">{</span><span class="n">EB</span><span class="o">.</span><span class="n">X_eff</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span></pre></div>
+</div>
+</section>
+<section id="energy-systems-supported">
+<h2>Energy Systems Supported<a class="headerlink" href="#energy-systems-supported" title="Link to this heading">¶</a></h2>
+<p>The library provides models for a wide range of energy conversion systems:</p>
+<p><strong>Domestic Hot Water (DHW) Systems</strong></p>
+<ul class="simple">
+<li><p><code class="xref py py-class docutils literal notranslate"><span class="pre">ElectricBoiler</span></code> - Electric resistance heating</p></li>
+<li><p><code class="xref py py-class docutils literal notranslate"><span class="pre">GasBoiler</span></code> - Natural gas combustion boiler</p></li>
+<li><p><code class="xref py py-class docutils literal notranslate"><span class="pre">HeatPumpBoiler</span></code> - Air-source heat pump</p></li>
+<li><p><code class="xref py py-class docutils literal notranslate"><span class="pre">SolarAssistedGasBoiler</span></code> - Hybrid solar+gas system</p></li>
+<li><p><code class="xref py py-class docutils literal notranslate"><span class="pre">GroundSourceHeatPumpBoiler</span></code> - Ground-source heat pump</p></li>
+</ul>
+<p><strong>Heat Pump Systems</strong></p>
+<ul class="simple">
+<li><p>Air-source and ground-source heat pumps in both heating and cooling modes</p></li>
+</ul>
+<p><strong>Dynamic System Models</strong></p>
+<ul class="simple">
+<li><p><code class="xref py py-class docutils literal notranslate"><span class="pre">ElectricHeater</span></code> - Transient heat transfer analysis</p></li>
+</ul>
+<p><strong>Auxiliary Components</strong></p>
+<ul class="simple">
+<li><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Fan</span></code> - Air handling fans with performance curves</p></li>
+<li><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Pump</span></code> - Fluid circulation pumps</p></li>
+</ul>
+<div class="toctree-wrapper compound">
+</div>
+<div class="toctree-wrapper compound">
+</div>
+</section>
+<section id="indices-and-tables">
+<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+</section>
+</section>
+
+        </article><button class="back-to-top" type="button">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+    <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+  </svg>
+  <span>Back to top</span>
+</button><div class="navigation flex print:hidden"><div class="navigation-next">
+    <a href="getting-started/index.html">
+      <div class="page-info">
+        <span>Next</span>
+        <div class="title">Getting Started</div>
+      </div>
+      <i class="i-lucide chevron-right"></i>
+    </a>
+  </div></div></div>
+    </div>
+  </main>
+</div>
+<footer class="sy-foot">
+  <div class="sy-foot-inner sy-container mx-auto">
+    <div class="sy-foot-reserved md:flex justify-between items-center">
+      <div class="sy-foot-copyright"><p>2025, betlab</p>
+  
+  <p>
+    Made with
+    
+    <a href="https://www.sphinx-doc.org/">Sphinx</a> and
+    
+    <a href="https://shibuya.lepture.com">Shibuya theme</a>.
+  </p>
+</div>
+      <div class="sy-foot-socials">
+<a href="https://github.com/bet-lab/enex_analysis_engine" aria-label="GitHub">
+  <iconify-icon icon="simple-icons:github"></iconify-icon>
+</a></div>
+    </div>
+  </div>
+</footer>
+      <script src="_static/documentation_options.js?v=01f34227"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="_static/copybutton.js?v=f281be69"></script>
+      <script src="_static/design-tabs.js?v=f930bc37"></script>
+      <script src="_static/shibuya.js?v=cac61aee"></script>
+      <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script></body>
+</html>

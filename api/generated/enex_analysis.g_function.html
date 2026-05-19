@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en" data-accent-color="violet" data-content_root="../../">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"><title>enex_analysis.g_function - Energy-Exergy Analysis Engine</title><link rel="index" title="Index" href="../../genindex.html" /><link rel="search" title="Search" href="../../search.html" /><link rel="next" title="Advanced &amp; Tools" href="../advanced.html" /><link rel="prev" title="enex_analysis.uv_treatment" href="enex_analysis.uv_treatment.html" />
+      <link rel="canonical" href="https://bet-lab.github.io/enex_analysis_engine/api/generated/enex_analysis.g_function.html" /><script>
+    function setColorMode(t){let e=document.documentElement;e.setAttribute("data-color-mode",t);let a=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,s=t;"auto"===t&&(s=a?"dark":"light"),"light"===s?(e.classList.remove("dark"),e.classList.add("light")):(e.classList.remove("light"),e.classList.add("dark"))}
+    setColorMode(localStorage._theme||"auto");
+  </script><link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=e1a1ceaf" />
+    <link rel="stylesheet" type="text/css" href="../../_static/shibuya.css?v=44020203" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link media="print" rel="stylesheet" type="text/css" href="../../_static/print.css?v=20ff2c19" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css?v=e84031eb" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --sy-f-text: "Inter", var(--sy-f-sys), var(--sy-f-cjk), sans-serif;
+  --sy-f-heading: "Inter", var(--sy-f-sys), var(--sy-f-cjk), sans-serif;
+}
+</style>
+    <meta property="og:type" content="website"/>
+  <meta property="og:url" content="https://bet-lab.github.io/enex_analysis_engine/api/generated/enex_analysis.g_function.html"/>
+  <meta property="og:title" content="enex_analysis.g_function"/>
+    <meta name="twitter:card" content="summary"/>
+  </head>
+<body><div class="sy-head">
+  <div class="sy-head-blur"></div>
+  <div class="sy-head-inner sy-container mx-auto">
+    <a class="sy-head-brand" href="../../index.html">
+      
+      
+      <strong>Energy-Exergy Analysis Engine</strong>
+    </a>
+    <div class="sy-head-nav" id="head-nav">
+      <nav class="sy-head-links"><ul><li class="link"><a href="../../getting-started/index.html">Getting Started</a></li><li class="link"><a href="../../theory/index.html">Theory</a></li><li class="link"><a href="../index.html">API Reference</a></li></ul></nav>
+      <div class="sy-head-extra flex items-center print:hidden"><form class="searchbox flex items-center" action="../../search.html" method="get">
+  <input type="text" name="q" placeholder="Search" />
+  <kbd>/</kbd>
+</form><div class="sy-head-socials">
+  <a href="https://github.com/bet-lab/enex_analysis_engine" aria-label="GitHub">
+    <iconify-icon icon="simple-icons:github"></iconify-icon>
+  </a></div></div>
+    </div>
+    <div class="sy-head-actions flex items-center shrink-0 print:hidden"><button class="js-theme theme-switch flex items-center"
+data-aria-auto="Switch to light color mode"
+data-aria-light="Switch to dark color mode"
+data-aria-dark="Switch to auto color mode">
+<i class="i-lucide theme-icon"></i>
+</button><button class="md:hidden flex items-center js-menu" aria-label="Menu" type="button" aria-controls="head-nav" aria-expanded="false">
+        <div class="hamburger">
+          <span class="hamburger_1"></span>
+          <span class="hamburger_2"></span>
+          <span class="hamburger_3"></span>
+        </div>
+      </button>
+    </div>
+  </div>
+</div>
+<div class="sy-page sy-container flex mx-auto">
+  <aside id="lside" class="sy-lside md:w-72 md:shrink-0 print:hidden">
+    <div class="sy-lside-inner md:sticky">
+      <div class="sy-scrollbar p-6">
+        <div class="globaltoc" data-expand-depth="0"><p class="caption" role="heading" aria-level="3"><span class="caption-text">Documentation</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../getting-started/index.html">Getting Started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../getting-started/installation.html">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../getting-started/quickstart.html">Quick Start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../getting-started/configuration.html">Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../guides/index.html">User Guides</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/user-guide.html">User Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/io-guide.html">Input/Output Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/advanced-topics.html">Advanced Topics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/nomenclature.html">Symbol Naming Convention</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">API Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../core.html">Core &amp; Utilities</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.thermodynamics.html">enex_analysis.thermodynamics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.refrigerant.html">enex_analysis.refrigerant</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.heat_transfer.html">enex_analysis.heat_transfer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.dhw.html">enex_analysis.dhw</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.cop.html">enex_analysis.cop</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.calc_util.html">enex_analysis.calc_util</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.constants.html">enex_analysis.constants</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.weather.html">enex_analysis.weather</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.enex_functions.html">enex_analysis.enex_functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.dynamic_context.html">enex_analysis.dynamic_context</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.simulation_runner.html">enex_analysis.simulation_runner</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.simulation_runner.html">enex_analysis.simulation_runner</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../engines.html">Energy System Engines</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.air_source_heat_pump.html">enex_analysis.air_source_heat_pump</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.ground_source_heat_pump.html">enex_analysis.ground_source_heat_pump</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.electric_boiler.html">enex_analysis.electric_boiler</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.gas_boiler.html">enex_analysis.gas_boiler</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.gas_boiler_tank.html">enex_analysis.gas_boiler_tank</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.solar_assisted_gas_boiler.html">enex_analysis.solar_assisted_gas_boiler</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.air_source_heat_pump_boiler.html">enex_analysis.air_source_heat_pump_boiler</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.ground_source_heat_pump_boiler.html">enex_analysis.ground_source_heat_pump_boiler</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.water_source_heat_pump_boiler.html">enex_analysis.water_source_heat_pump_boiler</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.ashpb_pv_ess.html">enex_analysis.ashpb_pv_ess</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.ashpb_stc_preheat.html">enex_analysis.ashpb_stc_preheat</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.ashpb_stc_tank.html">enex_analysis.ashpb_stc_tank</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.eb_pv_ess.html">enex_analysis.eb_pv_ess</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.eb_stc_preheat.html">enex_analysis.eb_stc_preheat</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.eb_stc_tank.html">enex_analysis.eb_stc_tank</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.gshpb_pv_ess.html">enex_analysis.gshpb_pv_ess</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.gshpb_stc_preheat.html">enex_analysis.gshpb_stc_preheat</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.gshpb_stc_tank.html">enex_analysis.gshpb_stc_tank</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.enex_engine.html">enex_analysis.enex_engine</a></li>
+</ul>
+</li>
+<li class="toctree-l2 current"><a class="reference internal" href="../subsystems.html">Subsystems</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.subsystems.html">enex_analysis.subsystems</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.tank_stratification_model.html">enex_analysis.tank_stratification_model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.hx_fan.html">enex_analysis.hx_fan</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.uv_treatment.html">enex_analysis.uv_treatment</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">enex_analysis.g_function</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../advanced.html">Advanced &amp; Tools</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.tdma.html">enex_analysis.tdma</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.visualization.html">enex_analysis.visualization</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../theory/index.html">Systems</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../theory/components/index.html">Subsystem Components</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../theory/components/refrigerant_cycle.html">Refrigerant Cycle</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../theory/components/thermal_storage.html">Thermal Storage Tank</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../theory/components/borehole_he.html">Borehole Heat Exchanger (BHE)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../theory/components/solar_thermal.html">Solar Thermal Collector (STC)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../theory/components/pv_ess.html">Photovoltaic and Energy Storage Systems (PV + ESS)</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../theory/systems/index.html">Integrated Systems</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../theory/systems/ashp_boiler.html">Air Source Heat Pump Boiler (ASHPB)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../theory/systems/gshp_boiler.html">Ground Source Heat Pump Boiler (GSHPB)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../theory/systems/hybrid_systems.html">Hybrid Heat Pump Systems</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../theory/scenarios/index.html">Scenarios &amp; Analysis</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../theory/scenarios/pv_vs_stc.html">Photovoltaic vs. Solar Thermal Collector</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading" aria-level="3"><span class="caption-text">Project Links</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/bet-lab/enex_analysis_engine">GitHub Repository</a></li>
+</ul>
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="lside-overlay js-menu" role="button" aria-label="Close left sidebar" aria-controls="lside" aria-expanded="false"></div>
+  <aside id="rside" class="sy-rside pb-3 w-64 shrink-0 order-last">
+    <button class="rside-close js-menu xl:hidden" aria-label="Close Table of Contents" type="button" aria-controls="rside" aria-expanded="false">
+      <i class="i-lucide close"></i>
+    </button>
+    <div class="sy-scrollbar sy-rside-inner px-6 xl:top-16 xl:sticky xl:pl-0 pt-6 pb-4"><div class="localtoc"><h3>On this page</h3><ul>
+<li><a class="reference internal" href="#enex_analysis.g_function.f"><code class="docutils literal notranslate"><span class="pre">f()</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.g_function.chi"><code class="docutils literal notranslate"><span class="pre">chi()</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.g_function.G_FLS"><code class="docutils literal notranslate"><span class="pre">G_FLS()</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.g_function.precompute_gfunction"><code class="docutils literal notranslate"><span class="pre">precompute_gfunction()</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.g_function.chi_mfls"><code class="docutils literal notranslate"><span class="pre">chi_mfls()</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.g_function.G_MFLS_Field"><code class="docutils literal notranslate"><span class="pre">G_MFLS_Field()</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.g_function.precompute_gfunction_mls"><code class="docutils literal notranslate"><span class="pre">precompute_gfunction_mls()</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.g_function.air_dynamic_viscosity"><code class="docutils literal notranslate"><span class="pre">air_dynamic_viscosity()</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.g_function.air_prandtl_number"><code class="docutils literal notranslate"><span class="pre">air_prandtl_number()</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.g_function.calc_borehole_thermal_resistance"><code class="docutils literal notranslate"><span class="pre">calc_borehole_thermal_resistance()</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.g_function.calc_submerged_coil_thermal_resistance"><code class="docutils literal notranslate"><span class="pre">calc_submerged_coil_thermal_resistance()</span></code></a></li>
+</ul>
+</div><div id="ethical-ad-placement" data-ea-publisher="readthedocs"></div></div>
+  </aside>
+  <div class="rside-overlay js-menu" role="button" aria-label="Close Table of Contents" aria-controls="rside" aria-expanded="false"></div>
+  <main class="sy-main w-full max-sm:max-w-full print:pt-6">
+<div class="sy-breadcrumbs" role="navigation">
+  <div class="sy-breadcrumbs-inner flex items-center">
+    <div class="md:hidden mr-3">
+      <button class="js-menu" aria-label="Menu" type="button" aria-controls="lside" aria-expanded="false">
+        <i class="i-lucide menu"></i>
+      </button>
+    </div>
+    <ol class="flex-1" itemscope itemtype="https://schema.org/BreadcrumbList"><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <a itemprop="item" href="../../index.html"><span itemprop="name">Energy-Exergy Analysis Engine</span></a>
+        <span>/</span>
+        <meta itemprop="position" content="1" />
+      </li><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <a itemprop="item" href="../index.html"><span itemprop="name">API Reference</span></a>
+        <span>/</span>
+        <meta itemprop="position" content="2" />
+      </li><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <a itemprop="item" href="../subsystems.html"><span itemprop="name">Subsystems</span></a>
+        <span>/</span>
+        <meta itemprop="position" content="3" />
+      </li><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <strong itemprop="name">enex_analysis.g_function</strong>
+        <meta itemprop="position" content="4" />
+      </li></ol>
+    <div class="xl:hidden ml-1">
+      <button class="js-menu" aria-label="Show table of contents" type="button" aria-controls="rside"
+        aria-expanded="false">
+        <i class="i-lucide outdent"></i>
+      </button>
+    </div>
+  </div>
+</div><div class="flex flex-col break-words justify-between">
+      <div class="relative min-w-0 max-w-6xl px-6 pb-6 pt-8 xl:px-12">
+  <div class="copy-page-wrapper relative pb-4 lg:absolute lg:top-8 lg:right-6 xl:right-12">
+  <div id="copy-page-trigger">
+    <button
+      type="button"
+      class="js-copy px-3 py-1 inline-flex items-center gap-1"
+      data-url="https://bet-lab.github.io/enex_analysis_engine/_sources/api/generated/enex_analysis.g_function.rst.txt"
+    >
+      <i class="i-lucide" data-icon="copy"></i>
+      <span>Copy page</span>
+    </button>
+    <button class="js-menu px-2 py-1" type="button" aria-label="More actions"
+      aria-haspopup="menu" aria-expanded="false" aria-controls="copy-page-content">
+      <i class="i-lucide chevron-down"></i>
+    </button>
+  </div>
+  <div id="copy-page-content" role="menu" aria-orientation="vertical" aria-hidden="true">
+    <div role="presentation">
+      <div class="flex flex-col" role="group">
+        <button class="js-copy" type="button" role="menuitem"
+          data-url="https://bet-lab.github.io/enex_analysis_engine/_sources/api/generated/enex_analysis.g_function.rst.txt">
+          <span class="iconify-icon">
+            <i class="i-lucide" data-icon="copy"></i>
+          </span>
+          <span>Copy page</span>
+        </button>
+        <a role="menuitem" href="https://bet-lab.github.io/enex_analysis_engine/_sources/api/generated/enex_analysis.g_function.rst.txt" target="_blank" rel="nofollow"><iconify-icon icon="bi:code-slash"></iconify-icon>
+            <span>View Source</span></a><a role="menuitem" href="https://chatgpt.com/?hints=search&q=Read%20https%3A//bet-lab.github.io/enex_analysis_engine/_sources/api/generated/enex_analysis.g_function.rst.txt%20so%20I%20can%20ask%20questions%20about%20it." target="_blank" rel="nofollow">
+          <iconify-icon icon="bi:openai"></iconify-icon>
+          <span>Open in ChatGPT</span>
+        </a><a role="menuitem" href="https://claude.ai/new?q=Read%20https%3A//bet-lab.github.io/enex_analysis_engine/_sources/api/generated/enex_analysis.g_function.rst.txt%20so%20I%20can%20ask%20questions%20about%20it." target="_blank" rel="nofollow">
+          <iconify-icon icon="bi:claude"></iconify-icon>
+          <span>Open in Claude</span>
+        </a></div>
+    </div>
+  </div>
+</div><article class="yue" role="main">
+          <section id="module-enex_analysis.g_function">
+<span id="enex-analysis-g-function"></span><h1>enex_analysis.g_function<a class="headerlink" href="#module-enex_analysis.g_function" title="Link to this heading">¶</a></h1>
+<p>Borehole g-function and air property helpers.</p>
+<p>Provides:
+- Finite Line Source (FLS) g-function for borehole heat exchangers
+- Air dynamic viscosity (Sutherland’s formula) and Prandtl number</p>
+<p class="rubric">Functions</p>
+<div class="table-wrapper autosummary longtable docutils container">
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#enex_analysis.g_function.G_FLS" title="enex_analysis.g_function.G_FLS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">G_FLS</span></code></a>(t, ks, as_, rb, H)</p></td>
+<td><p>Calculate the g-function for finite line source (FLS) model.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#enex_analysis.g_function.G_MFLS_Field" title="enex_analysis.g_function.G_MFLS_Field"><code class="xref py py-obj docutils literal notranslate"><span class="pre">G_MFLS_Field</span></code></a>(times, boreholes, v_gw, ...)</p></td>
+<td><p>Calculate the spatial superposition of the MFLS response for a bore field.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#enex_analysis.g_function.air_dynamic_viscosity" title="enex_analysis.g_function.air_dynamic_viscosity"><code class="xref py py-obj docutils literal notranslate"><span class="pre">air_dynamic_viscosity</span></code></a>(T_K)</p></td>
+<td><p>Calculate air dynamic viscosity using Sutherland's formula.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#enex_analysis.g_function.air_prandtl_number" title="enex_analysis.g_function.air_prandtl_number"><code class="xref py py-obj docutils literal notranslate"><span class="pre">air_prandtl_number</span></code></a>(T_K)</p></td>
+<td><p>Calculate air Prandtl number.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#enex_analysis.g_function.calc_borehole_thermal_resistance" title="enex_analysis.g_function.calc_borehole_thermal_resistance"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calc_borehole_thermal_resistance</span></code></a>(k_s, k_g, ...)</p></td>
+<td><p>Calculate the effective borehole thermal resistance R_b* [mK/W] for a Single U-tube.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#enex_analysis.g_function.calc_submerged_coil_thermal_resistance" title="enex_analysis.g_function.calc_submerged_coil_thermal_resistance"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calc_submerged_coil_thermal_resistance</span></code></a>(...)</p></td>
+<td><p>Calculate the local thermal resistance [mK/W] of a submerged surface water heat exchanger coil.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#enex_analysis.g_function.chi" title="enex_analysis.g_function.chi"><code class="xref py py-obj docutils literal notranslate"><span class="pre">chi</span></code></a>(s, rb, H[, z0])</p></td>
+<td><p>Helper function for G-function calculation.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#enex_analysis.g_function.chi_mfls" title="enex_analysis.g_function.chi_mfls"><code class="xref py py-obj docutils literal notranslate"><span class="pre">chi_mfls</span></code></a>(s, r, H, x_prime, U, alpha_s[, z0])</p></td>
+<td><p>Helper function for MFLS (Moving Finite Line Source) G-function calculation.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#enex_analysis.g_function.f" title="enex_analysis.g_function.f"><code class="xref py py-obj docutils literal notranslate"><span class="pre">f</span></code></a>(x)</p></td>
+<td><p>Helper function for G-function calculation.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#enex_analysis.g_function.precompute_gfunction" title="enex_analysis.g_function.precompute_gfunction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">precompute_gfunction</span></code></a>(N_1, N_2, B, H_b, D_b, ...)</p></td>
+<td><p>Precompute g-function using pygfunction and return an interpolator.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#enex_analysis.g_function.precompute_gfunction_mls" title="enex_analysis.g_function.precompute_gfunction_mls"><code class="xref py py-obj docutils literal notranslate"><span class="pre">precompute_gfunction_mls</span></code></a>(N_1, N_2, B, H_b, ...)</p></td>
+<td><p>Precompute the MFLS g-function and return an interpolator.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<dl class="py function">
+<dt class="sig sig-object py" id="enex_analysis.g_function.f">
+<span class="sig-prename descclassname"><span class="pre">enex_analysis.g_function.</span></span><span class="sig-name descname"><span class="pre">f</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/enex_analysis/g_function.html#f"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#enex_analysis.g_function.f" title="Link to this definition">¶</a></dt>
+<dd><p>Helper function for G-function calculation.</p>
+<section id="parameters">
+<h2>Parameters:<a class="headerlink" href="#parameters" title="Link to this heading">¶</a></h2>
+<dl class="simple">
+<dt>x<span class="classifier">float</span></dt><dd><p>Input value</p>
+</dd>
+</dl>
+</section>
+<section id="returns">
+<h2>Returns:<a class="headerlink" href="#returns" title="Link to this heading">¶</a></h2>
+<p>:
+float</p>
+<blockquote>
+<div><p>f(x) = x*erf(x) - (1-exp(-x²))/√π</p>
+</div></blockquote>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="enex_analysis.g_function.chi">
+<span class="sig-prename descclassname"><span class="pre">enex_analysis.g_function.</span></span><span class="sig-name descname"><span class="pre">chi</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rb</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">H</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/enex_analysis/g_function.html#chi"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#enex_analysis.g_function.chi" title="Link to this definition">¶</a></dt>
+<dd><p>Helper function for G-function calculation.</p>
+<section id="id1">
+<h2>Parameters:<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h2>
+<dl class="simple">
+<dt>s<span class="classifier">float</span></dt><dd><p>Integration variable</p>
+</dd>
+<dt>rb<span class="classifier">float</span></dt><dd><p>Borehole radius [m]</p>
+</dd>
+<dt>H<span class="classifier">float</span></dt><dd><p>Borehole height [m]</p>
+</dd>
+<dt>z0<span class="classifier">float, optional</span></dt><dd><p>Reference depth [m] (default: 0)</p>
+</dd>
+</dl>
+</section>
+<section id="id2">
+<h2>Returns:<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h2>
+<p>:
+float</p>
+<blockquote>
+<div><p>chi function value</p>
+</div></blockquote>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="enex_analysis.g_function.G_FLS">
+<span class="sig-prename descclassname"><span class="pre">enex_analysis.g_function.</span></span><span class="sig-name descname"><span class="pre">G_FLS</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ks</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">as_</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rb</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">H</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/enex_analysis/g_function.html#G_FLS"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#enex_analysis.g_function.G_FLS" title="Link to this definition">¶</a></dt>
+<dd><p>Calculate the g-function for finite line source (FLS) model.</p>
+<p>This function calculates the g-function used in ground source heat pump
+analysis. Results are cached for performance.</p>
+<section id="id3">
+<h2>Parameters:<a class="headerlink" href="#id3" title="Link to this heading">¶</a></h2>
+<dl class="simple">
+<dt>t<span class="classifier">float</span></dt><dd><p>Time [s]</p>
+</dd>
+<dt>ks<span class="classifier">float</span></dt><dd><p>Ground thermal conductivity [W/mK]</p>
+</dd>
+<dt><a href="#id12"><span class="problematic" id="id13">as_</span></a><span class="classifier">float</span></dt><dd><p>Ground thermal diffusivity [m²/s]</p>
+</dd>
+<dt>rb<span class="classifier">float</span></dt><dd><p>Borehole radius [m]</p>
+</dd>
+<dt>H<span class="classifier">float</span></dt><dd><p>Borehole height [m]</p>
+</dd>
+</dl>
+</section>
+<section id="id4">
+<h2>Returns:<a class="headerlink" href="#id4" title="Link to this heading">¶</a></h2>
+<p>:
+float or array</p>
+<blockquote>
+<div><p>g-function value [mK/W]. Returns scalar for single time value,
+array for multiple time values.</p>
+</div></blockquote>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="enex_analysis.g_function.precompute_gfunction">
+<span class="sig-prename descclassname"><span class="pre">enex_analysis.g_function.</span></span><span class="sig-name descname"><span class="pre">precompute_gfunction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">N_1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N_2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">B</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">H_b</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">D_b</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r_b</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha_s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k_s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t_max_s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dt_s</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/enex_analysis/g_function.html#precompute_gfunction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#enex_analysis.g_function.precompute_gfunction" title="Link to this definition">¶</a></dt>
+<dd><p>Precompute g-function using pygfunction and return an interpolator.</p>
+<p>Creates a rectangular borehole field and computes the g-function
+for log-spaced time steps up to t_max_s (plus an extra margin).
+Returns a callable <cite>interp1d</cite> object predicting the g-function [mK/W].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>N_1</strong> (<em>int</em>) – Number of boreholes in x-direction.</p></li>
+<li><p><strong>N_2</strong> (<em>int</em>) – Number of boreholes in y-direction.</p></li>
+<li><p><strong>B</strong> (<em>float</em>) – Borehole spacing [m].</p></li>
+<li><p><strong>H_b</strong> (<em>float</em>) – Borehole depth/length [m].</p></li>
+<li><p><strong>D_b</strong> (<em>float</em>) – Buried depth [m].</p></li>
+<li><p><strong>r_b</strong> (<em>float</em>) – Borehole radius [m].</p></li>
+<li><p><strong>alpha_s</strong> (<em>float</em>) – Ground thermal diffusivity [m²/s].</p></li>
+<li><p><strong>k_s</strong> (<em>float</em>) – Ground thermal conductivity [W/mK].</p></li>
+<li><p><strong>t_max_s</strong> (<em>float</em>) – Maximum simulation time [s].</p></li>
+<li><p><strong>dt_s</strong> (<em>float</em>) – Simulation timestep [s].</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Interpolator function mapping <cite>time [s]</cite> to <cite>g-function [mK/W]</cite>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>scipy.interpolate.interp1d</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="enex_analysis.g_function.chi_mfls">
+<span class="sig-prename descclassname"><span class="pre">enex_analysis.g_function.</span></span><span class="sig-name descname"><span class="pre">chi_mfls</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">H</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_prime</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">U</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha_s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/enex_analysis/g_function.html#chi_mfls"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#enex_analysis.g_function.chi_mfls" title="Link to this definition">¶</a></dt>
+<dd><p>Helper function for MFLS (Moving Finite Line Source) G-function calculation.</p>
+<p>Ref: Molina-Giraldo et al. (2011), “A moving finite line source model
+to simulate borehole heat exchangers with groundwater advection”</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="enex_analysis.g_function.G_MFLS_Field">
+<span class="sig-prename descclassname"><span class="pre">enex_analysis.g_function.</span></span><span class="sig-name descname"><span class="pre">G_MFLS_Field</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">times</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">boreholes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v_gw</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">theta_gw</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho_w</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c_w</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha_s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k_s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho_s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c_s</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/enex_analysis/g_function.html#G_MFLS_Field"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#enex_analysis.g_function.G_MFLS_Field" title="Link to this definition">¶</a></dt>
+<dd><p>Calculate the spatial superposition of the MFLS response for a bore field.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>times</strong> (<em>np.ndarray</em>) – Array of time values [s]</p></li>
+<li><p><strong>boreholes</strong> (<em>list</em>) – List of pygfunction Borehole objects</p></li>
+<li><p><strong>v_gw</strong> (<em>float</em>) – Darcy velocity of groundwater [m/s]</p></li>
+<li><p><strong>theta_gw</strong> (<em>float</em>) – Direction of groundwater flow [rad]</p></li>
+<li><p><strong>rho_w</strong> (<em>float</em>) – Density of groundwater [kg/m³]</p></li>
+<li><p><strong>c_w</strong> (<em>float</em>) – Specific heat capacity of groundwater [J/kgK]</p></li>
+<li><p><strong>alpha_s</strong> (<em>float</em>) – Ground thermal diffusivity [m²/s]</p></li>
+<li><p><strong>k_s</strong> (<em>float</em>) – Ground thermal conductivity [W/mK]</p></li>
+<li><p><strong>rho_s</strong> (<em>float</em>) – Density of ground [kg/m³]</p></li>
+<li><p><strong>c_s</strong> (<em>float</em>) – Specific heat capacity of ground [J/kgK]</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dimensional g-values for the entire field over time [mK/W]</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="enex_analysis.g_function.precompute_gfunction_mls">
+<span class="sig-prename descclassname"><span class="pre">enex_analysis.g_function.</span></span><span class="sig-name descname"><span class="pre">precompute_gfunction_mls</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">N_1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N_2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">B</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">H_b</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">D_b</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r_b</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha_s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k_s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho_s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c_s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v_gw</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">theta_gw</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho_w</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c_w</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t_max_s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dt_s</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/enex_analysis/g_function.html#precompute_gfunction_mls"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#enex_analysis.g_function.precompute_gfunction_mls" title="Link to this definition">¶</a></dt>
+<dd><p>Precompute the MFLS g-function and return an interpolator.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>N_1</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>)</p></li>
+<li><p><strong>N_2</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>)</p></li>
+<li><p><strong>B</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>H_b</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>D_b</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>r_b</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>alpha_s</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>k_s</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>rho_s</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>c_s</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>v_gw</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>theta_gw</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>rho_w</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>c_w</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>t_max_s</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>dt_s</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">interp1d</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="enex_analysis.g_function.air_dynamic_viscosity">
+<span class="sig-prename descclassname"><span class="pre">enex_analysis.g_function.</span></span><span class="sig-name descname"><span class="pre">air_dynamic_viscosity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T_K</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/enex_analysis/g_function.html#air_dynamic_viscosity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#enex_analysis.g_function.air_dynamic_viscosity" title="Link to this definition">¶</a></dt>
+<dd><p>Calculate air dynamic viscosity using Sutherland’s formula.</p>
+<section id="id5">
+<h2>Parameters:<a class="headerlink" href="#id5" title="Link to this heading">¶</a></h2>
+<dl class="simple">
+<dt>T_K<span class="classifier">float</span></dt><dd><p>Temperature [K]</p>
+</dd>
+</dl>
+</section>
+<section id="id6">
+<h2>Returns:<a class="headerlink" href="#id6" title="Link to this heading">¶</a></h2>
+<p>:
+float</p>
+<blockquote>
+<div><p>Dynamic viscosity [Pa·s]</p>
+</div></blockquote>
+<p>Reference: Sutherland’s formula for air
+mu = mu0 * (T/T0)^1.5 * (T0 + S) / (T + S)
+where mu0 = 1.716e-5 Pa·s at T0 = 273.15 K, S = 110.4 K</p>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="enex_analysis.g_function.air_prandtl_number">
+<span class="sig-prename descclassname"><span class="pre">enex_analysis.g_function.</span></span><span class="sig-name descname"><span class="pre">air_prandtl_number</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T_K</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/enex_analysis/g_function.html#air_prandtl_number"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#enex_analysis.g_function.air_prandtl_number" title="Link to this definition">¶</a></dt>
+<dd><p>Calculate air Prandtl number.</p>
+<section id="id7">
+<h2>Parameters:<a class="headerlink" href="#id7" title="Link to this heading">¶</a></h2>
+<dl class="simple">
+<dt>T_K<span class="classifier">float</span></dt><dd><p>Temperature [K]</p>
+</dd>
+</dl>
+</section>
+<section id="id8">
+<h2>Returns:<a class="headerlink" href="#id8" title="Link to this heading">¶</a></h2>
+<p>:
+float</p>
+<blockquote>
+<div><p>Prandtl number [-]</p>
+</div></blockquote>
+<p>Note: Pr ≈ 0.71 for air at typical temperatures (20-50°C)
+Temperature dependence is weak, so using constant value.</p>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="enex_analysis.g_function.calc_borehole_thermal_resistance">
+<span class="sig-prename descclassname"><span class="pre">enex_analysis.g_function.</span></span><span class="sig-name descname"><span class="pre">calc_borehole_thermal_resistance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">k_s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k_g</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k_p</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r_b</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r_out</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r_in</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">D_s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">H_b</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m_flow_borehole</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho_f</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu_f</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cp_f</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k_f</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/enex_analysis/g_function.html#calc_borehole_thermal_resistance"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#enex_analysis.g_function.calc_borehole_thermal_resistance" title="Link to this definition">¶</a></dt>
+<dd><p>Calculate the effective borehole thermal resistance R_b* [mK/W] for a Single U-tube.</p>
+<p>Implements the full three-stage calculation in a single call:</p>
+<dl class="simple">
+<dt>Stage 1 — Fluid-to-pipe resistance (R_fp):</dt><dd><p>R_fp = R_conv + R_cond
+R_conv: convective resistance inside the pipe (Gnielinski correlation).
+R_cond: conductive resistance through the pipe wall (ln(r_out/r_in)/(2πk_p)).</p>
+</dd>
+<dt>Stage 2 — 2D cross-section (Local R_b via multipole method):</dt><dd><p>SingleUTube solves the steady-state 2D Laplace equation in the grout
+cross-section using Hellström’s multipole expansion (default order J=10).
+Boundary conditions: R_fp at each pipe surface, T=const at borehole wall.
+Outputs: Local R_b (fluid → borehole wall, cross-section only).</p>
+</dd>
+<dt>Stage 3 — Axial short-circuit correction (Effective R_b*):</dt><dd><p>pipe.effective_borehole_thermal_resistance() applies the Cimmino / Hellström
+(1991) analytical solution for axial fluid temperature variation and
+thermal short-circuiting between the two U-tube legs.</p>
+</dd>
+</dl>
+<p>For a Single U-tube (series flow), each pipe leg carries the full borehole
+flow rate; m_flow_borehole is passed directly without division by 2.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>k_s</strong> (<em>float</em>) – Ground thermal conductivity [W/mK]</p></li>
+<li><p><strong>k_g</strong> (<em>float</em>) – Grout thermal conductivity [W/mK]</p></li>
+<li><p><strong>k_p</strong> (<em>float</em>) – Pipe thermal conductivity [W/mK]</p></li>
+<li><p><strong>r_b</strong> (<em>float</em>) – Borehole radius [m]</p></li>
+<li><p><strong>r_out</strong> (<em>float</em>) – Pipe outer radius [m]</p></li>
+<li><p><strong>r_in</strong> (<em>float</em>) – Pipe inner radius [m]</p></li>
+<li><p><strong>D_s</strong> (<em>float</em>) – Distance from borehole centre to pipe centre [m]</p></li>
+<li><p><strong>H_b</strong> (<em>float</em>) – Borehole depth [m]</p></li>
+<li><p><strong>m_flow_borehole</strong> (<em>float</em>) – Total fluid mass flow rate into the borehole [kg/s].
+For a Single U-tube (series), this equals the flow in each pipe leg.</p></li>
+<li><p><strong>rho_f</strong> (<em>float</em>) – Fluid density [kg/m³]</p></li>
+<li><p><strong>mu_f</strong> (<em>float</em>) – Fluid dynamic viscosity [Pa·s]</p></li>
+<li><p><strong>cp_f</strong> (<em>float</em>) – Fluid specific heat capacity [J/kgK]</p></li>
+<li><p><strong>k_f</strong> (<em>float</em>) – Fluid thermal conductivity [W/mK]</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Effective borehole thermal resistance R_b* [mK/W].</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<aside class="footnote-list brackets">
+<aside class="footnote brackets" id="id9" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></span>
+<p>Hellström, G. (1991). Ground Heat Storage: Thermal Analyses of Duct Storage Systems
+(Ph.D. thesis). University of Lund, Sweden.</p>
+</aside>
+<aside class="footnote brackets" id="id10" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></span>
+<p>Claesson, J., &amp; Hellström, G. (2011). Multipole method to calculate borehole
+thermal resistances in a borehole heat exchanger. HVAC&amp;R Research, 17(6), 895-911.
+DOI: 10.1080/10789669.2011.609927</p>
+</aside>
+<aside class="footnote brackets" id="id11" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></span>
+<p>Javed, S., &amp; Spitler, J. D. (2016). Accuracy of borehole thermal resistance
+calculation methods for grouted single U-tube ground heat exchangers.
+Applied Energy, 182, 161-176. DOI: 10.1016/j.apenergy.2016.08.054</p>
+</aside>
+</aside>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="enex_analysis.g_function.calc_submerged_coil_thermal_resistance">
+<span class="sig-prename descclassname"><span class="pre">enex_analysis.g_function.</span></span><span class="sig-name descname"><span class="pre">calc_submerged_coil_thermal_resistance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r_out</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r_in</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">D_s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k_p</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m_flow_pipe</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho_f</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu_f</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cp_f</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k_f</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v_river</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/enex_analysis/g_function.html#calc_submerged_coil_thermal_resistance"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#enex_analysis.g_function.calc_submerged_coil_thermal_resistance" title="Link to this definition">¶</a></dt>
+<dd><p>Calculate the local thermal resistance [mK/W] of a submerged surface water heat exchanger coil.</p>
+<p>Uses the Churchill-Bernstein correlation for cross-flow forced convection over a cylinder
+to estimate the external (river water) convective heat transfer coefficient.
+It tricks pygfunction’s SingleUTube model into capturing this pure pipe resistance
+without any ground thermal mass by assigning exceptionally high thermal conductivities
+to the grout and ground.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>r_out</strong> (<em>float</em>) – Pipe outer radius [m]</p></li>
+<li><p><strong>r_in</strong> (<em>float</em>) – Pipe inner radius [m]</p></li>
+<li><p><strong>D_s</strong> (<em>float</em>) – Shank spacing (half distance between pipes) [m]</p></li>
+<li><p><strong>k_p</strong> (<em>float</em>) – Pipe thermal conductivity [W/mK]</p></li>
+<li><p><strong>m_flow_pipe</strong> (<em>float</em>) – Mass flow rate per pipe [kg/s]</p></li>
+<li><p><strong>rho_f</strong> (<em>float</em>) – Internal fluid density [kg/m³]</p></li>
+<li><p><strong>mu_f</strong> (<em>float</em>) – Internal fluid dynamic viscosity [Pa·s]</p></li>
+<li><p><strong>cp_f</strong> (<em>float</em>) – Internal fluid specific heat capacity [J/kgK]</p></li>
+<li><p><strong>k_f</strong> (<em>float</em>) – Internal fluid thermal conductivity [W/mK]</p></li>
+<li><p><strong>v_river</strong> (<em>float</em>) – Velocity of the river water cross-flow [m/s]</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Thermal resistance of the submerged coil [mK/W].</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+        </article><button class="back-to-top" type="button">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+    <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+  </svg>
+  <span>Back to top</span>
+</button><div class="navigation flex print:hidden"><div class="navigation-prev">
+    <a href="enex_analysis.uv_treatment.html">
+      <i class="i-lucide chevron-left"></i>
+      <div class="page-info">
+        <span>Previous</span><div class="title">enex_analysis.uv_treatment</div></div>
+    </a>
+  </div><div class="navigation-next">
+    <a href="../advanced.html">
+      <div class="page-info">
+        <span>Next</span>
+        <div class="title">Advanced &amp; Tools</div>
+      </div>
+      <i class="i-lucide chevron-right"></i>
+    </a>
+  </div></div></div>
+    </div>
+  </main>
+</div>
+<footer class="sy-foot">
+  <div class="sy-foot-inner sy-container mx-auto">
+    <div class="sy-foot-reserved md:flex justify-between items-center">
+      <div class="sy-foot-copyright"><p>2025, betlab</p>
+  
+  <p>
+    Made with
+    
+    <a href="https://www.sphinx-doc.org/">Sphinx</a> and
+    
+    <a href="https://shibuya.lepture.com">Shibuya theme</a>.
+  </p>
+</div>
+      <div class="sy-foot-socials">
+<a href="https://github.com/bet-lab/enex_analysis_engine" aria-label="GitHub">
+  <iconify-icon icon="simple-icons:github"></iconify-icon>
+</a></div>
+    </div>
+  </div>
+</footer>
+      <script src="../../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+      <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+      <script src="../../_static/shibuya.js?v=cac61aee"></script></body>
+</html>

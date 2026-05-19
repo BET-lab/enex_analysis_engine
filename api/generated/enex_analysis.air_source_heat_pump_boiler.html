@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en" data-accent-color="violet" data-content_root="../../">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"><title>enex_analysis.air_source_heat_pump_boiler - Energy-Exergy Analysis Engine</title><link rel="index" title="Index" href="../../genindex.html" /><link rel="search" title="Search" href="../../search.html" /><link rel="next" title="enex_analysis.ground_source_heat_pump_boiler" href="enex_analysis.ground_source_heat_pump_boiler.html" /><link rel="prev" title="enex_analysis.solar_assisted_gas_boiler" href="enex_analysis.solar_assisted_gas_boiler.html" />
+      <link rel="canonical" href="https://bet-lab.github.io/enex_analysis_engine/api/generated/enex_analysis.air_source_heat_pump_boiler.html" /><script>
+    function setColorMode(t){let e=document.documentElement;e.setAttribute("data-color-mode",t);let a=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,s=t;"auto"===t&&(s=a?"dark":"light"),"light"===s?(e.classList.remove("dark"),e.classList.add("light")):(e.classList.remove("light"),e.classList.add("dark"))}
+    setColorMode(localStorage._theme||"auto");
+  </script><link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=e1a1ceaf" />
+    <link rel="stylesheet" type="text/css" href="../../_static/shibuya.css?v=44020203" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link media="print" rel="stylesheet" type="text/css" href="../../_static/print.css?v=20ff2c19" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css?v=e84031eb" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --sy-f-text: "Inter", var(--sy-f-sys), var(--sy-f-cjk), sans-serif;
+  --sy-f-heading: "Inter", var(--sy-f-sys), var(--sy-f-cjk), sans-serif;
+}
+</style>
+    <meta property="og:type" content="website"/>
+  <meta property="og:url" content="https://bet-lab.github.io/enex_analysis_engine/api/generated/enex_analysis.air_source_heat_pump_boiler.html"/>
+  <meta property="og:title" content="enex_analysis.air_source_heat_pump_boiler"/>
+    <meta name="twitter:card" content="summary"/>
+  </head>
+<body><div class="sy-head">
+  <div class="sy-head-blur"></div>
+  <div class="sy-head-inner sy-container mx-auto">
+    <a class="sy-head-brand" href="../../index.html">
+      
+      
+      <strong>Energy-Exergy Analysis Engine</strong>
+    </a>
+    <div class="sy-head-nav" id="head-nav">
+      <nav class="sy-head-links"><ul><li class="link"><a href="../../getting-started/index.html">Getting Started</a></li><li class="link"><a href="../../theory/index.html">Theory</a></li><li class="link"><a href="../index.html">API Reference</a></li></ul></nav>
+      <div class="sy-head-extra flex items-center print:hidden"><form class="searchbox flex items-center" action="../../search.html" method="get">
+  <input type="text" name="q" placeholder="Search" />
+  <kbd>/</kbd>
+</form><div class="sy-head-socials">
+  <a href="https://github.com/bet-lab/enex_analysis_engine" aria-label="GitHub">
+    <iconify-icon icon="simple-icons:github"></iconify-icon>
+  </a></div></div>
+    </div>
+    <div class="sy-head-actions flex items-center shrink-0 print:hidden"><button class="js-theme theme-switch flex items-center"
+data-aria-auto="Switch to light color mode"
+data-aria-light="Switch to dark color mode"
+data-aria-dark="Switch to auto color mode">
+<i class="i-lucide theme-icon"></i>
+</button><button class="md:hidden flex items-center js-menu" aria-label="Menu" type="button" aria-controls="head-nav" aria-expanded="false">
+        <div class="hamburger">
+          <span class="hamburger_1"></span>
+          <span class="hamburger_2"></span>
+          <span class="hamburger_3"></span>
+        </div>
+      </button>
+    </div>
+  </div>
+</div>
+<div class="sy-page sy-container flex mx-auto">
+  <aside id="lside" class="sy-lside md:w-72 md:shrink-0 print:hidden">
+    <div class="sy-lside-inner md:sticky">
+      <div class="sy-scrollbar p-6">
+        <div class="globaltoc" data-expand-depth="0"><p class="caption" role="heading" aria-level="3"><span class="caption-text">Documentation</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../getting-started/index.html">Getting Started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../getting-started/installation.html">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../getting-started/quickstart.html">Quick Start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../getting-started/configuration.html">Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../guides/index.html">User Guides</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/user-guide.html">User Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/io-guide.html">Input/Output Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/advanced-topics.html">Advanced Topics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/nomenclature.html">Symbol Naming Convention</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">API Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../core.html">Core &amp; Utilities</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.thermodynamics.html">enex_analysis.thermodynamics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.refrigerant.html">enex_analysis.refrigerant</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.heat_transfer.html">enex_analysis.heat_transfer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.dhw.html">enex_analysis.dhw</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.cop.html">enex_analysis.cop</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.calc_util.html">enex_analysis.calc_util</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.constants.html">enex_analysis.constants</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.weather.html">enex_analysis.weather</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.enex_functions.html">enex_analysis.enex_functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.dynamic_context.html">enex_analysis.dynamic_context</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.simulation_runner.html">enex_analysis.simulation_runner</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.simulation_runner.html">enex_analysis.simulation_runner</a></li>
+</ul>
+</li>
+<li class="toctree-l2 current"><a class="reference internal" href="../engines.html">Energy System Engines</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.air_source_heat_pump.html">enex_analysis.air_source_heat_pump</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.ground_source_heat_pump.html">enex_analysis.ground_source_heat_pump</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.electric_boiler.html">enex_analysis.electric_boiler</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.gas_boiler.html">enex_analysis.gas_boiler</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.gas_boiler_tank.html">enex_analysis.gas_boiler_tank</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.solar_assisted_gas_boiler.html">enex_analysis.solar_assisted_gas_boiler</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">enex_analysis.air_source_heat_pump_boiler</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.ground_source_heat_pump_boiler.html">enex_analysis.ground_source_heat_pump_boiler</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.water_source_heat_pump_boiler.html">enex_analysis.water_source_heat_pump_boiler</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.ashpb_pv_ess.html">enex_analysis.ashpb_pv_ess</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.ashpb_stc_preheat.html">enex_analysis.ashpb_stc_preheat</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.ashpb_stc_tank.html">enex_analysis.ashpb_stc_tank</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.eb_pv_ess.html">enex_analysis.eb_pv_ess</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.eb_stc_preheat.html">enex_analysis.eb_stc_preheat</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.eb_stc_tank.html">enex_analysis.eb_stc_tank</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.gshpb_pv_ess.html">enex_analysis.gshpb_pv_ess</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.gshpb_stc_preheat.html">enex_analysis.gshpb_stc_preheat</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.gshpb_stc_tank.html">enex_analysis.gshpb_stc_tank</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.enex_engine.html">enex_analysis.enex_engine</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../subsystems.html">Subsystems</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.subsystems.html">enex_analysis.subsystems</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.tank_stratification_model.html">enex_analysis.tank_stratification_model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.hx_fan.html">enex_analysis.hx_fan</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.uv_treatment.html">enex_analysis.uv_treatment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.g_function.html">enex_analysis.g_function</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../advanced.html">Advanced &amp; Tools</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.tdma.html">enex_analysis.tdma</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.visualization.html">enex_analysis.visualization</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../theory/index.html">Systems</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../theory/components/index.html">Subsystem Components</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../theory/components/refrigerant_cycle.html">Refrigerant Cycle</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../theory/components/thermal_storage.html">Thermal Storage Tank</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../theory/components/borehole_he.html">Borehole Heat Exchanger (BHE)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../theory/components/solar_thermal.html">Solar Thermal Collector (STC)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../theory/components/pv_ess.html">Photovoltaic and Energy Storage Systems (PV + ESS)</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../theory/systems/index.html">Integrated Systems</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../theory/systems/ashp_boiler.html">Air Source Heat Pump Boiler (ASHPB)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../theory/systems/gshp_boiler.html">Ground Source Heat Pump Boiler (GSHPB)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../theory/systems/hybrid_systems.html">Hybrid Heat Pump Systems</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../theory/scenarios/index.html">Scenarios &amp; Analysis</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../theory/scenarios/pv_vs_stc.html">Photovoltaic vs. Solar Thermal Collector</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading" aria-level="3"><span class="caption-text">Project Links</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/bet-lab/enex_analysis_engine">GitHub Repository</a></li>
+</ul>
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="lside-overlay js-menu" role="button" aria-label="Close left sidebar" aria-controls="lside" aria-expanded="false"></div>
+  <aside id="rside" class="sy-rside pb-3 w-64 shrink-0 order-last">
+    <button class="rside-close js-menu xl:hidden" aria-label="Close Table of Contents" type="button" aria-controls="rside" aria-expanded="false">
+      <i class="i-lucide close"></i>
+    </button>
+    <div class="sy-scrollbar sy-rside-inner px-6 xl:top-16 xl:sticky xl:pl-0 pt-6 pb-4"><div class="localtoc"><h3>On this page</h3><ul>
+<li><a class="reference internal" href="#enex_analysis.air_source_heat_pump_boiler.AirSourceHeatPumpBoiler"><code class="docutils literal notranslate"><span class="pre">AirSourceHeatPumpBoiler</span></code></a><ul>
+<li><a class="reference internal" href="#enex_analysis.air_source_heat_pump_boiler.AirSourceHeatPumpBoiler.__init__"><code class="docutils literal notranslate">__init__()</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.air_source_heat_pump_boiler.AirSourceHeatPumpBoiler.analyze_steady"><code class="docutils literal notranslate">analyze_steady()</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.air_source_heat_pump_boiler.AirSourceHeatPumpBoiler.analyze_dynamic"><code class="docutils literal notranslate">analyze_dynamic()</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.air_source_heat_pump_boiler.AirSourceHeatPumpBoiler.postprocess_exergy"><code class="docutils literal notranslate">postprocess_exergy()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</div><div id="ethical-ad-placement" data-ea-publisher="readthedocs"></div></div>
+  </aside>
+  <div class="rside-overlay js-menu" role="button" aria-label="Close Table of Contents" aria-controls="rside" aria-expanded="false"></div>
+  <main class="sy-main w-full max-sm:max-w-full print:pt-6">
+<div class="sy-breadcrumbs" role="navigation">
+  <div class="sy-breadcrumbs-inner flex items-center">
+    <div class="md:hidden mr-3">
+      <button class="js-menu" aria-label="Menu" type="button" aria-controls="lside" aria-expanded="false">
+        <i class="i-lucide menu"></i>
+      </button>
+    </div>
+    <ol class="flex-1" itemscope itemtype="https://schema.org/BreadcrumbList"><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <a itemprop="item" href="../../index.html"><span itemprop="name">Energy-Exergy Analysis Engine</span></a>
+        <span>/</span>
+        <meta itemprop="position" content="1" />
+      </li><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <a itemprop="item" href="../index.html"><span itemprop="name">API Reference</span></a>
+        <span>/</span>
+        <meta itemprop="position" content="2" />
+      </li><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <a itemprop="item" href="../engines.html"><span itemprop="name">Energy System Engines</span></a>
+        <span>/</span>
+        <meta itemprop="position" content="3" />
+      </li><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <strong itemprop="name">enex_analysis.air_source_heat_pump_boiler</strong>
+        <meta itemprop="position" content="4" />
+      </li></ol>
+    <div class="xl:hidden ml-1">
+      <button class="js-menu" aria-label="Show table of contents" type="button" aria-controls="rside"
+        aria-expanded="false">
+        <i class="i-lucide outdent"></i>
+      </button>
+    </div>
+  </div>
+</div><div class="flex flex-col break-words justify-between">
+      <div class="relative min-w-0 max-w-6xl px-6 pb-6 pt-8 xl:px-12">
+  <div class="copy-page-wrapper relative pb-4 lg:absolute lg:top-8 lg:right-6 xl:right-12">
+  <div id="copy-page-trigger">
+    <button
+      type="button"
+      class="js-copy px-3 py-1 inline-flex items-center gap-1"
+      data-url="https://bet-lab.github.io/enex_analysis_engine/_sources/api/generated/enex_analysis.air_source_heat_pump_boiler.rst.txt"
+    >
+      <i class="i-lucide" data-icon="copy"></i>
+      <span>Copy page</span>
+    </button>
+    <button class="js-menu px-2 py-1" type="button" aria-label="More actions"
+      aria-haspopup="menu" aria-expanded="false" aria-controls="copy-page-content">
+      <i class="i-lucide chevron-down"></i>
+    </button>
+  </div>
+  <div id="copy-page-content" role="menu" aria-orientation="vertical" aria-hidden="true">
+    <div role="presentation">
+      <div class="flex flex-col" role="group">
+        <button class="js-copy" type="button" role="menuitem"
+          data-url="https://bet-lab.github.io/enex_analysis_engine/_sources/api/generated/enex_analysis.air_source_heat_pump_boiler.rst.txt">
+          <span class="iconify-icon">
+            <i class="i-lucide" data-icon="copy"></i>
+          </span>
+          <span>Copy page</span>
+        </button>
+        <a role="menuitem" href="https://bet-lab.github.io/enex_analysis_engine/_sources/api/generated/enex_analysis.air_source_heat_pump_boiler.rst.txt" target="_blank" rel="nofollow"><iconify-icon icon="bi:code-slash"></iconify-icon>
+            <span>View Source</span></a><a role="menuitem" href="https://chatgpt.com/?hints=search&q=Read%20https%3A//bet-lab.github.io/enex_analysis_engine/_sources/api/generated/enex_analysis.air_source_heat_pump_boiler.rst.txt%20so%20I%20can%20ask%20questions%20about%20it." target="_blank" rel="nofollow">
+          <iconify-icon icon="bi:openai"></iconify-icon>
+          <span>Open in ChatGPT</span>
+        </a><a role="menuitem" href="https://claude.ai/new?q=Read%20https%3A//bet-lab.github.io/enex_analysis_engine/_sources/api/generated/enex_analysis.air_source_heat_pump_boiler.rst.txt%20so%20I%20can%20ask%20questions%20about%20it." target="_blank" rel="nofollow">
+          <iconify-icon icon="bi:claude"></iconify-icon>
+          <span>Open in Claude</span>
+        </a></div>
+    </div>
+  </div>
+</div><article class="yue" role="main">
+          <section id="module-enex_analysis.air_source_heat_pump_boiler">
+<span id="enex-analysis-air-source-heat-pump-boiler"></span><h1>enex_analysis.air_source_heat_pump_boiler<a class="headerlink" href="#module-enex_analysis.air_source_heat_pump_boiler" title="Link to this heading">¶</a></h1>
+<p>Integrated System Model: Air Source Heat Pump Boiler (ASHPB).</p>
+<p>This system class orchestrates the dynamic interaction between distinct thermodynamic
+sub-components to simulate the overall heating performance. While implemented as an
+integrated model, its physical calculations represent the behavior of:</p>
+<ol class="arabic simple">
+<li><p><strong>Refrigerant Cycle (Vapor-Compression):</strong>
+Evaluates thermodynamic states using CoolProp, enforcing superheat/subcool margins.</p></li>
+<li><p><strong>Heat Pump Compressor:</strong>
+Models the compression process using isentropic and volumetric efficiencies to compute
+the actual discharge enthalpy and mass flow rate. The compressor power is determined
+from the enthalpy difference and the mass flow rate.</p></li>
+<li><p><strong>Expansion Valve:</strong>
+Modeled as an isenthalpic expansion device (constant enthalpy) that throttles the
+refrigerant from the condensing pressure down to the evaporating pressure.</p></li>
+<li><p><strong>Heat Exchangers (Condenser &amp; Evaporator):</strong></p>
+<ul class="simple">
+<li><p><strong>Condenser:</strong> Placed inside the tank (hydronic), utilizing a static overall heat
+transfer coefficient (UA_cond_design).</p></li>
+<li><p><strong>Evaporator:</strong> Air-coupled outdoor unit, utilizing a dynamic overall heat transfer
+coefficient (UA_evap) that scales non-linearly with fan airflow (Colburn j-factor analogy).</p></li>
+</ul>
+</li>
+<li><p><strong>Thermal Storage Tank:</strong>
+Modeled with lumped-capacitance and DHW mixing logic.</p></li>
+</ol>
+<p>At each time step, the model finds the minimum-power operating point
+(compressor + fan) via bounded 1-D optimisation (Brent’s method) over
+the evaporator approach temperature difference.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>이 통합 시스템의 작동 원리와 개별 서브 컴포넌트 모델링에 대한 상세 이론적 배경은
+<a class="reference internal" href="../../theory/systems/ashp_boiler.html"><span class="doc">Air Source Heat Pump Boiler (ASHPB)</span></a> 및 <a class="reference internal" href="../../theory/components/index.html"><span class="doc">Subsystem Components</span></a> 를 참조하세요.</p>
+</div>
+<p>Optional sub-components (injected via constructor):
+- <code class="docutils literal notranslate"><span class="pre">SolarThermalCollector</span></code> — tank-circuit or mains-preheat placement
+- (future) <code class="docutils literal notranslate"><span class="pre">PVPanel</span></code> — photovoltaic integration</p>
+<p>Tank-level management and UV disinfection are built-in features
+configured through constructor parameters.</p>
+<p class="rubric">Classes</p>
+<div class="table-wrapper autosummary longtable docutils container">
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#enex_analysis.air_source_heat_pump_boiler.AirSourceHeatPumpBoiler" title="enex_analysis.air_source_heat_pump_boiler.AirSourceHeatPumpBoiler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">AirSourceHeatPumpBoiler</span></code></a>([ref, V_disp_cmp, ...])</p></td>
+<td><p>Air source heat pump boiler with outdoor-air evaporator.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<dl class="py class">
+<dt class="sig sig-object py" id="enex_analysis.air_source_heat_pump_boiler.AirSourceHeatPumpBoiler">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">enex_analysis.air_source_heat_pump_boiler.</span></span><span class="sig-name descname"><span class="pre">AirSourceHeatPumpBoiler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'R134a'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">V_disp_cmp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0002</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eta_cmp_isen</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eta_cmp_vol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eta_cmp_mech</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.855</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dT_superheat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dT_subcool</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">UA_cond_design</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">UA_evap_design</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_evap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.65</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dV_ou_fan_a_design</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dP_ou_fan_design</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">60.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">A_cross_ou</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eta_ou_fan_design</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_tank_w_upper_bound</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">65.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_tank_w_lower_bound</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">60.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_mix_w_out</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">40.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_sup_w</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">15.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hp_capacity</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">15000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dV_mix_w_out_max</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0045</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">H</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_shell</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.005</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_ins</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k_shell</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">25</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k_ins</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.03</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">h_o</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">15</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tank_always_full</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tank_level_lower_bound</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tank_level_upper_bound</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dV_tank_w_in_refill</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prevent_simultaneous_flow</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hp_on_schedule</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pv</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uv</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vsd_coeffs_ou</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/enex_analysis/air_source_heat_pump_boiler.html#AirSourceHeatPumpBoiler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#enex_analysis.air_source_heat_pump_boiler.AirSourceHeatPumpBoiler" title="Link to this definition">¶</a></dt>
+<dd><p>Air source heat pump boiler with outdoor-air evaporator.</p>
+<p>The refrigerant cycle is resolved via CoolProp with
+user-specified superheat / subcool margins.  The condenser
+approach temperature is determined analytically
+(<code class="docutils literal notranslate"><span class="pre">dT_ref_cond</span> <span class="pre">=</span> <span class="pre">Q_cond_target</span> <span class="pre">/</span> <span class="pre">UA_cond</span></code>), and a bounded
+1-D optimiser (Brent’s method) minimises total electrical
+input (<code class="docutils literal notranslate"><span class="pre">E_cmp</span> <span class="pre">+</span> <span class="pre">E_ou_fan</span></code>) over the evaporator approach.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ref</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>)</p></li>
+<li><p><strong>V_disp_cmp</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>eta_cmp_isen</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">Callable</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>)</p></li>
+<li><p><strong>eta_cmp_vol</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">Callable</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>)</p></li>
+<li><p><strong>eta_cmp_mech</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">Callable</span></code></span>)</p></li>
+<li><p><strong>dT_superheat</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>dT_subcool</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>UA_cond_design</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>)</p></li>
+<li><p><strong>UA_evap_design</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>)</p></li>
+<li><p><strong>n_evap</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>dV_ou_fan_a_design</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>)</p></li>
+<li><p><strong>dP_ou_fan_design</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>A_cross_ou</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>)</p></li>
+<li><p><strong>eta_ou_fan_design</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>T_tank_w_upper_bound</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>T_tank_w_lower_bound</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>T_mix_w_out</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>T_sup_w</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>hp_capacity</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>dV_mix_w_out_max</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>r0</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>H</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>x_shell</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>x_ins</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>k_shell</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>k_ins</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>h_o</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>tank_always_full</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>)</p></li>
+<li><p><strong>tank_level_lower_bound</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>tank_level_upper_bound</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>dV_tank_w_in_refill</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>prevent_simultaneous_flow</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>)</p></li>
+<li><p><strong>hp_on_schedule</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]] | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>)</p></li>
+<li><p><strong>stc</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="enex_analysis.subsystems.html#enex_analysis.subsystems.SolarThermalCollector" title="enex_analysis.subsystems.SolarThermalCollector"><code class="xref py py-class docutils literal notranslate"><span class="pre">SolarThermalCollector</span></code></a> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>)</p></li>
+<li><p><strong>pv</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="enex_analysis.subsystems.html#enex_analysis.subsystems.PhotovoltaicSystem" title="enex_analysis.subsystems.PhotovoltaicSystem"><code class="xref py py-class docutils literal notranslate"><span class="pre">PhotovoltaicSystem</span></code></a> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>)</p></li>
+<li><p><strong>vsd_coeffs_ou</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="enex_analysis.air_source_heat_pump_boiler.AirSourceHeatPumpBoiler.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'R134a'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">V_disp_cmp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0002</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eta_cmp_isen</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eta_cmp_vol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eta_cmp_mech</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.855</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dT_superheat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dT_subcool</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">UA_cond_design</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">UA_evap_design</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_evap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.65</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dV_ou_fan_a_design</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dP_ou_fan_design</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">60.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">A_cross_ou</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eta_ou_fan_design</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_tank_w_upper_bound</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">65.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_tank_w_lower_bound</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">60.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_mix_w_out</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">40.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_sup_w</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">15.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hp_capacity</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">15000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dV_mix_w_out_max</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0045</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">H</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_shell</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.005</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_ins</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k_shell</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">25</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k_ins</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.03</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">h_o</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">15</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tank_always_full</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tank_level_lower_bound</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tank_level_upper_bound</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dV_tank_w_in_refill</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prevent_simultaneous_flow</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hp_on_schedule</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pv</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uv</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vsd_coeffs_ou</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/enex_analysis/air_source_heat_pump_boiler.html#AirSourceHeatPumpBoiler.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#enex_analysis.air_source_heat_pump_boiler.AirSourceHeatPumpBoiler.__init__" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ref</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>)</p></li>
+<li><p><strong>V_disp_cmp</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>eta_cmp_isen</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">Callable</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>)</p></li>
+<li><p><strong>eta_cmp_vol</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">Callable</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>)</p></li>
+<li><p><strong>eta_cmp_mech</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">Callable</span></code></span>)</p></li>
+<li><p><strong>dT_superheat</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>dT_subcool</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>UA_cond_design</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>)</p></li>
+<li><p><strong>UA_evap_design</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>)</p></li>
+<li><p><strong>n_evap</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>dV_ou_fan_a_design</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>)</p></li>
+<li><p><strong>dP_ou_fan_design</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>A_cross_ou</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>)</p></li>
+<li><p><strong>eta_ou_fan_design</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>T_tank_w_upper_bound</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>T_tank_w_lower_bound</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>T_mix_w_out</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>T_sup_w</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>hp_capacity</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>dV_mix_w_out_max</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>r0</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>H</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>x_shell</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>x_ins</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>k_shell</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>k_ins</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>h_o</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>tank_always_full</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>)</p></li>
+<li><p><strong>tank_level_lower_bound</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>tank_level_upper_bound</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>dV_tank_w_in_refill</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>prevent_simultaneous_flow</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>)</p></li>
+<li><p><strong>hp_on_schedule</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]] | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>)</p></li>
+<li><p><strong>stc</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="enex_analysis.subsystems.html#enex_analysis.subsystems.SolarThermalCollector" title="enex_analysis.subsystems.SolarThermalCollector"><code class="xref py py-class docutils literal notranslate"><span class="pre">SolarThermalCollector</span></code></a> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>)</p></li>
+<li><p><strong>pv</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="enex_analysis.subsystems.html#enex_analysis.subsystems.PhotovoltaicSystem" title="enex_analysis.subsystems.PhotovoltaicSystem"><code class="xref py py-class docutils literal notranslate"><span class="pre">PhotovoltaicSystem</span></code></a> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>)</p></li>
+<li><p><strong>vsd_coeffs_ou</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="enex_analysis.air_source_heat_pump_boiler.AirSourceHeatPumpBoiler.analyze_steady">
+<span class="sig-name descname"><span class="pre">analyze_steady</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T_tank_w</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Q_ref_cond</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_dict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/enex_analysis/air_source_heat_pump_boiler.html#AirSourceHeatPumpBoiler.analyze_steady"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#enex_analysis.air_source_heat_pump_boiler.AirSourceHeatPumpBoiler.analyze_steady" title="Link to this definition">¶</a></dt>
+<dd><p>Run a steady-state performance snapshot.</p>
+<p>Evaluates the refrigerant cycle at a given operating point
+(T_tank_w, T0, Q_ref_cond) <strong>without</strong> solving the tank energy
+balance or tracking dynamic flows.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>T_tank_w</strong> (<em>float</em>) – Tank water temperature [°C] — treated as a given input.</p></li>
+<li><p><strong>T0</strong> (<em>float</em>) – Dead-state / outdoor-air temperature [°C].</p></li>
+<li><p><strong>Q_ref_cond</strong> (<em>float</em>) – Target condenser heat rate [W].</p></li>
+<li><p><strong>return_dict</strong> (<em>bool</em>) – If True return dict; else single-row DataFrame.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict | pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="enex_analysis.air_source_heat_pump_boiler.AirSourceHeatPumpBoiler.analyze_dynamic">
+<span class="sig-name descname"><span class="pre">analyze_dynamic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">simulation_period_sec</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dt_s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_tank_w_init_C</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dhw_usage_schedule</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T0_schedule</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">I_DN_schedule</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">I_dH_schedule</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_sup_w_schedule</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tank_level_init</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">result_save_csv_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/enex_analysis/air_source_heat_pump_boiler.html#AirSourceHeatPumpBoiler.analyze_dynamic"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#enex_analysis.air_source_heat_pump_boiler.AirSourceHeatPumpBoiler.analyze_dynamic" title="Link to this definition">¶</a></dt>
+<dd><p>Run a time-stepping dynamic simulation.</p>
+<p>Fully implicit scheme: <code class="docutils literal notranslate"><span class="pre">fsolve</span></code> solves for
+<code class="docutils literal notranslate"><span class="pre">[T_next,</span> <span class="pre">level_next]</span></code> each timestep.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>simulation_period_sec</strong> (<em>int</em>) – Total simulation duration [s].</p></li>
+<li><p><strong>dt_s</strong> (<em>int</em>) – Time step size [s].</p></li>
+<li><p><strong>T_tank_w_init_C</strong> (<em>float</em>) – Initial tank temperature [°C].</p></li>
+<li><p><strong>dhw_usage_schedule</strong> (<em>np.ndarray</em>) – DHW volumetric flow rate per step [m³/s].</p></li>
+<li><p><strong>T0_schedule</strong> (<em>array-like</em>) – Outdoor temperature per step [°C].</p></li>
+<li><p><strong>I_DN_schedule</strong> (<em>array-like</em><em> | </em><em>None</em>) – Direct-normal irradiance per step [W/m²].</p></li>
+<li><p><strong>I_dH_schedule</strong> (<em>array-like</em><em> | </em><em>None</em>) – Diffuse-horizontal irradiance [W/m²].</p></li>
+<li><p><strong>T_sup_w_schedule</strong> (<em>array-like</em><em> | </em><em>None</em>) – Mains water supply temperature per step [°C].
+If <code class="docutils literal notranslate"><span class="pre">None</span></code>, the constructor value <code class="docutils literal notranslate"><span class="pre">T_sup_w</span></code>
+is used for every step (backward-compatible).</p></li>
+<li><p><strong>tank_level_init</strong> (<em>float</em>) – Initial fractional tank level (0–1).</p></li>
+<li><p><strong>result_save_csv_path</strong> (<em>str</em><em> | </em><em>None</em>) – Optional CSV output path.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Per-timestep result DataFrame.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="enex_analysis.air_source_heat_pump_boiler.AirSourceHeatPumpBoiler.postprocess_exergy">
+<span class="sig-name descname"><span class="pre">postprocess_exergy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/enex_analysis/air_source_heat_pump_boiler.html#AirSourceHeatPumpBoiler.postprocess_exergy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#enex_analysis.air_source_heat_pump_boiler.AirSourceHeatPumpBoiler.postprocess_exergy" title="Link to this definition">¶</a></dt>
+<dd><p>Compute ASHP-specific exergy variables.</p>
+<p>Owns the full HP exergy topology:</p>
+<ol class="arabic simple">
+<li><p>Refrigerant state-point exergy (CoolProp)</p></li>
+<li><p>Electricity = exergy (compressor, OU fan, UV)</p></li>
+<li><p>Air exergy (outdoor unit)</p></li>
+<li><p>Heat exchanger Carnot exergy (condenser, evaporator)</p></li>
+<li><p>Water exergy (tank inlet/outlet, mixing valve)</p></li>
+<li><p>Heat loss exergy, tank stored exergy</p></li>
+<li><p>Subsystem exergy via <code class="docutils literal notranslate"><span class="pre">calc_exergy()</span></code> protocol</p></li>
+<li><p>Component-level exergy destruction</p></li>
+<li><p>Exergetic efficiency metrics</p></li>
+</ol>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>df</strong> (<em>pd.DataFrame</em>) – Result DataFrame from <code class="docutils literal notranslate"><span class="pre">analyze_dynamic()</span></code>.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>DataFrame with exergy columns appended.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+        </article><button class="back-to-top" type="button">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+    <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+  </svg>
+  <span>Back to top</span>
+</button><div class="navigation flex print:hidden"><div class="navigation-prev">
+    <a href="enex_analysis.solar_assisted_gas_boiler.html">
+      <i class="i-lucide chevron-left"></i>
+      <div class="page-info">
+        <span>Previous</span><div class="title">enex_analysis.solar_assisted_gas_boiler</div></div>
+    </a>
+  </div><div class="navigation-next">
+    <a href="enex_analysis.ground_source_heat_pump_boiler.html">
+      <div class="page-info">
+        <span>Next</span>
+        <div class="title">enex_analysis.ground_source_heat_pump_boiler</div>
+      </div>
+      <i class="i-lucide chevron-right"></i>
+    </a>
+  </div></div></div>
+    </div>
+  </main>
+</div>
+<footer class="sy-foot">
+  <div class="sy-foot-inner sy-container mx-auto">
+    <div class="sy-foot-reserved md:flex justify-between items-center">
+      <div class="sy-foot-copyright"><p>2025, betlab</p>
+  
+  <p>
+    Made with
+    
+    <a href="https://www.sphinx-doc.org/">Sphinx</a> and
+    
+    <a href="https://shibuya.lepture.com">Shibuya theme</a>.
+  </p>
+</div>
+      <div class="sy-foot-socials">
+<a href="https://github.com/bet-lab/enex_analysis_engine" aria-label="GitHub">
+  <iconify-icon icon="simple-icons:github"></iconify-icon>
+</a></div>
+    </div>
+  </div>
+</footer>
+      <script src="../../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+      <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+      <script src="../../_static/shibuya.js?v=cac61aee"></script></body>
+</html>

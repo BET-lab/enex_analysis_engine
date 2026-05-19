@@ -1,0 +1,51 @@
+/* custom.css - Applying DESIGN.md styling to Shibuya theme */
+
+:root {
+  /* Core Colors */
+  --sy-c-background: #ffffff;
+  --sy-c-bg: #ffffff;
+  --sy-c-surface: #f0f8ff; /* Soft Sky Canvas */
+  --sy-c-text: #272c30; /* Midnight Graphite */
+  --sy-c-heading: #272c30;
+  --sy-c-link: #3e79ea; /* Sky Surge */
+  --sy-c-link-hover: #3161df; /* Deep Ocean */
+  --sy-c-primary: #3e79ea;
+  --sy-c-border: #e3e8ea; /* Soft Fog */
+  --sy-c-divider: #e3e8ea;
+  
+  /* Typography */
+  --sy-f-text: 'Suisse Intl', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --sy-f-heading: 'Selecta', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --sy-f-sys: 'Geist Mono', ui-monospace, SFMono-Regular, monospace;
+}
+
+/* Adjust Sidebar and Content Widths */
+/* Shibuya defaults: left sidebar 18rem, right 16rem, content 52rem-64rem */
+
+@media (min-width: 768px) {
+  .sy-lside { 
+    width: 14rem !important; 
+  }
+  .sy-main { 
+    width: calc(100% - 14rem) !important; 
+    max-width: 60rem !important; 
+  }
+}
+
+@media (min-width: 1280px) {
+  .sy-lside { 
+    width: 14rem !important; 
+  }
+  .sy-rside { 
+    width: 14rem !important; 
+  }
+  .sy-main { 
+    width: calc(100% - 28rem) !important; 
+    max-width: 75rem !important; 
+  }
+}
+
+/* Make actual text column take up more space */
+.sy-content { 
+  max-width: 75rem !important; 
+}

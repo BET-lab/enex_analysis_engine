@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en" data-accent-color="violet" data-content_root="../../">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"><title>enex_analysis.tank_stratification_model - Energy-Exergy Analysis Engine</title><link rel="index" title="Index" href="../../genindex.html" /><link rel="search" title="Search" href="../../search.html" /><link rel="next" title="enex_analysis.hx_fan" href="enex_analysis.hx_fan.html" /><link rel="prev" title="enex_analysis.subsystems" href="enex_analysis.subsystems.html" />
+      <link rel="canonical" href="https://bet-lab.github.io/enex_analysis_engine/api/generated/enex_analysis.tank_stratification_model.html" /><script>
+    function setColorMode(t){let e=document.documentElement;e.setAttribute("data-color-mode",t);let a=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,s=t;"auto"===t&&(s=a?"dark":"light"),"light"===s?(e.classList.remove("dark"),e.classList.add("light")):(e.classList.remove("light"),e.classList.add("dark"))}
+    setColorMode(localStorage._theme||"auto");
+  </script><link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=e1a1ceaf" />
+    <link rel="stylesheet" type="text/css" href="../../_static/shibuya.css?v=44020203" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link media="print" rel="stylesheet" type="text/css" href="../../_static/print.css?v=20ff2c19" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css?v=e84031eb" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --sy-f-text: "Inter", var(--sy-f-sys), var(--sy-f-cjk), sans-serif;
+  --sy-f-heading: "Inter", var(--sy-f-sys), var(--sy-f-cjk), sans-serif;
+}
+</style>
+    <meta property="og:type" content="website"/>
+  <meta property="og:url" content="https://bet-lab.github.io/enex_analysis_engine/api/generated/enex_analysis.tank_stratification_model.html"/>
+  <meta property="og:title" content="enex_analysis.tank_stratification_model"/>
+    <meta name="twitter:card" content="summary"/>
+  </head>
+<body><div class="sy-head">
+  <div class="sy-head-blur"></div>
+  <div class="sy-head-inner sy-container mx-auto">
+    <a class="sy-head-brand" href="../../index.html">
+      
+      
+      <strong>Energy-Exergy Analysis Engine</strong>
+    </a>
+    <div class="sy-head-nav" id="head-nav">
+      <nav class="sy-head-links"><ul><li class="link"><a href="../../getting-started/index.html">Getting Started</a></li><li class="link"><a href="../../theory/index.html">Theory</a></li><li class="link"><a href="../index.html">API Reference</a></li></ul></nav>
+      <div class="sy-head-extra flex items-center print:hidden"><form class="searchbox flex items-center" action="../../search.html" method="get">
+  <input type="text" name="q" placeholder="Search" />
+  <kbd>/</kbd>
+</form><div class="sy-head-socials">
+  <a href="https://github.com/bet-lab/enex_analysis_engine" aria-label="GitHub">
+    <iconify-icon icon="simple-icons:github"></iconify-icon>
+  </a></div></div>
+    </div>
+    <div class="sy-head-actions flex items-center shrink-0 print:hidden"><button class="js-theme theme-switch flex items-center"
+data-aria-auto="Switch to light color mode"
+data-aria-light="Switch to dark color mode"
+data-aria-dark="Switch to auto color mode">
+<i class="i-lucide theme-icon"></i>
+</button><button class="md:hidden flex items-center js-menu" aria-label="Menu" type="button" aria-controls="head-nav" aria-expanded="false">
+        <div class="hamburger">
+          <span class="hamburger_1"></span>
+          <span class="hamburger_2"></span>
+          <span class="hamburger_3"></span>
+        </div>
+      </button>
+    </div>
+  </div>
+</div>
+<div class="sy-page sy-container flex mx-auto">
+  <aside id="lside" class="sy-lside md:w-72 md:shrink-0 print:hidden">
+    <div class="sy-lside-inner md:sticky">
+      <div class="sy-scrollbar p-6">
+        <div class="globaltoc" data-expand-depth="0"><p class="caption" role="heading" aria-level="3"><span class="caption-text">Documentation</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../getting-started/index.html">Getting Started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../getting-started/installation.html">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../getting-started/quickstart.html">Quick Start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../getting-started/configuration.html">Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../guides/index.html">User Guides</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/user-guide.html">User Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/io-guide.html">Input/Output Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/advanced-topics.html">Advanced Topics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/nomenclature.html">Symbol Naming Convention</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">API Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../core.html">Core &amp; Utilities</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.thermodynamics.html">enex_analysis.thermodynamics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.refrigerant.html">enex_analysis.refrigerant</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.heat_transfer.html">enex_analysis.heat_transfer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.dhw.html">enex_analysis.dhw</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.cop.html">enex_analysis.cop</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.calc_util.html">enex_analysis.calc_util</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.constants.html">enex_analysis.constants</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.weather.html">enex_analysis.weather</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.enex_functions.html">enex_analysis.enex_functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.dynamic_context.html">enex_analysis.dynamic_context</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.simulation_runner.html">enex_analysis.simulation_runner</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.simulation_runner.html">enex_analysis.simulation_runner</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../engines.html">Energy System Engines</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.air_source_heat_pump.html">enex_analysis.air_source_heat_pump</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.ground_source_heat_pump.html">enex_analysis.ground_source_heat_pump</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.electric_boiler.html">enex_analysis.electric_boiler</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.gas_boiler.html">enex_analysis.gas_boiler</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.gas_boiler_tank.html">enex_analysis.gas_boiler_tank</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.solar_assisted_gas_boiler.html">enex_analysis.solar_assisted_gas_boiler</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.air_source_heat_pump_boiler.html">enex_analysis.air_source_heat_pump_boiler</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.ground_source_heat_pump_boiler.html">enex_analysis.ground_source_heat_pump_boiler</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.water_source_heat_pump_boiler.html">enex_analysis.water_source_heat_pump_boiler</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.ashpb_pv_ess.html">enex_analysis.ashpb_pv_ess</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.ashpb_stc_preheat.html">enex_analysis.ashpb_stc_preheat</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.ashpb_stc_tank.html">enex_analysis.ashpb_stc_tank</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.eb_pv_ess.html">enex_analysis.eb_pv_ess</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.eb_stc_preheat.html">enex_analysis.eb_stc_preheat</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.eb_stc_tank.html">enex_analysis.eb_stc_tank</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.gshpb_pv_ess.html">enex_analysis.gshpb_pv_ess</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.gshpb_stc_preheat.html">enex_analysis.gshpb_stc_preheat</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.gshpb_stc_tank.html">enex_analysis.gshpb_stc_tank</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.enex_engine.html">enex_analysis.enex_engine</a></li>
+</ul>
+</li>
+<li class="toctree-l2 current"><a class="reference internal" href="../subsystems.html">Subsystems</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.subsystems.html">enex_analysis.subsystems</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">enex_analysis.tank_stratification_model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.hx_fan.html">enex_analysis.hx_fan</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.uv_treatment.html">enex_analysis.uv_treatment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.g_function.html">enex_analysis.g_function</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../advanced.html">Advanced &amp; Tools</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.tdma.html">enex_analysis.tdma</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.visualization.html">enex_analysis.visualization</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../theory/index.html">Systems</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../theory/components/index.html">Subsystem Components</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../theory/components/refrigerant_cycle.html">Refrigerant Cycle</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../theory/components/thermal_storage.html">Thermal Storage Tank</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../theory/components/borehole_he.html">Borehole Heat Exchanger (BHE)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../theory/components/solar_thermal.html">Solar Thermal Collector (STC)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../theory/components/pv_ess.html">Photovoltaic and Energy Storage Systems (PV + ESS)</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../theory/systems/index.html">Integrated Systems</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../theory/systems/ashp_boiler.html">Air Source Heat Pump Boiler (ASHPB)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../theory/systems/gshp_boiler.html">Ground Source Heat Pump Boiler (GSHPB)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../theory/systems/hybrid_systems.html">Hybrid Heat Pump Systems</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../theory/scenarios/index.html">Scenarios &amp; Analysis</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../theory/scenarios/pv_vs_stc.html">Photovoltaic vs. Solar Thermal Collector</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading" aria-level="3"><span class="caption-text">Project Links</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/bet-lab/enex_analysis_engine">GitHub Repository</a></li>
+</ul>
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="lside-overlay js-menu" role="button" aria-label="Close left sidebar" aria-controls="lside" aria-expanded="false"></div>
+  <aside id="rside" class="sy-rside pb-3 w-64 shrink-0 order-last">
+    <button class="rside-close js-menu xl:hidden" aria-label="Close Table of Contents" type="button" aria-controls="rside" aria-expanded="false">
+      <i class="i-lucide close"></i>
+    </button>
+    <div class="sy-scrollbar sy-rside-inner px-6 xl:top-16 xl:sticky xl:pl-0 pt-6 pb-4"><div class="localtoc"><h3>On this page</h3><ul>
+<li><a class="reference internal" href="#enex_analysis.tank_stratification_model.StratifiedTankTDMA"><code class="docutils literal notranslate"><span class="pre">StratifiedTankTDMA</span></code></a><ul>
+<li><a class="reference internal" href="#enex_analysis.tank_stratification_model.StratifiedTankTDMA.A"><code class="docutils literal notranslate">A</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.tank_stratification_model.StratifiedTankTDMA.dh"><code class="docutils literal notranslate">dh</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.tank_stratification_model.StratifiedTankTDMA.V"><code class="docutils literal notranslate">V</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.tank_stratification_model.StratifiedTankTDMA.UA"><code class="docutils literal notranslate">UA</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.tank_stratification_model.StratifiedTankTDMA.K"><code class="docutils literal notranslate">K</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.tank_stratification_model.StratifiedTankTDMA.C"><code class="docutils literal notranslate">C</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.tank_stratification_model.StratifiedTankTDMA.C_d_mix"><code class="docutils literal notranslate">C_d_mix</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.tank_stratification_model.StratifiedTankTDMA.g"><code class="docutils literal notranslate">g</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.tank_stratification_model.StratifiedTankTDMA.beta"><code class="docutils literal notranslate">beta</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.tank_stratification_model.StratifiedTankTDMA.nu"><code class="docutils literal notranslate">nu</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.tank_stratification_model.StratifiedTankTDMA.alpha"><code class="docutils literal notranslate">alpha</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.tank_stratification_model.StratifiedTankTDMA.Pr"><code class="docutils literal notranslate">Pr</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.tank_stratification_model.StratifiedTankTDMA.k_molecular"><code class="docutils literal notranslate">k_molecular</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.tank_stratification_model.StratifiedTankTDMA.Ra_critical"><code class="docutils literal notranslate">Ra_critical</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.tank_stratification_model.StratifiedTankTDMA.k_eff"><code class="docutils literal notranslate">k_eff</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.tank_stratification_model.StratifiedTankTDMA.K_eff"><code class="docutils literal notranslate">K_eff</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.tank_stratification_model.StratifiedTankTDMA.effective_conductivity"><code class="docutils literal notranslate">effective_conductivity()</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.tank_stratification_model.StratifiedTankTDMA.update_tank_temp"><code class="docutils literal notranslate">update_tank_temp()</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.tank_stratification_model.StratifiedTankTDMA.info"><code class="docutils literal notranslate">info()</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.tank_stratification_model.StratifiedTankTDMA.__init__"><code class="docutils literal notranslate">__init__()</span></code></a></li>
+<li><a class="reference internal" href="#id0"><code class="docutils literal notranslate">effective_conductivity()</span></code></a></li>
+<li><a class="reference internal" href="#id1"><code class="docutils literal notranslate">update_tank_temp()</span></code></a></li>
+<li><a class="reference internal" href="#id2"><code class="docutils literal notranslate">info()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</div><div id="ethical-ad-placement" data-ea-publisher="readthedocs"></div></div>
+  </aside>
+  <div class="rside-overlay js-menu" role="button" aria-label="Close Table of Contents" aria-controls="rside" aria-expanded="false"></div>
+  <main class="sy-main w-full max-sm:max-w-full print:pt-6">
+<div class="sy-breadcrumbs" role="navigation">
+  <div class="sy-breadcrumbs-inner flex items-center">
+    <div class="md:hidden mr-3">
+      <button class="js-menu" aria-label="Menu" type="button" aria-controls="lside" aria-expanded="false">
+        <i class="i-lucide menu"></i>
+      </button>
+    </div>
+    <ol class="flex-1" itemscope itemtype="https://schema.org/BreadcrumbList"><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <a itemprop="item" href="../../index.html"><span itemprop="name">Energy-Exergy Analysis Engine</span></a>
+        <span>/</span>
+        <meta itemprop="position" content="1" />
+      </li><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <a itemprop="item" href="../index.html"><span itemprop="name">API Reference</span></a>
+        <span>/</span>
+        <meta itemprop="position" content="2" />
+      </li><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <a itemprop="item" href="../subsystems.html"><span itemprop="name">Subsystems</span></a>
+        <span>/</span>
+        <meta itemprop="position" content="3" />
+      </li><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <strong itemprop="name">enex_analysis.tank_stratification_model</strong>
+        <meta itemprop="position" content="4" />
+      </li></ol>
+    <div class="xl:hidden ml-1">
+      <button class="js-menu" aria-label="Show table of contents" type="button" aria-controls="rside"
+        aria-expanded="false">
+        <i class="i-lucide outdent"></i>
+      </button>
+    </div>
+  </div>
+</div><div class="flex flex-col break-words justify-between">
+      <div class="relative min-w-0 max-w-6xl px-6 pb-6 pt-8 xl:px-12">
+  <div class="copy-page-wrapper relative pb-4 lg:absolute lg:top-8 lg:right-6 xl:right-12">
+  <div id="copy-page-trigger">
+    <button
+      type="button"
+      class="js-copy px-3 py-1 inline-flex items-center gap-1"
+      data-url="https://bet-lab.github.io/enex_analysis_engine/_sources/api/generated/enex_analysis.tank_stratification_model.rst.txt"
+    >
+      <i class="i-lucide" data-icon="copy"></i>
+      <span>Copy page</span>
+    </button>
+    <button class="js-menu px-2 py-1" type="button" aria-label="More actions"
+      aria-haspopup="menu" aria-expanded="false" aria-controls="copy-page-content">
+      <i class="i-lucide chevron-down"></i>
+    </button>
+  </div>
+  <div id="copy-page-content" role="menu" aria-orientation="vertical" aria-hidden="true">
+    <div role="presentation">
+      <div class="flex flex-col" role="group">
+        <button class="js-copy" type="button" role="menuitem"
+          data-url="https://bet-lab.github.io/enex_analysis_engine/_sources/api/generated/enex_analysis.tank_stratification_model.rst.txt">
+          <span class="iconify-icon">
+            <i class="i-lucide" data-icon="copy"></i>
+          </span>
+          <span>Copy page</span>
+        </button>
+        <a role="menuitem" href="https://bet-lab.github.io/enex_analysis_engine/_sources/api/generated/enex_analysis.tank_stratification_model.rst.txt" target="_blank" rel="nofollow"><iconify-icon icon="bi:code-slash"></iconify-icon>
+            <span>View Source</span></a><a role="menuitem" href="https://chatgpt.com/?hints=search&q=Read%20https%3A//bet-lab.github.io/enex_analysis_engine/_sources/api/generated/enex_analysis.tank_stratification_model.rst.txt%20so%20I%20can%20ask%20questions%20about%20it." target="_blank" rel="nofollow">
+          <iconify-icon icon="bi:openai"></iconify-icon>
+          <span>Open in ChatGPT</span>
+        </a><a role="menuitem" href="https://claude.ai/new?q=Read%20https%3A//bet-lab.github.io/enex_analysis_engine/_sources/api/generated/enex_analysis.tank_stratification_model.rst.txt%20so%20I%20can%20ask%20questions%20about%20it." target="_blank" rel="nofollow">
+          <iconify-icon icon="bi:claude"></iconify-icon>
+          <span>Open in Claude</span>
+        </a></div>
+    </div>
+  </div>
+</div><article class="yue" role="main">
+          <section id="module-enex_analysis.tank_stratification_model">
+<span id="enex-analysis-tank-stratification-model"></span><h1>enex_analysis.tank_stratification_model<a class="headerlink" href="#module-enex_analysis.tank_stratification_model" title="Link to this heading">¶</a></h1>
+<p>Stratified tank model using TDMA (Tri-Diagonal Matrix Algorithm).</p>
+<p>This module provides a 1D stratified hot-water tank model with vertical discretization.
+The model uses effective thermal conductivity to account for both molecular conduction
+and natural convection driven by buoyancy forces.</p>
+<p class="rubric">Classes</p>
+<div class="table-wrapper autosummary longtable docutils container">
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#enex_analysis.tank_stratification_model.StratifiedTankTDMA" title="enex_analysis.tank_stratification_model.StratifiedTankTDMA"><code class="xref py py-obj docutils literal notranslate"><span class="pre">StratifiedTankTDMA</span></code></a>(H, N, r0, x_shell, x_ins, ...)</p></td>
+<td><p>TDMA-based 1D stratified hot-water tank model (vertical discretization).</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<dl class="py class">
+<dt class="sig sig-object py" id="enex_analysis.tank_stratification_model.StratifiedTankTDMA">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">enex_analysis.tank_stratification_model.</span></span><span class="sig-name descname"><span class="pre">StratifiedTankTDMA</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">H</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_shell</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_ins</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k_shell</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k_ins</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">h_w</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">h_o</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">C_d_mix</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/enex_analysis/tank_stratification_model.html#StratifiedTankTDMA"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#enex_analysis.tank_stratification_model.StratifiedTankTDMA" title="Link to this definition">¶</a></dt>
+<dd><p>TDMA-based 1D stratified hot-water tank model (vertical discretization).</p>
+<p>This class models a cylindrical storage tank split into N vertical layers (nodes).
+Each node enforces an energy balance that includes:
+- Storage term via node thermal capacitance (C).
+- Effective thermal conduction between adjacent nodes using effective</p>
+<blockquote>
+<div><p>conductivity (k_eff) that accounts for both molecular conduction and
+natural convection driven by buoyancy forces.</p>
+</div></blockquote>
+<ul class="simple">
+<li><p>Advection due to draw/inlet flow (G = rho_w * c_w * dV).</p></li>
+<li><p>Heat loss to ambient through a per-node UA array (side for all nodes;
+bottom/top discs additionally for the end nodes).</p></li>
+<li><p>Optional point heater applied at a single node.</p></li>
+<li><p>Optional external loop advection across a node range in either direction,
+with loop heat input Q_loop.</p></li>
+</ul>
+<section id="effective-thermal-conductivity-approach">
+<h2>Effective Thermal Conductivity Approach:<a class="headerlink" href="#effective-thermal-conductivity-approach" title="Link to this heading">¶</a></h2>
+<p>The model uses an effective thermal conductivity (k_eff) approach to
+integrate molecular conduction and natural convection effects. For each
+node pair (i, i+1), the effective conductivity is calculated based on:
+- Temperature difference (dT = T[i+1] - T[i])
+- Rayleigh number (Ra), which characterizes the buoyancy-driven flow
+- Nusselt number (Nu), which relates effective to molecular conductivity</p>
+<p>Stable stratification (dT &lt; 0, upper warmer than lower):
+- Convection is suppressed, primarily molecular conduction
+- Nu ≈ 1.0 with small correction terms</p>
+<p>Unstable stratification (dT &gt; 0, lower warmer than upper):
+- Natural convection enhances heat transfer
+- Nu &gt; 1.0, increasing with Rayleigh number
+- Laminar (Ra &lt; 1e7): Nu ∝ Ra^0.25
+- Turbulent (Ra ≥ 1e7): Nu ∝ Ra^0.33</p>
+<p>The effective conduction coefficient between nodes is:
+K_eff = k_eff * A / dh, where k_eff = k_molecular * Nu</p>
+<p>The semi-implicit time advance assembles a tri-diagonal linear system
+a, b, c, d and solves it with a TDMA routine (see TDMA()) to obtain
+next-step temperatures.</p>
+<p>Units
+- Temperatures: K
+- Geometry: m
+- Volumetric flow: m³/s
+- UA, K: W/K
+- Heater power, heat flows: W</p>
+<dl class="field-list simple">
+<dt class="field-odd">type H<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+<dt class="field-even">param H<span class="colon">:</span></dt>
+<dd class="field-even"><p>Tank height [m].</p>
+</dd>
+<dt class="field-odd">type H<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+<dt class="field-even">type N<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+<dt class="field-odd">param N<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Number of vertical layers (nodes).</p>
+</dd>
+<dt class="field-even">type N<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+<dt class="field-odd">type r0<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+<dt class="field-even">param r0<span class="colon">:</span></dt>
+<dd class="field-even"><p>Inner radius of tank [m] (D = 2*r0).</p>
+</dd>
+<dt class="field-odd">type r0<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+<dt class="field-even">type x_shell<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+<dt class="field-odd">param x_shell<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Shell thickness [m].</p>
+</dd>
+<dt class="field-even">type x_shell<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+<dt class="field-odd">type x_ins<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+<dt class="field-even">param x_ins<span class="colon">:</span></dt>
+<dd class="field-even"><p>Insulation thickness [m].</p>
+</dd>
+<dt class="field-odd">type x_ins<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+<dt class="field-even">type k_shell<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+<dt class="field-odd">param k_shell<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Shell thermal conductivity [W/mK].</p>
+</dd>
+<dt class="field-even">type k_shell<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+<dt class="field-odd">type k_ins<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+<dt class="field-even">param k_ins<span class="colon">:</span></dt>
+<dd class="field-even"><p>Insulation thermal conductivity [W/mK].</p>
+</dd>
+<dt class="field-odd">type k_ins<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+<dt class="field-even">type h_w<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+<dt class="field-odd">param h_w<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Internal convective heat transfer coefficient (water side) [W/m²K].</p>
+</dd>
+<dt class="field-even">type h_w<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+<dt class="field-odd">type h_o<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+<dt class="field-even">param h_o<span class="colon">:</span></dt>
+<dd class="field-even"><p>External convective heat transfer coefficient (ambient side) [W/m²K].</p>
+</dd>
+<dt class="field-odd">type h_o<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+<dt class="field-even">type C_d_mix<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+<dt class="field-odd">param C_d_mix<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Empirical discharge coefficient for buoyancy-driven mixing [-].
+(Note: This parameter is retained for compatibility but is not used
+in the effective conductivity approach.)</p>
+</dd>
+<dt class="field-even">type C_d_mix<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">H,</span> <span class="pre">D,</span> <span class="pre">N</span></span></dt>
+<dd><p>Geometry and discretization (D = 2*r0).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float, float, int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="enex_analysis.tank_stratification_model.StratifiedTankTDMA.A">
+<span class="sig-name descname"><span class="pre">A</span></span><a class="headerlink" href="#enex_analysis.tank_stratification_model.StratifiedTankTDMA.A" title="Link to this definition">¶</a></dt>
+<dd><p>Cross-sectional area [m²].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="enex_analysis.tank_stratification_model.StratifiedTankTDMA.dh">
+<span class="sig-name descname"><span class="pre">dh</span></span><a class="headerlink" href="#enex_analysis.tank_stratification_model.StratifiedTankTDMA.dh" title="Link to this definition">¶</a></dt>
+<dd><p>Layer height [m].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="enex_analysis.tank_stratification_model.StratifiedTankTDMA.V">
+<span class="sig-name descname"><span class="pre">V</span></span><a class="headerlink" href="#enex_analysis.tank_stratification_model.StratifiedTankTDMA.V" title="Link to this definition">¶</a></dt>
+<dd><p>Per-node volume [m³].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="enex_analysis.tank_stratification_model.StratifiedTankTDMA.UA">
+<span class="sig-name descname"><span class="pre">UA</span></span><a class="headerlink" href="#enex_analysis.tank_stratification_model.StratifiedTankTDMA.UA" title="Link to this definition">¶</a></dt>
+<dd><p>Node-to-ambient UA per node [W/K], shape (N,).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="enex_analysis.tank_stratification_model.StratifiedTankTDMA.K">
+<span class="sig-name descname"><span class="pre">K</span></span><a class="headerlink" href="#enex_analysis.tank_stratification_model.StratifiedTankTDMA.K" title="Link to this definition">¶</a></dt>
+<dd><p>Reference axial conduction equivalent between nodes [W/K]
+(based on molecular conductivity only, for reference).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="enex_analysis.tank_stratification_model.StratifiedTankTDMA.C">
+<span class="sig-name descname"><span class="pre">C</span></span><a class="headerlink" href="#enex_analysis.tank_stratification_model.StratifiedTankTDMA.C" title="Link to this definition">¶</a></dt>
+<dd><p>Per-node thermal capacitance [J/K].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="enex_analysis.tank_stratification_model.StratifiedTankTDMA.C_d_mix">
+<span class="sig-name descname"><span class="pre">C_d_mix</span></span><a class="headerlink" href="#enex_analysis.tank_stratification_model.StratifiedTankTDMA.C_d_mix" title="Link to this definition">¶</a></dt>
+<dd><p>Mixing discharge coefficient [-] (retained for compatibility).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="enex_analysis.tank_stratification_model.StratifiedTankTDMA.g">
+<span class="sig-name descname"><span class="pre">g</span></span><a class="headerlink" href="#enex_analysis.tank_stratification_model.StratifiedTankTDMA.g" title="Link to this definition">¶</a></dt>
+<dd><p>Gravitational acceleration [m/s²].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="enex_analysis.tank_stratification_model.StratifiedTankTDMA.beta">
+<span class="sig-name descname"><span class="pre">beta</span></span><a class="headerlink" href="#enex_analysis.tank_stratification_model.StratifiedTankTDMA.beta" title="Link to this definition">¶</a></dt>
+<dd><p>Volumetric expansion coefficient of water [1/K].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="enex_analysis.tank_stratification_model.StratifiedTankTDMA.nu">
+<span class="sig-name descname"><span class="pre">nu</span></span><a class="headerlink" href="#enex_analysis.tank_stratification_model.StratifiedTankTDMA.nu" title="Link to this definition">¶</a></dt>
+<dd><p>Kinematic viscosity of water [m²/s].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="enex_analysis.tank_stratification_model.StratifiedTankTDMA.alpha">
+<span class="sig-name descname"><span class="pre">alpha</span></span><a class="headerlink" href="#enex_analysis.tank_stratification_model.StratifiedTankTDMA.alpha" title="Link to this definition">¶</a></dt>
+<dd><p>Thermal diffusivity of water [m²/s].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="enex_analysis.tank_stratification_model.StratifiedTankTDMA.Pr">
+<span class="sig-name descname"><span class="pre">Pr</span></span><a class="headerlink" href="#enex_analysis.tank_stratification_model.StratifiedTankTDMA.Pr" title="Link to this definition">¶</a></dt>
+<dd><p>Prandtl number [-].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="enex_analysis.tank_stratification_model.StratifiedTankTDMA.k_molecular">
+<span class="sig-name descname"><span class="pre">k_molecular</span></span><a class="headerlink" href="#enex_analysis.tank_stratification_model.StratifiedTankTDMA.k_molecular" title="Link to this definition">¶</a></dt>
+<dd><p>Molecular thermal conductivity of water [W/m·K].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="enex_analysis.tank_stratification_model.StratifiedTankTDMA.Ra_critical">
+<span class="sig-name descname"><span class="pre">Ra_critical</span></span><a class="headerlink" href="#enex_analysis.tank_stratification_model.StratifiedTankTDMA.Ra_critical" title="Link to this definition">¶</a></dt>
+<dd><p>Critical Rayleigh number for stable stratification (≈1708).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="enex_analysis.tank_stratification_model.StratifiedTankTDMA.k_eff">
+<span class="sig-name descname"><span class="pre">k_eff</span></span><a class="headerlink" href="#enex_analysis.tank_stratification_model.StratifiedTankTDMA.k_eff" title="Link to this definition">¶</a></dt>
+<dd><p>Effective thermal conductivity between node pairs [W/m·K],
+shape (N-1,), updated during each time step.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="enex_analysis.tank_stratification_model.StratifiedTankTDMA.K_eff">
+<span class="sig-name descname"><span class="pre">K_eff</span></span><a class="headerlink" href="#enex_analysis.tank_stratification_model.StratifiedTankTDMA.K_eff" title="Link to this definition">¶</a></dt>
+<dd><p>Effective conduction coefficient between node pairs [W/K],
+shape (N-1,), updated during each time step.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">G_use,</span> <span class="pre">G_loop</span></span></dt>
+<dd><p>Flow-related terms cached from the last update step.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="enex_analysis.tank_stratification_model.StratifiedTankTDMA.effective_conductivity">
+<span class="sig-name descname"><span class="pre">effective_conductivity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T_upper</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_lower</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/enex_analysis/tank_stratification_model.html#StratifiedTankTDMA.effective_conductivity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#enex_analysis.tank_stratification_model.StratifiedTankTDMA.effective_conductivity" title="Link to this definition">¶</a></dt>
+<dd><p>Calculate effective thermal conductivity between two nodes based on
+temperature difference and Rayleigh number.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="enex_analysis.tank_stratification_model.StratifiedTankTDMA.update_tank_temp">
+<span class="sig-name descname"><span class="pre">update_tank_temp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">...</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/enex_analysis/tank_stratification_model.html#StratifiedTankTDMA.update_tank_temp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#enex_analysis.tank_stratification_model.StratifiedTankTDMA.update_tank_temp" title="Link to this definition">¶</a></dt>
+<dd><p>Advance temperatures by one time step using the TDMA scheme.
+Heater and optional external loop can be applied. Heater and loop
+node indices are 1-based in the public API.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="enex_analysis.tank_stratification_model.StratifiedTankTDMA.info">
+<span class="sig-name descname"><span class="pre">info</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">as_dict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">precision</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/enex_analysis/tank_stratification_model.html#StratifiedTankTDMA.info"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#enex_analysis.tank_stratification_model.StratifiedTankTDMA.info" title="Link to this definition">¶</a></dt>
+<dd><p>Print or return a concise summary of model geometry and thermal properties.</p>
+</dd></dl>
+
+<p class="rubric">Notes</p>
+<ul class="simple">
+<li><p>Heater/loop node indices are 1-based (converted to 0-based internally).</p></li>
+<li><p>External loop terms are added to the TDMA coefficients to represent
+directed advection across a node range.</p></li>
+<li><p>The effective conductivity approach replaces the previous Boussinesq
+mixing flow model, providing a more physically consistent representation
+of heat transfer in stratified tanks.</p></li>
+</ul>
+<dl class="py method">
+<dt class="sig sig-object py" id="enex_analysis.tank_stratification_model.StratifiedTankTDMA.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">H</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_shell</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_ins</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k_shell</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k_ins</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">h_w</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">h_o</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">C_d_mix</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/enex_analysis/tank_stratification_model.html#StratifiedTankTDMA.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#enex_analysis.tank_stratification_model.StratifiedTankTDMA.__init__" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="id0">
+<span class="sig-name descname"><span class="pre">effective_conductivity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T_upper</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_lower</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/enex_analysis/tank_stratification_model.html#StratifiedTankTDMA.effective_conductivity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id0" title="Link to this definition">¶</a></dt>
+<dd><p>Calculate effective thermal conductivity between two adjacent nodes.</p>
+<p>Integrates molecular conduction and buoyancy-driven natural convection
+into a single effective conductivity using the Rayleigh–Nusselt approach.</p>
+<dl class="simple">
+<dt>Stable stratification (dT &lt; 0, upper warmer):</dt><dd><p>Convection is suppressed; heat transfer is primarily by conduction.
+Nu ≈ 1.0 with a small correction term.</p>
+</dd>
+<dt>Unstable stratification (dT &gt; 0, lower warmer):</dt><dd><p>Buoyancy drives natural convection, enhancing heat transfer.
+- Ra &lt; 1e3:  Nu = 1.0 (conduction-dominated)
+- Ra &lt; 1e7:  Nu = 0.2 · Ra^0.25 (laminar convection)
+- Ra ≥ 1e7:  Nu = 0.1 · Ra^0.33 (turbulent convection)</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>T_upper</strong> (<em>float</em>) – Temperature of the upper node [K].</p></li>
+<li><p><strong>T_lower</strong> (<em>float</em>) – Temperature of the lower node [K].</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>k_eff</strong> – Effective thermal conductivity [W/m·K].</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<p>Incropera &amp; DeWitt, <em>Fundamentals of Heat and Mass Transfer</em>, 7th ed.
+Bejan, <em>Convection Heat Transfer</em>, 4th ed.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="id1">
+<span class="sig-name descname"><span class="pre">update_tank_temp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_in</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dV_use</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_amb</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">heater_node</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">heater_capacity</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loop_outlet_node</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loop_inlet_node</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dV_loop</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Q_loop</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/enex_analysis/tank_stratification_model.html#StratifiedTankTDMA.update_tank_temp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id1" title="Link to this definition">¶</a></dt>
+<dd><p>Advance node temperatures by one time step using the TDMA scheme.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>T</strong> (<em>np.ndarray</em>) – Current node temperature array [K], shape (N,).</p></li>
+<li><p><strong>dt</strong> (<em>float</em>) – Time step size [s].</p></li>
+<li><p><strong>T_in</strong> (<em>float</em>) – Inlet (mains) water temperature [K].</p></li>
+<li><p><strong>dV_use</strong> (<em>float</em>) – Draw-off volumetric flow rate [m³/s].</p></li>
+<li><p><strong>T_amb</strong> (<em>float</em>) – Ambient temperature [K].</p></li>
+<li><p><strong>T0</strong> (<em>float</em>) – Dead-state (reference) temperature for exergy [K].</p></li>
+<li><p><strong>heater_node</strong> (<em>int</em><em>, </em><em>optional</em>) – 1-based node index where the heater is located.</p></li>
+<li><p><strong>heater_capacity</strong> (<em>float</em><em>, </em><em>optional</em>) – Heater thermal output [W].</p></li>
+<li><p><strong>loop_outlet_node</strong> (<em>int</em><em>, </em><em>optional</em>) – 1-based node index where the external loop exits the tank.</p></li>
+<li><p><strong>loop_inlet_node</strong> (<em>int</em><em>, </em><em>optional</em>) – 1-based node index where the external loop enters the tank.</p></li>
+<li><p><strong>dV_loop</strong> (<em>float</em><em>, </em><em>optional</em>) – External loop volumetric flow rate [m³/s].</p></li>
+<li><p><strong>Q_loop</strong> (<em>float</em><em>, </em><em>optional</em>) – Heat input from the external loop [W].</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Updated node temperatures for the next time step [K].</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="id2">
+<span class="sig-name descname"><span class="pre">info</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">as_dict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">precision</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/enex_analysis/tank_stratification_model.html#StratifiedTankTDMA.info"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id2" title="Link to this definition">¶</a></dt>
+<dd><p>Print or return a summary of tank geometry and thermal properties.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>as_dict</strong> (<em>bool</em>) – If True, return as dict; otherwise print a formatted summary.</p></li>
+<li><p><strong>precision</strong> (<em>int</em>) – Number of significant digits for display.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</dd></dl>
+
+</section>
+
+        </article><button class="back-to-top" type="button">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+    <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+  </svg>
+  <span>Back to top</span>
+</button><div class="navigation flex print:hidden"><div class="navigation-prev">
+    <a href="enex_analysis.subsystems.html">
+      <i class="i-lucide chevron-left"></i>
+      <div class="page-info">
+        <span>Previous</span><div class="title">enex_analysis.subsystems</div></div>
+    </a>
+  </div><div class="navigation-next">
+    <a href="enex_analysis.hx_fan.html">
+      <div class="page-info">
+        <span>Next</span>
+        <div class="title">enex_analysis.hx_fan</div>
+      </div>
+      <i class="i-lucide chevron-right"></i>
+    </a>
+  </div></div></div>
+    </div>
+  </main>
+</div>
+<footer class="sy-foot">
+  <div class="sy-foot-inner sy-container mx-auto">
+    <div class="sy-foot-reserved md:flex justify-between items-center">
+      <div class="sy-foot-copyright"><p>2025, betlab</p>
+  
+  <p>
+    Made with
+    
+    <a href="https://www.sphinx-doc.org/">Sphinx</a> and
+    
+    <a href="https://shibuya.lepture.com">Shibuya theme</a>.
+  </p>
+</div>
+      <div class="sy-foot-socials">
+<a href="https://github.com/bet-lab/enex_analysis_engine" aria-label="GitHub">
+  <iconify-icon icon="simple-icons:github"></iconify-icon>
+</a></div>
+    </div>
+  </div>
+</footer>
+      <script src="../../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+      <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+      <script src="../../_static/shibuya.js?v=cac61aee"></script></body>
+</html>

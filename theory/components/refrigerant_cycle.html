@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en" data-accent-color="violet" data-content_root="../../">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Refrigerant Cycle - Energy-Exergy Analysis Engine</title><link rel="index" title="Index" href="../../genindex.html" /><link rel="search" title="Search" href="../../search.html" /><link rel="next" title="Thermal Storage Tank" href="thermal_storage.html" /><link rel="prev" title="Subsystem Components" href="index.html" />
+      <link rel="canonical" href="https://bet-lab.github.io/enex_analysis_engine/theory/components/refrigerant_cycle.html" /><script>
+    function setColorMode(t){let e=document.documentElement;e.setAttribute("data-color-mode",t);let a=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,s=t;"auto"===t&&(s=a?"dark":"light"),"light"===s?(e.classList.remove("dark"),e.classList.add("light")):(e.classList.remove("light"),e.classList.add("dark"))}
+    setColorMode(localStorage._theme||"auto");
+  </script><link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=e1a1ceaf" />
+    <link rel="stylesheet" type="text/css" href="../../_static/shibuya.css?v=44020203" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link media="print" rel="stylesheet" type="text/css" href="../../_static/print.css?v=20ff2c19" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css?v=e84031eb" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --sy-f-text: "Inter", var(--sy-f-sys), var(--sy-f-cjk), sans-serif;
+  --sy-f-heading: "Inter", var(--sy-f-sys), var(--sy-f-cjk), sans-serif;
+}
+</style>
+    <meta property="og:type" content="website"/>
+  <meta property="og:url" content="https://bet-lab.github.io/enex_analysis_engine/theory/components/refrigerant_cycle.html"/>
+  <meta property="og:title" content="Refrigerant Cycle"/>
+    <meta name="twitter:card" content="summary"/>
+  </head>
+<body><div class="sy-head">
+  <div class="sy-head-blur"></div>
+  <div class="sy-head-inner sy-container mx-auto">
+    <a class="sy-head-brand" href="../../index.html">
+      
+      
+      <strong>Energy-Exergy Analysis Engine</strong>
+    </a>
+    <div class="sy-head-nav" id="head-nav">
+      <nav class="sy-head-links"><ul><li class="link"><a href="../../getting-started/index.html">Getting Started</a></li><li class="link"><a href="../index.html">Theory</a></li><li class="link"><a href="../../api/index.html">API Reference</a></li></ul></nav>
+      <div class="sy-head-extra flex items-center print:hidden"><form class="searchbox flex items-center" action="../../search.html" method="get">
+  <input type="text" name="q" placeholder="Search" />
+  <kbd>/</kbd>
+</form><div class="sy-head-socials">
+  <a href="https://github.com/bet-lab/enex_analysis_engine" aria-label="GitHub">
+    <iconify-icon icon="simple-icons:github"></iconify-icon>
+  </a></div></div>
+    </div>
+    <div class="sy-head-actions flex items-center shrink-0 print:hidden"><button class="js-theme theme-switch flex items-center"
+data-aria-auto="Switch to light color mode"
+data-aria-light="Switch to dark color mode"
+data-aria-dark="Switch to auto color mode">
+<i class="i-lucide theme-icon"></i>
+</button><button class="md:hidden flex items-center js-menu" aria-label="Menu" type="button" aria-controls="head-nav" aria-expanded="false">
+        <div class="hamburger">
+          <span class="hamburger_1"></span>
+          <span class="hamburger_2"></span>
+          <span class="hamburger_3"></span>
+        </div>
+      </button>
+    </div>
+  </div>
+</div>
+<div class="sy-page sy-container flex mx-auto">
+  <aside id="lside" class="sy-lside md:w-72 md:shrink-0 print:hidden">
+    <div class="sy-lside-inner md:sticky">
+      <div class="sy-scrollbar p-6">
+        <div class="globaltoc" data-expand-depth="0"><p class="caption" role="heading" aria-level="3"><span class="caption-text">Documentation</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../getting-started/index.html">Getting Started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../getting-started/installation.html">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../getting-started/quickstart.html">Quick Start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../getting-started/configuration.html">Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../guides/index.html">User Guides</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/user-guide.html">User Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/io-guide.html">Input/Output Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/advanced-topics.html">Advanced Topics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/nomenclature.html">Symbol Naming Convention</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/index.html">API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../api/core.html">Core &amp; Utilities</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/enex_analysis.thermodynamics.html">enex_analysis.thermodynamics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/enex_analysis.refrigerant.html">enex_analysis.refrigerant</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/enex_analysis.heat_transfer.html">enex_analysis.heat_transfer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/enex_analysis.dhw.html">enex_analysis.dhw</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/enex_analysis.cop.html">enex_analysis.cop</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/enex_analysis.calc_util.html">enex_analysis.calc_util</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/enex_analysis.constants.html">enex_analysis.constants</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/enex_analysis.weather.html">enex_analysis.weather</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/enex_analysis.enex_functions.html">enex_analysis.enex_functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/enex_analysis.dynamic_context.html">enex_analysis.dynamic_context</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/enex_analysis.simulation_runner.html">enex_analysis.simulation_runner</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/enex_analysis.simulation_runner.html">enex_analysis.simulation_runner</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/engines.html">Energy System Engines</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/enex_analysis.air_source_heat_pump.html">enex_analysis.air_source_heat_pump</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/enex_analysis.ground_source_heat_pump.html">enex_analysis.ground_source_heat_pump</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/enex_analysis.electric_boiler.html">enex_analysis.electric_boiler</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/enex_analysis.gas_boiler.html">enex_analysis.gas_boiler</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/enex_analysis.gas_boiler_tank.html">enex_analysis.gas_boiler_tank</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/enex_analysis.solar_assisted_gas_boiler.html">enex_analysis.solar_assisted_gas_boiler</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/enex_analysis.air_source_heat_pump_boiler.html">enex_analysis.air_source_heat_pump_boiler</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/enex_analysis.ground_source_heat_pump_boiler.html">enex_analysis.ground_source_heat_pump_boiler</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/enex_analysis.water_source_heat_pump_boiler.html">enex_analysis.water_source_heat_pump_boiler</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/enex_analysis.ashpb_pv_ess.html">enex_analysis.ashpb_pv_ess</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/enex_analysis.ashpb_stc_preheat.html">enex_analysis.ashpb_stc_preheat</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/enex_analysis.ashpb_stc_tank.html">enex_analysis.ashpb_stc_tank</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/enex_analysis.eb_pv_ess.html">enex_analysis.eb_pv_ess</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/enex_analysis.eb_stc_preheat.html">enex_analysis.eb_stc_preheat</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/enex_analysis.eb_stc_tank.html">enex_analysis.eb_stc_tank</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/enex_analysis.gshpb_pv_ess.html">enex_analysis.gshpb_pv_ess</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/enex_analysis.gshpb_stc_preheat.html">enex_analysis.gshpb_stc_preheat</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/enex_analysis.gshpb_stc_tank.html">enex_analysis.gshpb_stc_tank</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/enex_analysis.enex_engine.html">enex_analysis.enex_engine</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/subsystems.html">Subsystems</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/enex_analysis.subsystems.html">enex_analysis.subsystems</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/enex_analysis.tank_stratification_model.html">enex_analysis.tank_stratification_model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/enex_analysis.hx_fan.html">enex_analysis.hx_fan</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/enex_analysis.uv_treatment.html">enex_analysis.uv_treatment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/enex_analysis.g_function.html">enex_analysis.g_function</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/advanced.html">Advanced &amp; Tools</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/enex_analysis.tdma.html">enex_analysis.tdma</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/enex_analysis.visualization.html">enex_analysis.visualization</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Systems</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="index.html">Subsystem Components</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Refrigerant Cycle</a></li>
+<li class="toctree-l3"><a class="reference internal" href="thermal_storage.html">Thermal Storage Tank</a></li>
+<li class="toctree-l3"><a class="reference internal" href="borehole_he.html">Borehole Heat Exchanger (BHE)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="solar_thermal.html">Solar Thermal Collector (STC)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pv_ess.html">Photovoltaic and Energy Storage Systems (PV + ESS)</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../systems/index.html">Integrated Systems</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../systems/ashp_boiler.html">Air Source Heat Pump Boiler (ASHPB)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../systems/gshp_boiler.html">Ground Source Heat Pump Boiler (GSHPB)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../systems/hybrid_systems.html">Hybrid Heat Pump Systems</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../scenarios/index.html">Scenarios &amp; Analysis</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../scenarios/pv_vs_stc.html">Photovoltaic vs. Solar Thermal Collector</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading" aria-level="3"><span class="caption-text">Project Links</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/bet-lab/enex_analysis_engine">GitHub Repository</a></li>
+</ul>
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="lside-overlay js-menu" role="button" aria-label="Close left sidebar" aria-controls="lside" aria-expanded="false"></div>
+  <aside id="rside" class="sy-rside pb-3 w-64 shrink-0 order-last">
+    <button class="rside-close js-menu xl:hidden" aria-label="Close Table of Contents" type="button" aria-controls="rside" aria-expanded="false">
+      <i class="i-lucide close"></i>
+    </button>
+    <div class="sy-scrollbar sy-rside-inner px-6 xl:top-16 xl:sticky xl:pl-0 pt-6 pb-4"><div class="localtoc"><h3>On this page</h3><ul>
+<li><a class="reference internal" href="#cycle-visualization">Cycle Visualization</a></li>
+<li><a class="reference internal" href="#modeling-assumptions">Modeling Assumptions</a></li>
+<li><a class="reference internal" href="#mathematical-modeling">Mathematical Modeling</a><ul>
+<li><a class="reference internal" href="#thermodynamic-states">Thermodynamic States</a></li>
+<li><a class="reference internal" href="#energy-balance-and-mass-flow-rate">Energy Balance and Mass Flow Rate</a></li>
+</ul>
+</li>
+</ul>
+</div><div id="ethical-ad-placement" data-ea-publisher="readthedocs"></div></div>
+  </aside>
+  <div class="rside-overlay js-menu" role="button" aria-label="Close Table of Contents" aria-controls="rside" aria-expanded="false"></div>
+  <main class="sy-main w-full max-sm:max-w-full print:pt-6">
+<div class="sy-breadcrumbs" role="navigation">
+  <div class="sy-breadcrumbs-inner flex items-center">
+    <div class="md:hidden mr-3">
+      <button class="js-menu" aria-label="Menu" type="button" aria-controls="lside" aria-expanded="false">
+        <i class="i-lucide menu"></i>
+      </button>
+    </div>
+    <ol class="flex-1" itemscope itemtype="https://schema.org/BreadcrumbList"><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <a itemprop="item" href="../../index.html"><span itemprop="name">Energy-Exergy Analysis Engine</span></a>
+        <span>/</span>
+        <meta itemprop="position" content="1" />
+      </li><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <a itemprop="item" href="../index.html"><span itemprop="name">Systems</span></a>
+        <span>/</span>
+        <meta itemprop="position" content="2" />
+      </li><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <a itemprop="item" href="index.html"><span itemprop="name">Subsystem Components</span></a>
+        <span>/</span>
+        <meta itemprop="position" content="3" />
+      </li><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <strong itemprop="name">Refrigerant Cycle</strong>
+        <meta itemprop="position" content="4" />
+      </li></ol>
+    <div class="xl:hidden ml-1">
+      <button class="js-menu" aria-label="Show table of contents" type="button" aria-controls="rside"
+        aria-expanded="false">
+        <i class="i-lucide outdent"></i>
+      </button>
+    </div>
+  </div>
+</div><div class="flex flex-col break-words justify-between">
+      <div class="relative min-w-0 max-w-6xl px-6 pb-6 pt-8 xl:px-12">
+  <div class="copy-page-wrapper relative pb-4 lg:absolute lg:top-8 lg:right-6 xl:right-12">
+  <div id="copy-page-trigger">
+    <button
+      type="button"
+      class="js-copy px-3 py-1 inline-flex items-center gap-1"
+      data-url="https://bet-lab.github.io/enex_analysis_engine/_sources/theory/components/refrigerant_cycle.rst.txt"
+    >
+      <i class="i-lucide" data-icon="copy"></i>
+      <span>Copy page</span>
+    </button>
+    <button class="js-menu px-2 py-1" type="button" aria-label="More actions"
+      aria-haspopup="menu" aria-expanded="false" aria-controls="copy-page-content">
+      <i class="i-lucide chevron-down"></i>
+    </button>
+  </div>
+  <div id="copy-page-content" role="menu" aria-orientation="vertical" aria-hidden="true">
+    <div role="presentation">
+      <div class="flex flex-col" role="group">
+        <button class="js-copy" type="button" role="menuitem"
+          data-url="https://bet-lab.github.io/enex_analysis_engine/_sources/theory/components/refrigerant_cycle.rst.txt">
+          <span class="iconify-icon">
+            <i class="i-lucide" data-icon="copy"></i>
+          </span>
+          <span>Copy page</span>
+        </button>
+        <a role="menuitem" href="https://bet-lab.github.io/enex_analysis_engine/_sources/theory/components/refrigerant_cycle.rst.txt" target="_blank" rel="nofollow"><iconify-icon icon="bi:code-slash"></iconify-icon>
+            <span>View Source</span></a><a role="menuitem" href="https://chatgpt.com/?hints=search&q=Read%20https%3A//bet-lab.github.io/enex_analysis_engine/_sources/theory/components/refrigerant_cycle.rst.txt%20so%20I%20can%20ask%20questions%20about%20it." target="_blank" rel="nofollow">
+          <iconify-icon icon="bi:openai"></iconify-icon>
+          <span>Open in ChatGPT</span>
+        </a><a role="menuitem" href="https://claude.ai/new?q=Read%20https%3A//bet-lab.github.io/enex_analysis_engine/_sources/theory/components/refrigerant_cycle.rst.txt%20so%20I%20can%20ask%20questions%20about%20it." target="_blank" rel="nofollow">
+          <iconify-icon icon="bi:claude"></iconify-icon>
+          <span>Open in Claude</span>
+        </a></div>
+    </div>
+  </div>
+</div><article class="yue" role="main">
+          <section id="refrigerant-cycle">
+<h1>Refrigerant Cycle<a class="headerlink" href="#refrigerant-cycle" title="Link to this heading">¶</a></h1>
+<p>The core of the heat pump models relies on evaluating the thermodynamic state of the vapor-compression cycle. The mathematical resolution assumes steady-state balances at each time step and uses the <cite>CoolProp</cite> library for accurate refrigerant property evaluation.</p>
+<section id="cycle-visualization">
+<h2>Cycle Visualization<a class="headerlink" href="#cycle-visualization" title="Link to this heading">¶</a></h2>
+<p>The interactive widget below visualizes the thermodynamic cycle on Temperature-Enthalpy (T-h), Pressure-Enthalpy (P-h), and Temperature-Entropy (T-s) diagrams. You can select the refrigerant and adjust the source and sink temperatures to see how the cycle states change.</p>
+<style>
+    .cycle-widget-container {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        border: 1px solid var(--sy-c-border, #eaecef);
+        border-radius: 8px;
+        padding: 16px;
+        background-color: var(--sy-c-bg, #ffffff);
+        margin: 20px 0;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    }
+    .widget-controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        margin-bottom: 20px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid var(--sy-c-border, #eaecef);
+    }
+    .control-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        flex: 1;
+        min-width: 200px;
+    }
+    .control-group label {
+        font-weight: 600;
+        font-size: 0.9em;
+        color: var(--sy-c-text, #24292e);
+    }
+    .control-group select {
+        padding: 8px;
+        border-radius: 4px;
+        border: 1px solid var(--sy-c-border, #eaecef);
+        background-color: var(--sy-c-bg, #ffffff);
+        color: var(--sy-c-text, #24292e);
+        font-size: 0.95em;
+    }
+    .slider-container {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .slider-container input[type="range"] {
+        flex-grow: 1;
+    }
+    .slider-value {
+        font-weight: 500;
+        min-width: 45px;
+        text-align: right;
+        color: var(--sy-c-text, #24292e);
+    }
+    
+    /* Button Group for Diagram Type */
+    .diagram-selector {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 15px;
+        gap: 10px;
+    }
+    
+    .diagram-btn {
+        padding: 8px 16px;
+        background-color: transparent;
+        border: 1px solid var(--sy-c-border, #eaecef);
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 500;
+        color: var(--sy-c-text, #24292e);
+        transition: all 0.2s ease;
+    }
+    
+    .diagram-btn:hover {
+        background-color: var(--sy-c-bg-hover, #f6f8fa);
+    }
+    
+    .diagram-btn.active {
+        background-color: var(--sy-c-primary, #0969da);
+        color: white;
+        border-color: var(--sy-c-primary, #0969da);
+    }
+
+    .plot-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        min-height: auto;
+    }
+    .plot-container img {
+        width: 100%;
+        height: auto;
+        border-radius: 4px;
+        transition: opacity 0.2s ease-in-out;
+    }
+    
+    /* For error state */
+    .error-message {
+        color: var(--sy-c-danger, #dc3545);
+        text-align: center;
+        padding: 20px;
+        background-color: rgba(220, 53, 69, 0.1);
+        border-radius: 4px;
+        display: none;
+    }
+</style>
+
+<div class="cycle-widget-container">
+    <div class="widget-controls">
+        <div class="control-group">
+            <label for="refSelect">Refrigerant</label>
+            <select id="refSelect">
+                <option value="R410A">R410A</option>
+                <option value="R134a">R134a</option>
+                <option value="R32">R32</option>
+                <option value="R290">R290</option>
+            </select>
+        </div>
+        
+        <div class="control-group">
+            <label for="tsourceSlider">Source Temperature (T<sub>source</sub>)</label>
+            <div class="slider-container">
+                <input type="range" id="tsourceSlider" min="-15" max="15" step="5" value="0">
+                <span class="slider-value" id="tsourceVal">0&deg;C</span>
+            </div>
+        </div>
+        
+        <div class="control-group">
+            <label for="tsinkSlider">Sink Temperature (T<sub>sink</sub>)</label>
+            <div class="slider-container">
+                <input type="range" id="tsinkSlider" min="25" max="55" step="5" value="40">
+                <span class="slider-value" id="tsinkVal">40&deg;C</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="diagram-selector" id="diagramSelector">
+        <button class="diagram-btn active" data-type="th">T-h Diagram</button>
+        <button class="diagram-btn" data-type="ph">P-h Diagram</button>
+        <button class="diagram-btn" data-type="ts">T-s Diagram</button>
+    </div>
+
+    <div class="plot-container">
+        <div class="error-message" id="plotError">Plot not available for this configuration. (Ensure T<sub>sink</sub> > T<sub>source</sub>)</div>
+        <img id="cyclePlot" src="" alt="Thermodynamic Cycle Diagram">
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const refSelect = document.getElementById('refSelect');
+    const tsourceSlider = document.getElementById('tsourceSlider');
+    const tsinkSlider = document.getElementById('tsinkSlider');
+    const tsourceVal = document.getElementById('tsourceVal');
+    const tsinkVal = document.getElementById('tsinkVal');
+    const cyclePlot = document.getElementById('cyclePlot');
+    const plotError = document.getElementById('plotError');
+    const diagramBtns = document.querySelectorAll('.diagram-btn');
+    
+    let currentType = 'th';
+
+    // Base path relative to where this HTML is embedded
+    // When embedded in docs/source/theory/components/refrigerant_cycle.html
+    // The relative path from the built HTML to the static folder is ../../_static/
+    const basePath = '../../_static/interactive_plots';
+
+    function updatePlot() {
+        const ref = refSelect.value;
+        const tsource = parseInt(tsourceSlider.value);
+        const tsink = parseInt(tsinkSlider.value);
+        
+        tsourceVal.innerHTML = `${tsource}&deg;C`;
+        tsinkVal.innerHTML = `${tsink}&deg;C`;
+        
+        // Map to internal Evaporation and Condensation temperatures based on 5K difference
+        const tevap = tsource - 5;
+        const tcond = tsink + 5;
+        
+        // Prevent physical impossibility or generation errors
+        if (tcond <= tevap) {
+            cyclePlot.style.display = 'none';
+            plotError.style.display = 'block';
+            return;
+        }
+        
+        cyclePlot.style.display = 'block';
+        plotError.style.display = 'none';
+        
+        // Construct filename: type_ref_tsource_tsink.png
+        const filename = `${currentType}_${ref}_${tsource}_${tsink}.png`;
+        const newSrc = `${basePath}/${filename}`;
+        
+        // Simple transition effect
+        cyclePlot.style.opacity = 0.5;
+        
+        const tempImg = new Image();
+        tempImg.onload = () => {
+            cyclePlot.src = newSrc;
+            cyclePlot.style.opacity = 1;
+        };
+        tempImg.onerror = () => {
+            cyclePlot.style.display = 'none';
+            plotError.style.display = 'block';
+            plotError.innerText = `Image not found: ${filename}`;
+        };
+        tempImg.src = newSrc;
+    }
+
+    refSelect.addEventListener('change', updatePlot);
+    tsourceSlider.addEventListener('input', updatePlot);
+    tsinkSlider.addEventListener('input', updatePlot);
+    
+    diagramBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            diagramBtns.forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            currentType = e.target.getAttribute('data-type');
+            updatePlot();
+        });
+    });
+
+    // Initialize
+    updatePlot();
+});
+</script>
+</section>
+<section id="modeling-assumptions">
+<h2>Modeling Assumptions<a class="headerlink" href="#modeling-assumptions" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p><strong>Negligible Heat Exchanger Thermal Resistance:</strong> The thermal resistance of the metallic coil walls in the heat exchangers is negligible. The entire surface temperature of the condenser and evaporator is assumed to equal the condensation (<span class="math notranslate nohighlight">\(T_\text{ref,cond,sat}\)</span>) and evaporation (<span class="math notranslate nohighlight">\(T_\text{ref,evap,sat}\)</span>) saturation temperatures, respectively.</p></li>
+<li><p><strong>Negligible Single-Phase Region:</strong> The surface area dedicated to the superheated and subcooled single-phase regions within the heat exchangers is assumed to be small relative to the two-phase region.</p></li>
+<li><p><strong>Isenthalpic Expansion:</strong> The expansion process through the expansion valve is considered perfectly isenthalpic.</p></li>
+</ul>
+</section>
+<section id="mathematical-modeling">
+<h2>Mathematical Modeling<a class="headerlink" href="#mathematical-modeling" title="Link to this heading">¶</a></h2>
+<section id="thermodynamic-states">
+<h3>Thermodynamic States<a class="headerlink" href="#thermodynamic-states" title="Link to this heading">¶</a></h3>
+<p>The thermodynamic states of the refrigerant cycle are anchored by the evaporating and condensing saturation temperatures. These are derived from the heat source temperature (e.g., outdoor air or BHE fluid) and the heat sink temperature (e.g., tank water):</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[\begin{split}T_\text{ref,evap,sat} &amp;= T_\text{source} - \Delta T_\text{ref,evap} \\
+T_\text{ref,cond,sat} &amp;= T_\text{sink} + \Delta T_\text{ref,cond}\end{split}\]</div>
+</div>
+<p>The condenser approach temperature (<span class="math notranslate nohighlight">\(\Delta T_\text{ref,cond}\)</span>) is determined by the target heating capacity (<span class="math notranslate nohighlight">\(Q_\text{ref,cond}\)</span>) and the overall heat transfer coefficient (<span class="math notranslate nohighlight">\(UA_\text{cond}\)</span>) of the condenser:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[\Delta T_\text{ref,cond} = \frac{Q_\text{ref,cond}}{UA_\text{cond}}\]</div>
+</div>
+<p>The treatment of the overall heat transfer coefficient (<span class="math notranslate nohighlight">\(UA\)</span>) depends on the physical placement and type of the heat exchanger:</p>
+<ul>
+<li><p><strong>Immersed / Hydronic Heat Exchangers (e.g., Tank Condensers or BHE Evaporators):</strong> When the heat exchanger interacts with a liquid body under simplified mixing assumptions (like a lumped-capacitance water tank) or fixed ground loop flows, the water-side or brine-side thermal resistance is often assumed constant. Thus, <span class="math notranslate nohighlight">\(UA\)</span> is treated as a static design parameter (<span class="math notranslate nohighlight">\(UA_\text{design}\)</span>).</p></li>
+<li><p><strong>Air-Coupled Heat Exchangers (e.g., Outdoor Evaporators or Air-Cooled Condensers):</strong> When the heat exchanger is coupled with an external fan, the <span class="math notranslate nohighlight">\(UA\)</span> dynamically scales with the fan’s volumetric airflow rate (<span class="math notranslate nohighlight">\(\dot{V}_\text{a}\)</span>). Based on the Colburn <span class="math notranslate nohighlight">\(j\)</span>-factor analogy for plain fin-and-tube configurations, the convective heat transfer coefficient varies non-linearly with fluid velocity. This is modeled using an empirical exponent <span class="math notranslate nohighlight">\(n\)</span>:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[UA = UA_\text{design} \left(\frac{\dot{V}_\text{a}}{\dot{V}_\text{a,design}}\right)^{n}\]</div>
+</div>
+<p>where the exponent <span class="math notranslate nohighlight">\(n\)</span> typically ranges from 0.58 to 0.83 depending on the number of tube rows, and is nominally set to 0.65 to represent standard operating performance.</p>
+</li>
+</ul>
+<p>The compressor inlet (cmp,in) and expansion valve inlet (exp,in) temperatures are defined by user-specified superheat (<span class="math notranslate nohighlight">\(\Delta T_\text{superheat}\)</span>) and subcool (<span class="math notranslate nohighlight">\(\Delta T_\text{subcool}\)</span>) margins to ensure safe operation:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[\begin{split}T_\text{ref,cmp,in} &amp;= T_\text{ref,evap,sat} + \Delta T_\text{superheat} \\
+T_\text{ref,exp,in} &amp;= T_\text{ref,cond,sat} - \Delta T_\text{subcool}\end{split}\]</div>
+</div>
+<p>Based on the isentropic efficiency (<span class="math notranslate nohighlight">\(\eta_\text{cmp,isen}\)</span>) of the compressor, the actual discharge enthalpy (<span class="math notranslate nohighlight">\(h_\text{ref,cmp,out}\)</span>) is calculated from the ideal isentropic discharge enthalpy (<span class="math notranslate nohighlight">\(h_\text{2,isen}\)</span>):</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[h_\text{ref,cmp,out} = h_\text{ref,cmp,in} + \frac{h_\text{2,isen} - h_\text{ref,cmp,in}}{\eta_\text{cmp,isen}}\]</div>
+</div>
+</section>
+<section id="energy-balance-and-mass-flow-rate">
+<h3>Energy Balance and Mass Flow Rate<a class="headerlink" href="#energy-balance-and-mass-flow-rate" title="Link to this heading">¶</a></h3>
+<p>The required refrigerant mass flow rate (<span class="math notranslate nohighlight">\(\dot{m}_\text{ref}\)</span>) is derived by applying the steady-state energy balance across the condenser to meet the target heat load:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[\dot{m}_\text{ref} = \frac{Q_\text{ref,cond}}{h_\text{ref,cmp,out} - h_\text{ref,exp,in}}\]</div>
+</div>
+<p>With the mass flow rate established, the evaporator heat absorption rate (<span class="math notranslate nohighlight">\(Q_\text{ref,evap}\)</span>) and the compressor electrical power input (<span class="math notranslate nohighlight">\(E_\text{cmp}\)</span>) are computed:</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[\begin{split}Q_\text{ref,evap} &amp;= \dot{m}_\text{ref} (h_\text{ref,cmp,in} - h_\text{ref,exp,out}) \\
+E_\text{cmp} &amp;= \dot{m}_\text{ref} (h_\text{ref,cmp,out} - h_\text{ref,cmp,in})\end{split}\]</div>
+</div>
+<p>The compressor speed (<span class="math notranslate nohighlight">\(N_\text{cmp}\)</span> in RPM) is determined by the required mass flow rate, the compressor displacement volume (<span class="math notranslate nohighlight">\(V_\text{disp,cmp}\)</span>), and the suction density (<span class="math notranslate nohighlight">\(\rho_\text{ref,cmp,in}\)</span>):</p>
+<div class="math-wrapper docutils container">
+<div class="math notranslate nohighlight">
+\[N_\text{cmp} = \frac{\dot{m}_\text{ref}}{V_\text{disp,cmp} \cdot \rho_\text{ref,cmp,in}} \times 60\]</div>
+</div>
+</section>
+</section>
+</section>
+
+        </article><button class="back-to-top" type="button">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+    <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+  </svg>
+  <span>Back to top</span>
+</button><div class="navigation flex print:hidden"><div class="navigation-prev">
+    <a href="index.html">
+      <i class="i-lucide chevron-left"></i>
+      <div class="page-info">
+        <span>Previous</span><div class="title">Subsystem Components</div></div>
+    </a>
+  </div><div class="navigation-next">
+    <a href="thermal_storage.html">
+      <div class="page-info">
+        <span>Next</span>
+        <div class="title">Thermal Storage Tank</div>
+      </div>
+      <i class="i-lucide chevron-right"></i>
+    </a>
+  </div></div></div>
+    </div>
+  </main>
+</div>
+<footer class="sy-foot">
+  <div class="sy-foot-inner sy-container mx-auto">
+    <div class="sy-foot-reserved md:flex justify-between items-center">
+      <div class="sy-foot-copyright"><p>2025, betlab</p>
+  
+  <p>
+    Made with
+    
+    <a href="https://www.sphinx-doc.org/">Sphinx</a> and
+    
+    <a href="https://shibuya.lepture.com">Shibuya theme</a>.
+  </p>
+</div>
+      <div class="sy-foot-socials">
+<a href="https://github.com/bet-lab/enex_analysis_engine" aria-label="GitHub">
+  <iconify-icon icon="simple-icons:github"></iconify-icon>
+</a></div>
+    </div>
+  </div>
+</footer>
+      <script src="../../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+      <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+      <script src="../../_static/shibuya.js?v=cac61aee"></script>
+      <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script></body>
+</html>

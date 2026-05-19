@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="en" data-accent-color="violet" data-content_root="../../">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"><title>enex_analysis.dynamic_context - Energy-Exergy Analysis Engine</title><link rel="index" title="Index" href="../../genindex.html" /><link rel="search" title="Search" href="../../search.html" /><link rel="next" title="enex_analysis.simulation_runner" href="enex_analysis.simulation_runner.html" /><link rel="prev" title="enex_analysis.enex_functions" href="enex_analysis.enex_functions.html" />
+      <link rel="canonical" href="https://bet-lab.github.io/enex_analysis_engine/api/generated/enex_analysis.dynamic_context.html" /><script>
+    function setColorMode(t){let e=document.documentElement;e.setAttribute("data-color-mode",t);let a=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,s=t;"auto"===t&&(s=a?"dark":"light"),"light"===s?(e.classList.remove("dark"),e.classList.add("light")):(e.classList.remove("light"),e.classList.add("dark"))}
+    setColorMode(localStorage._theme||"auto");
+  </script><link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=e1a1ceaf" />
+    <link rel="stylesheet" type="text/css" href="../../_static/shibuya.css?v=44020203" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link media="print" rel="stylesheet" type="text/css" href="../../_static/print.css?v=20ff2c19" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css?v=e84031eb" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --sy-f-text: "Inter", var(--sy-f-sys), var(--sy-f-cjk), sans-serif;
+  --sy-f-heading: "Inter", var(--sy-f-sys), var(--sy-f-cjk), sans-serif;
+}
+</style>
+    <meta property="og:type" content="website"/>
+  <meta property="og:url" content="https://bet-lab.github.io/enex_analysis_engine/api/generated/enex_analysis.dynamic_context.html"/>
+  <meta property="og:title" content="enex_analysis.dynamic_context"/>
+    <meta name="twitter:card" content="summary"/>
+  </head>
+<body><div class="sy-head">
+  <div class="sy-head-blur"></div>
+  <div class="sy-head-inner sy-container mx-auto">
+    <a class="sy-head-brand" href="../../index.html">
+      
+      
+      <strong>Energy-Exergy Analysis Engine</strong>
+    </a>
+    <div class="sy-head-nav" id="head-nav">
+      <nav class="sy-head-links"><ul><li class="link"><a href="../../getting-started/index.html">Getting Started</a></li><li class="link"><a href="../../theory/index.html">Theory</a></li><li class="link"><a href="../index.html">API Reference</a></li></ul></nav>
+      <div class="sy-head-extra flex items-center print:hidden"><form class="searchbox flex items-center" action="../../search.html" method="get">
+  <input type="text" name="q" placeholder="Search" />
+  <kbd>/</kbd>
+</form><div class="sy-head-socials">
+  <a href="https://github.com/bet-lab/enex_analysis_engine" aria-label="GitHub">
+    <iconify-icon icon="simple-icons:github"></iconify-icon>
+  </a></div></div>
+    </div>
+    <div class="sy-head-actions flex items-center shrink-0 print:hidden"><button class="js-theme theme-switch flex items-center"
+data-aria-auto="Switch to light color mode"
+data-aria-light="Switch to dark color mode"
+data-aria-dark="Switch to auto color mode">
+<i class="i-lucide theme-icon"></i>
+</button><button class="md:hidden flex items-center js-menu" aria-label="Menu" type="button" aria-controls="head-nav" aria-expanded="false">
+        <div class="hamburger">
+          <span class="hamburger_1"></span>
+          <span class="hamburger_2"></span>
+          <span class="hamburger_3"></span>
+        </div>
+      </button>
+    </div>
+  </div>
+</div>
+<div class="sy-page sy-container flex mx-auto">
+  <aside id="lside" class="sy-lside md:w-72 md:shrink-0 print:hidden">
+    <div class="sy-lside-inner md:sticky">
+      <div class="sy-scrollbar p-6">
+        <div class="globaltoc" data-expand-depth="0"><p class="caption" role="heading" aria-level="3"><span class="caption-text">Documentation</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../getting-started/index.html">Getting Started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../getting-started/installation.html">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../getting-started/quickstart.html">Quick Start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../getting-started/configuration.html">Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../guides/index.html">User Guides</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/user-guide.html">User Guide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/io-guide.html">Input/Output Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/advanced-topics.html">Advanced Topics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../guides/nomenclature.html">Symbol Naming Convention</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../core.html">Core &amp; Utilities</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.thermodynamics.html">enex_analysis.thermodynamics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.refrigerant.html">enex_analysis.refrigerant</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.heat_transfer.html">enex_analysis.heat_transfer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.dhw.html">enex_analysis.dhw</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.cop.html">enex_analysis.cop</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.calc_util.html">enex_analysis.calc_util</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.constants.html">enex_analysis.constants</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.weather.html">enex_analysis.weather</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.enex_functions.html">enex_analysis.enex_functions</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">enex_analysis.dynamic_context</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.simulation_runner.html">enex_analysis.simulation_runner</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.simulation_runner.html">enex_analysis.simulation_runner</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../engines.html">Energy System Engines</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.air_source_heat_pump.html">enex_analysis.air_source_heat_pump</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.ground_source_heat_pump.html">enex_analysis.ground_source_heat_pump</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.electric_boiler.html">enex_analysis.electric_boiler</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.gas_boiler.html">enex_analysis.gas_boiler</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.gas_boiler_tank.html">enex_analysis.gas_boiler_tank</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.solar_assisted_gas_boiler.html">enex_analysis.solar_assisted_gas_boiler</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.air_source_heat_pump_boiler.html">enex_analysis.air_source_heat_pump_boiler</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.ground_source_heat_pump_boiler.html">enex_analysis.ground_source_heat_pump_boiler</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.water_source_heat_pump_boiler.html">enex_analysis.water_source_heat_pump_boiler</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.ashpb_pv_ess.html">enex_analysis.ashpb_pv_ess</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.ashpb_stc_preheat.html">enex_analysis.ashpb_stc_preheat</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.ashpb_stc_tank.html">enex_analysis.ashpb_stc_tank</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.eb_pv_ess.html">enex_analysis.eb_pv_ess</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.eb_stc_preheat.html">enex_analysis.eb_stc_preheat</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.eb_stc_tank.html">enex_analysis.eb_stc_tank</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.gshpb_pv_ess.html">enex_analysis.gshpb_pv_ess</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.gshpb_stc_preheat.html">enex_analysis.gshpb_stc_preheat</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.gshpb_stc_tank.html">enex_analysis.gshpb_stc_tank</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.enex_engine.html">enex_analysis.enex_engine</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../subsystems.html">Subsystems</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.subsystems.html">enex_analysis.subsystems</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.tank_stratification_model.html">enex_analysis.tank_stratification_model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.hx_fan.html">enex_analysis.hx_fan</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.uv_treatment.html">enex_analysis.uv_treatment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.g_function.html">enex_analysis.g_function</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../advanced.html">Advanced &amp; Tools</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.tdma.html">enex_analysis.tdma</a></li>
+<li class="toctree-l3"><a class="reference internal" href="enex_analysis.visualization.html">enex_analysis.visualization</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../theory/index.html">Systems</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../theory/components/index.html">Subsystem Components</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../theory/components/refrigerant_cycle.html">Refrigerant Cycle</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../theory/components/thermal_storage.html">Thermal Storage Tank</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../theory/components/borehole_he.html">Borehole Heat Exchanger (BHE)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../theory/components/solar_thermal.html">Solar Thermal Collector (STC)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../theory/components/pv_ess.html">Photovoltaic and Energy Storage Systems (PV + ESS)</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../theory/systems/index.html">Integrated Systems</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../theory/systems/ashp_boiler.html">Air Source Heat Pump Boiler (ASHPB)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../theory/systems/gshp_boiler.html">Ground Source Heat Pump Boiler (GSHPB)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../theory/systems/hybrid_systems.html">Hybrid Heat Pump Systems</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../theory/scenarios/index.html">Scenarios &amp; Analysis</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../theory/scenarios/pv_vs_stc.html">Photovoltaic vs. Solar Thermal Collector</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading" aria-level="3"><span class="caption-text">Project Links</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/bet-lab/enex_analysis_engine">GitHub Repository</a></li>
+</ul>
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="lside-overlay js-menu" role="button" aria-label="Close left sidebar" aria-controls="lside" aria-expanded="false"></div>
+  <aside id="rside" class="sy-rside pb-3 w-64 shrink-0 order-last">
+    <button class="rside-close js-menu xl:hidden" aria-label="Close Table of Contents" type="button" aria-controls="rside" aria-expanded="false">
+      <i class="i-lucide close"></i>
+    </button>
+    <div class="sy-scrollbar sy-rside-inner px-6 xl:top-16 xl:sticky xl:pl-0 pt-6 pb-4"><div class="localtoc"><h3>On this page</h3><ul>
+<li><a class="reference internal" href="#enex_analysis.dynamic_context.StepContext"><code class="docutils literal notranslate"><span class="pre">StepContext</span></code></a><ul>
+<li><a class="reference internal" href="#enex_analysis.dynamic_context.StepContext.n"><code class="docutils literal notranslate">n</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.dynamic_context.StepContext.current_time_s"><code class="docutils literal notranslate">current_time_s</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.dynamic_context.StepContext.current_hour"><code class="docutils literal notranslate">current_hour</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.dynamic_context.StepContext.hour_of_day"><code class="docutils literal notranslate">hour_of_day</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.dynamic_context.StepContext.T0"><code class="docutils literal notranslate">T0</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.dynamic_context.StepContext.T0_K"><code class="docutils literal notranslate">T0_K</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.dynamic_context.StepContext.activation_flags"><code class="docutils literal notranslate">activation_flags</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.dynamic_context.StepContext.T_tank_w_K"><code class="docutils literal notranslate">T_tank_w_K</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.dynamic_context.StepContext.tank_level"><code class="docutils literal notranslate">tank_level</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.dynamic_context.StepContext.dV_mix_w_out"><code class="docutils literal notranslate">dV_mix_w_out</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.dynamic_context.StepContext.I_DN"><code class="docutils literal notranslate">I_DN</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.dynamic_context.StepContext.I_dH"><code class="docutils literal notranslate">I_dH</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.dynamic_context.StepContext.T_sup_w_K"><code class="docutils literal notranslate">T_sup_w_K</span></code></a></li>
+<li><a class="reference internal" href="#id0"><code class="docutils literal notranslate">n</span></code></a></li>
+<li><a class="reference internal" href="#id1"><code class="docutils literal notranslate">current_time_s</span></code></a></li>
+<li><a class="reference internal" href="#id2"><code class="docutils literal notranslate">current_hour</span></code></a></li>
+<li><a class="reference internal" href="#id3"><code class="docutils literal notranslate">hour_of_day</span></code></a></li>
+<li><a class="reference internal" href="#id4"><code class="docutils literal notranslate">T0</span></code></a></li>
+<li><a class="reference internal" href="#id5"><code class="docutils literal notranslate">T0_K</span></code></a></li>
+<li><a class="reference internal" href="#id6"><code class="docutils literal notranslate">activation_flags</span></code></a></li>
+<li><a class="reference internal" href="#id7"><code class="docutils literal notranslate">T_tank_w_K</span></code></a></li>
+<li><a class="reference internal" href="#id8"><code class="docutils literal notranslate">tank_level</span></code></a></li>
+<li><a class="reference internal" href="#id9"><code class="docutils literal notranslate">dV_mix_w_out</span></code></a></li>
+<li><a class="reference internal" href="#id10"><code class="docutils literal notranslate">I_DN</span></code></a></li>
+<li><a class="reference internal" href="#id11"><code class="docutils literal notranslate">I_dH</span></code></a></li>
+<li><a class="reference internal" href="#id12"><code class="docutils literal notranslate">T_sup_w_K</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.dynamic_context.StepContext.__init__"><code class="docutils literal notranslate">__init__()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#enex_analysis.dynamic_context.ControlState"><code class="docutils literal notranslate"><span class="pre">ControlState</span></code></a><ul>
+<li><a class="reference internal" href="#enex_analysis.dynamic_context.ControlState.is_on"><code class="docutils literal notranslate">is_on</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.dynamic_context.ControlState.Q_heat_source"><code class="docutils literal notranslate">Q_heat_source</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.dynamic_context.ControlState.dV_tank_w_in_ctrl"><code class="docutils literal notranslate">dV_tank_w_in_ctrl</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.dynamic_context.ControlState.result"><code class="docutils literal notranslate">result</span></code></a></li>
+<li><a class="reference internal" href="#id13"><code class="docutils literal notranslate">is_on</span></code></a></li>
+<li><a class="reference internal" href="#id14"><code class="docutils literal notranslate">Q_heat_source</span></code></a></li>
+<li><a class="reference internal" href="#id15"><code class="docutils literal notranslate">dV_tank_w_in_ctrl</span></code></a></li>
+<li><a class="reference internal" href="#id16"><code class="docutils literal notranslate">result</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.dynamic_context.ControlState.__init__"><code class="docutils literal notranslate">__init__()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#enex_analysis.dynamic_context.SubsystemExergy"><code class="docutils literal notranslate"><span class="pre">SubsystemExergy</span></code></a><ul>
+<li><a class="reference internal" href="#enex_analysis.dynamic_context.SubsystemExergy.columns"><code class="docutils literal notranslate">columns</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.dynamic_context.SubsystemExergy.X_tot_add"><code class="docutils literal notranslate">X_tot_add</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.dynamic_context.SubsystemExergy.X_in_tank_add"><code class="docutils literal notranslate">X_in_tank_add</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.dynamic_context.SubsystemExergy.X_out_tank_add"><code class="docutils literal notranslate">X_out_tank_add</span></code></a></li>
+<li><a class="reference internal" href="#id17"><code class="docutils literal notranslate">columns</span></code></a></li>
+<li><a class="reference internal" href="#id18"><code class="docutils literal notranslate">X_tot_add</span></code></a></li>
+<li><a class="reference internal" href="#id19"><code class="docutils literal notranslate">X_in_tank_add</span></code></a></li>
+<li><a class="reference internal" href="#id20"><code class="docutils literal notranslate">X_out_tank_add</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.dynamic_context.SubsystemExergy.__init__"><code class="docutils literal notranslate">__init__()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#enex_analysis.dynamic_context.Subsystem"><code class="docutils literal notranslate"><span class="pre">Subsystem</span></code></a><ul>
+<li><a class="reference internal" href="#enex_analysis.dynamic_context.Subsystem.step"><code class="docutils literal notranslate">step()</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.dynamic_context.Subsystem.assemble_results"><code class="docutils literal notranslate">assemble_results()</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.dynamic_context.Subsystem.calc_exergy"><code class="docutils literal notranslate">calc_exergy()</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.dynamic_context.Subsystem.calc_performance"><code class="docutils literal notranslate">calc_performance()</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.dynamic_context.Subsystem.__init__"><code class="docutils literal notranslate">__init__()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#enex_analysis.dynamic_context.check_hp_schedule_active"><code class="docutils literal notranslate"><span class="pre">check_hp_schedule_active()</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.dynamic_context.determine_heat_source_on_off"><code class="docutils literal notranslate"><span class="pre">determine_heat_source_on_off()</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.dynamic_context.determine_tank_refill_flow"><code class="docutils literal notranslate"><span class="pre">determine_tank_refill_flow()</span></code></a></li>
+<li><a class="reference internal" href="#enex_analysis.dynamic_context.tank_mass_energy_residual"><code class="docutils literal notranslate"><span class="pre">tank_mass_energy_residual()</span></code></a></li>
+</ul>
+</div><div id="ethical-ad-placement" data-ea-publisher="readthedocs"></div></div>
+  </aside>
+  <div class="rside-overlay js-menu" role="button" aria-label="Close Table of Contents" aria-controls="rside" aria-expanded="false"></div>
+  <main class="sy-main w-full max-sm:max-w-full print:pt-6">
+<div class="sy-breadcrumbs" role="navigation">
+  <div class="sy-breadcrumbs-inner flex items-center">
+    <div class="md:hidden mr-3">
+      <button class="js-menu" aria-label="Menu" type="button" aria-controls="lside" aria-expanded="false">
+        <i class="i-lucide menu"></i>
+      </button>
+    </div>
+    <ol class="flex-1" itemscope itemtype="https://schema.org/BreadcrumbList"><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <a itemprop="item" href="../../index.html"><span itemprop="name">Energy-Exergy Analysis Engine</span></a>
+        <span>/</span>
+        <meta itemprop="position" content="1" />
+      </li><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <a itemprop="item" href="../index.html"><span itemprop="name">API Reference</span></a>
+        <span>/</span>
+        <meta itemprop="position" content="2" />
+      </li><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <a itemprop="item" href="../core.html"><span itemprop="name">Core &amp; Utilities</span></a>
+        <span>/</span>
+        <meta itemprop="position" content="3" />
+      </li><li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <strong itemprop="name">enex_analysis.dynamic_context</strong>
+        <meta itemprop="position" content="4" />
+      </li></ol>
+    <div class="xl:hidden ml-1">
+      <button class="js-menu" aria-label="Show table of contents" type="button" aria-controls="rside"
+        aria-expanded="false">
+        <i class="i-lucide outdent"></i>
+      </button>
+    </div>
+  </div>
+</div><div class="flex flex-col break-words justify-between">
+      <div class="relative min-w-0 max-w-6xl px-6 pb-6 pt-8 xl:px-12">
+  <div class="copy-page-wrapper relative pb-4 lg:absolute lg:top-8 lg:right-6 xl:right-12">
+  <div id="copy-page-trigger">
+    <button
+      type="button"
+      class="js-copy px-3 py-1 inline-flex items-center gap-1"
+      data-url="https://bet-lab.github.io/enex_analysis_engine/_sources/api/generated/enex_analysis.dynamic_context.rst.txt"
+    >
+      <i class="i-lucide" data-icon="copy"></i>
+      <span>Copy page</span>
+    </button>
+    <button class="js-menu px-2 py-1" type="button" aria-label="More actions"
+      aria-haspopup="menu" aria-expanded="false" aria-controls="copy-page-content">
+      <i class="i-lucide chevron-down"></i>
+    </button>
+  </div>
+  <div id="copy-page-content" role="menu" aria-orientation="vertical" aria-hidden="true">
+    <div role="presentation">
+      <div class="flex flex-col" role="group">
+        <button class="js-copy" type="button" role="menuitem"
+          data-url="https://bet-lab.github.io/enex_analysis_engine/_sources/api/generated/enex_analysis.dynamic_context.rst.txt">
+          <span class="iconify-icon">
+            <i class="i-lucide" data-icon="copy"></i>
+          </span>
+          <span>Copy page</span>
+        </button>
+        <a role="menuitem" href="https://bet-lab.github.io/enex_analysis_engine/_sources/api/generated/enex_analysis.dynamic_context.rst.txt" target="_blank" rel="nofollow"><iconify-icon icon="bi:code-slash"></iconify-icon>
+            <span>View Source</span></a><a role="menuitem" href="https://chatgpt.com/?hints=search&q=Read%20https%3A//bet-lab.github.io/enex_analysis_engine/_sources/api/generated/enex_analysis.dynamic_context.rst.txt%20so%20I%20can%20ask%20questions%20about%20it." target="_blank" rel="nofollow">
+          <iconify-icon icon="bi:openai"></iconify-icon>
+          <span>Open in ChatGPT</span>
+        </a><a role="menuitem" href="https://claude.ai/new?q=Read%20https%3A//bet-lab.github.io/enex_analysis_engine/_sources/api/generated/enex_analysis.dynamic_context.rst.txt%20so%20I%20can%20ask%20questions%20about%20it." target="_blank" rel="nofollow">
+          <iconify-icon icon="bi:claude"></iconify-icon>
+          <span>Open in Claude</span>
+        </a></div>
+    </div>
+  </div>
+</div><article class="yue" role="main">
+          <section id="module-enex_analysis.dynamic_context">
+<span id="enex-analysis-dynamic-context"></span><h1>enex_analysis.dynamic_context<a class="headerlink" href="#module-enex_analysis.dynamic_context" title="Link to this heading">¶</a></h1>
+<p>Shared dynamic simulation context and control helpers.</p>
+<p>Provides reusable dataclasses and pure functions that form the
+backbone of time-stepping heat-pump simulations.  Extracted from
+<code class="docutils literal notranslate"><span class="pre">AirSourceHeatPumpBoiler</span></code> so that <code class="docutils literal notranslate"><span class="pre">GroundSourceHeatPumpBoiler</span></code>
+and future models can share the same infrastructure.</p>
+<p class="rubric">Functions</p>
+<div class="table-wrapper autosummary longtable docutils container">
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#enex_analysis.dynamic_context.check_hp_schedule_active" title="enex_analysis.dynamic_context.check_hp_schedule_active"><code class="xref py py-obj docutils literal notranslate"><span class="pre">check_hp_schedule_active</span></code></a>(hour, hp_on_schedule)</p></td>
+<td><p>Check whether current hour falls within HP operating schedule.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#enex_analysis.dynamic_context.determine_heat_source_on_off" title="enex_analysis.dynamic_context.determine_heat_source_on_off"><code class="xref py py-obj docutils literal notranslate"><span class="pre">determine_heat_source_on_off</span></code></a>(T_tank_w_C, ...)</p></td>
+<td><p>Hysteresis-based heat-source on/off decision.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#enex_analysis.dynamic_context.determine_tank_refill_flow" title="enex_analysis.dynamic_context.determine_tank_refill_flow"><code class="xref py py-obj docutils literal notranslate"><span class="pre">determine_tank_refill_flow</span></code></a>(dt, tank_level, ...)</p></td>
+<td><p>Determine refill flow rate from current level and operational mode.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#enex_analysis.dynamic_context.tank_mass_energy_residual" title="enex_analysis.dynamic_context.tank_mass_energy_residual"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tank_mass_energy_residual</span></code></a>(x, ctx, ctrl, dt, ...)</p></td>
+<td><p>Energy and mass balance residuals at T^{n+1}.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="rubric">Classes</p>
+<div class="table-wrapper autosummary longtable docutils container">
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#enex_analysis.dynamic_context.ControlState" title="enex_analysis.dynamic_context.ControlState"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ControlState</span></code></a>(is_on, Q_heat_source, ...[, result])</p></td>
+<td><p>Heat-source control decisions for one timestep.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#enex_analysis.dynamic_context.StepContext" title="enex_analysis.dynamic_context.StepContext"><code class="xref py py-obj docutils literal notranslate"><span class="pre">StepContext</span></code></a>(n, current_time_s, current_hour, ...)</p></td>
+<td><p>Per-timestep immutable context (time, environment, demand).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#enex_analysis.dynamic_context.Subsystem" title="enex_analysis.dynamic_context.Subsystem"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Subsystem</span></code></a>(*args, **kwargs)</p></td>
+<td><p>Pluggable subsystem interface.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#enex_analysis.dynamic_context.SubsystemExergy" title="enex_analysis.dynamic_context.SubsystemExergy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SubsystemExergy</span></code></a>(columns[, X_tot_add, ...])</p></td>
+<td><p>Subsystem-specific exergy calculation results.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<dl class="py class">
+<dt class="sig sig-object py" id="enex_analysis.dynamic_context.StepContext">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">enex_analysis.dynamic_context.</span></span><span class="sig-name descname"><span class="pre">StepContext</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_time_s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_hour</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hour_of_day</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T0_K</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">activation_flags</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_tank_w_K</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tank_level</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dV_mix_w_out</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">I_DN</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">I_dH</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_sup_w_K</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">288.15</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/enex_analysis/dynamic_context.html#StepContext"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#enex_analysis.dynamic_context.StepContext" title="Link to this definition">¶</a></dt>
+<dd><p>Per-timestep immutable context (time, environment, demand).</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="enex_analysis.dynamic_context.StepContext.n">
+<span class="sig-name descname"><span class="pre">n</span></span><a class="headerlink" href="#enex_analysis.dynamic_context.StepContext.n" title="Link to this definition">¶</a></dt>
+<dd><p>Current step index.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="enex_analysis.dynamic_context.StepContext.current_time_s">
+<span class="sig-name descname"><span class="pre">current_time_s</span></span><a class="headerlink" href="#enex_analysis.dynamic_context.StepContext.current_time_s" title="Link to this definition">¶</a></dt>
+<dd><p>Elapsed simulation time [s].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="enex_analysis.dynamic_context.StepContext.current_hour">
+<span class="sig-name descname"><span class="pre">current_hour</span></span><a class="headerlink" href="#enex_analysis.dynamic_context.StepContext.current_hour" title="Link to this definition">¶</a></dt>
+<dd><p>Elapsed simulation time [h].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="enex_analysis.dynamic_context.StepContext.hour_of_day">
+<span class="sig-name descname"><span class="pre">hour_of_day</span></span><a class="headerlink" href="#enex_analysis.dynamic_context.StepContext.hour_of_day" title="Link to this definition">¶</a></dt>
+<dd><p>Hour within the current day (0–24, repeating).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="enex_analysis.dynamic_context.StepContext.T0">
+<span class="sig-name descname"><span class="pre">T0</span></span><a class="headerlink" href="#enex_analysis.dynamic_context.StepContext.T0" title="Link to this definition">¶</a></dt>
+<dd><p>Dead-state / outdoor-air temperature [°C].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="enex_analysis.dynamic_context.StepContext.T0_K">
+<span class="sig-name descname"><span class="pre">T0_K</span></span><a class="headerlink" href="#enex_analysis.dynamic_context.StepContext.T0_K" title="Link to this definition">¶</a></dt>
+<dd><p>Dead-state temperature [K].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="enex_analysis.dynamic_context.StepContext.activation_flags">
+<span class="sig-name descname"><span class="pre">activation_flags</span></span><a class="headerlink" href="#enex_analysis.dynamic_context.StepContext.activation_flags" title="Link to this definition">¶</a></dt>
+<dd><p>Per-subsystem schedule activation flags for this step.
+e.g. <code class="docutils literal notranslate"><span class="pre">{&quot;stc&quot;:</span> <span class="pre">True}</span></code> when the STC preheat window is active.
+An empty dict means no subsystem has a schedule constraint.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str, bool]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="enex_analysis.dynamic_context.StepContext.T_tank_w_K">
+<span class="sig-name descname"><span class="pre">T_tank_w_K</span></span><a class="headerlink" href="#enex_analysis.dynamic_context.StepContext.T_tank_w_K" title="Link to this definition">¶</a></dt>
+<dd><p>Current tank water temperature [K].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="enex_analysis.dynamic_context.StepContext.tank_level">
+<span class="sig-name descname"><span class="pre">tank_level</span></span><a class="headerlink" href="#enex_analysis.dynamic_context.StepContext.tank_level" title="Link to this definition">¶</a></dt>
+<dd><p>Fractional tank fill level (0–1).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="enex_analysis.dynamic_context.StepContext.dV_mix_w_out">
+<span class="sig-name descname"><span class="pre">dV_mix_w_out</span></span><a class="headerlink" href="#enex_analysis.dynamic_context.StepContext.dV_mix_w_out" title="Link to this definition">¶</a></dt>
+<dd><p>Service water draw-off flow rate [m³/s].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="enex_analysis.dynamic_context.StepContext.I_DN">
+<span class="sig-name descname"><span class="pre">I_DN</span></span><a class="headerlink" href="#enex_analysis.dynamic_context.StepContext.I_DN" title="Link to this definition">¶</a></dt>
+<dd><p>Direct-normal irradiance on collector plane [W/m²].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="enex_analysis.dynamic_context.StepContext.I_dH">
+<span class="sig-name descname"><span class="pre">I_dH</span></span><a class="headerlink" href="#enex_analysis.dynamic_context.StepContext.I_dH" title="Link to this definition">¶</a></dt>
+<dd><p>Diffuse-horizontal irradiance [W/m²].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="enex_analysis.dynamic_context.StepContext.T_sup_w_K">
+<span class="sig-name descname"><span class="pre">T_sup_w_K</span></span><a class="headerlink" href="#enex_analysis.dynamic_context.StepContext.T_sup_w_K" title="Link to this definition">¶</a></dt>
+<dd><p>Mains water supply temperature [K].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>)</p></li>
+<li><p><strong>current_time_s</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>current_hour</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>hour_of_day</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>T0</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>T0_K</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>activation_flags</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></span>)</p></li>
+<li><p><strong>T_tank_w_K</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>tank_level</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>dV_mix_w_out</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>I_DN</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>I_dH</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>T_sup_w_K</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id0">
+<span class="sig-name descname"><span class="pre">n</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></em><a class="headerlink" href="#id0" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id1">
+<span class="sig-name descname"><span class="pre">current_time_s</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></em><a class="headerlink" href="#id1" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id2">
+<span class="sig-name descname"><span class="pre">current_hour</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></em><a class="headerlink" href="#id2" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id3">
+<span class="sig-name descname"><span class="pre">hour_of_day</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></em><a class="headerlink" href="#id3" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id4">
+<span class="sig-name descname"><span class="pre">T0</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></em><a class="headerlink" href="#id4" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id5">
+<span class="sig-name descname"><span class="pre">T0_K</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></em><a class="headerlink" href="#id5" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id6">
+<span class="sig-name descname"><span class="pre">activation_flags</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></em><a class="headerlink" href="#id6" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id7">
+<span class="sig-name descname"><span class="pre">T_tank_w_K</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></em><a class="headerlink" href="#id7" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id8">
+<span class="sig-name descname"><span class="pre">tank_level</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></em><a class="headerlink" href="#id8" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id9">
+<span class="sig-name descname"><span class="pre">dV_mix_w_out</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></em><a class="headerlink" href="#id9" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id10">
+<span class="sig-name descname"><span class="pre">I_DN</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.0</span></em><a class="headerlink" href="#id10" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id11">
+<span class="sig-name descname"><span class="pre">I_dH</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.0</span></em><a class="headerlink" href="#id11" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id12">
+<span class="sig-name descname"><span class="pre">T_sup_w_K</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">288.15</span></em><a class="headerlink" href="#id12" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="enex_analysis.dynamic_context.StepContext.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_time_s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_hour</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hour_of_day</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T0_K</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">activation_flags</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_tank_w_K</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tank_level</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dV_mix_w_out</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">I_DN</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">I_dH</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_sup_w_K</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">288.15</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enex_analysis.dynamic_context.StepContext.__init__" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>)</p></li>
+<li><p><strong>current_time_s</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>current_hour</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>hour_of_day</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>T0</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>T0_K</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>activation_flags</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></span>)</p></li>
+<li><p><strong>T_tank_w_K</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>tank_level</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>dV_mix_w_out</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>I_DN</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>I_dH</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>T_sup_w_K</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="enex_analysis.dynamic_context.ControlState">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">enex_analysis.dynamic_context.</span></span><span class="sig-name descname"><span class="pre">ControlState</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">is_on</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Q_heat_source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dV_tank_w_in_ctrl</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">result=&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/enex_analysis/dynamic_context.html#ControlState"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#enex_analysis.dynamic_context.ControlState" title="Link to this definition">¶</a></dt>
+<dd><p>Heat-source control decisions for one timestep.</p>
+<p>Model-agnostic container: any boiler model populates
+these fields in its Phase-A helper.  Subsystem states
+are managed separately via <code class="docutils literal notranslate"><span class="pre">sub_states:</span> <span class="pre">dict[str,</span> <span class="pre">dict]</span></code>.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="enex_analysis.dynamic_context.ControlState.is_on">
+<span class="sig-name descname"><span class="pre">is_on</span></span><a class="headerlink" href="#enex_analysis.dynamic_context.ControlState.is_on" title="Link to this definition">¶</a></dt>
+<dd><p>Whether the heat source is running.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="enex_analysis.dynamic_context.ControlState.Q_heat_source">
+<span class="sig-name descname"><span class="pre">Q_heat_source</span></span><a class="headerlink" href="#enex_analysis.dynamic_context.ControlState.Q_heat_source" title="Link to this definition">¶</a></dt>
+<dd><p>Net heat delivered to the tank from the heat
+source [W].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="enex_analysis.dynamic_context.ControlState.dV_tank_w_in_ctrl">
+<span class="sig-name descname"><span class="pre">dV_tank_w_in_ctrl</span></span><a class="headerlink" href="#enex_analysis.dynamic_context.ControlState.dV_tank_w_in_ctrl" title="Link to this definition">¶</a></dt>
+<dd><p>Refill flow rate [m³/s].  <code class="docutils literal notranslate"><span class="pre">None</span></code> = always-full
+sentinel (inflow resolved inside residual).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="enex_analysis.dynamic_context.ControlState.result">
+<span class="sig-name descname"><span class="pre">result</span></span><a class="headerlink" href="#enex_analysis.dynamic_context.ControlState.result" title="Link to this definition">¶</a></dt>
+<dd><p>Full result dictionary from the model’s
+<code class="docutils literal notranslate"><span class="pre">_calc_state</span></code>.  Contents are model-specific.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>is_on</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>)</p></li>
+<li><p><strong>Q_heat_source</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>dV_tank_w_in_ctrl</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>)</p></li>
+<li><p><strong>result</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></span>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id13">
+<span class="sig-name descname"><span class="pre">is_on</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></em><a class="headerlink" href="#id13" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id14">
+<span class="sig-name descname"><span class="pre">Q_heat_source</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></em><a class="headerlink" href="#id14" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id15">
+<span class="sig-name descname"><span class="pre">dV_tank_w_in_ctrl</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code> <span class="pre">|</span> <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></em><a class="headerlink" href="#id15" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id16">
+<span class="sig-name descname"><span class="pre">result</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></em><a class="headerlink" href="#id16" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="enex_analysis.dynamic_context.ControlState.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">is_on</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Q_heat_source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dV_tank_w_in_ctrl</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">result=&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enex_analysis.dynamic_context.ControlState.__init__" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>is_on</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>)</p></li>
+<li><p><strong>Q_heat_source</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>)</p></li>
+<li><p><strong>dV_tank_w_in_ctrl</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>)</p></li>
+<li><p><strong>result</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></span>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="enex_analysis.dynamic_context.SubsystemExergy">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">enex_analysis.dynamic_context.</span></span><span class="sig-name descname"><span class="pre">SubsystemExergy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">columns</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">X_tot_add</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">X_in_tank_add</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">X_out_tank_add</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/enex_analysis/dynamic_context.html#SubsystemExergy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#enex_analysis.dynamic_context.SubsystemExergy" title="Link to this definition">¶</a></dt>
+<dd><p>Subsystem-specific exergy calculation results.</p>
+<p>Each subsystem’s <code class="docutils literal notranslate"><span class="pre">calc_exergy()</span></code> returns this object
+so that the host boiler can merge subsystem columns into
+the result DataFrame and adjust system-level totals.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="enex_analysis.dynamic_context.SubsystemExergy.columns">
+<span class="sig-name descname"><span class="pre">columns</span></span><a class="headerlink" href="#enex_analysis.dynamic_context.SubsystemExergy.columns" title="Link to this definition">¶</a></dt>
+<dd><p>Exergy columns to append (key = column name).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str, pd.Series]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="enex_analysis.dynamic_context.SubsystemExergy.X_tot_add">
+<span class="sig-name descname"><span class="pre">X_tot_add</span></span><a class="headerlink" href="#enex_analysis.dynamic_context.SubsystemExergy.X_tot_add" title="Link to this definition">¶</a></dt>
+<dd><p>Additive contribution to system total exergy input
+<code class="docutils literal notranslate"><span class="pre">X_tot</span> <span class="pre">[W]</span></code> (e.g. pump electricity).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pd.Series | float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="enex_analysis.dynamic_context.SubsystemExergy.X_in_tank_add">
+<span class="sig-name descname"><span class="pre">X_in_tank_add</span></span><a class="headerlink" href="#enex_analysis.dynamic_context.SubsystemExergy.X_in_tank_add" title="Link to this definition">¶</a></dt>
+<dd><p>Additive exergy entering the tank boundary
+(e.g. heated return water in <code class="docutils literal notranslate"><span class="pre">tank_circuit</span></code>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pd.Series | float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="enex_analysis.dynamic_context.SubsystemExergy.X_out_tank_add">
+<span class="sig-name descname"><span class="pre">X_out_tank_add</span></span><a class="headerlink" href="#enex_analysis.dynamic_context.SubsystemExergy.X_out_tank_add" title="Link to this definition">¶</a></dt>
+<dd><p>Additive exergy leaving the tank boundary
+(e.g. water drawn to STC in <code class="docutils literal notranslate"><span class="pre">tank_circuit</span></code>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pd.Series | float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>columns</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></span>)</p></li>
+<li><p><strong>X_tot_add</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></span>)</p></li>
+<li><p><strong>X_in_tank_add</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></span>)</p></li>
+<li><p><strong>X_out_tank_add</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></span>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id17">
+<span class="sig-name descname"><span class="pre">columns</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></em><a class="headerlink" href="#id17" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id18">
+<span class="sig-name descname"><span class="pre">X_tot_add</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.0</span></em><a class="headerlink" href="#id18" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id19">
+<span class="sig-name descname"><span class="pre">X_in_tank_add</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.0</span></em><a class="headerlink" href="#id19" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id20">
+<span class="sig-name descname"><span class="pre">X_out_tank_add</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.0</span></em><a class="headerlink" href="#id20" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="enex_analysis.dynamic_context.SubsystemExergy.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">columns</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">X_tot_add</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">X_in_tank_add</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">X_out_tank_add</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enex_analysis.dynamic_context.SubsystemExergy.__init__" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>columns</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></span>)</p></li>
+<li><p><strong>X_tot_add</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></span>)</p></li>
+<li><p><strong>X_in_tank_add</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></span>)</p></li>
+<li><p><strong>X_out_tank_add</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></span>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="enex_analysis.dynamic_context.Subsystem">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">enex_analysis.dynamic_context.</span></span><span class="sig-name descname"><span class="pre">Subsystem</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/enex_analysis/dynamic_context.html#Subsystem"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#enex_analysis.dynamic_context.Subsystem" title="Link to this definition">¶</a></dt>
+<dd><p>Pluggable subsystem interface.</p>
+<p>Each subsystem computes its contribution for a single
+timestep and assembles result columns for the output
+DataFrame.  New subsystems (PV, battery, …) implement
+this protocol and register with the boiler model.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="enex_analysis.dynamic_context.Subsystem.step">
+<span class="sig-name descname"><span class="pre">step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ctx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ctrl</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_tank_w_in_K</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/enex_analysis/dynamic_context.html#Subsystem.step"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#enex_analysis.dynamic_context.Subsystem.step" title="Link to this definition">¶</a></dt>
+<dd><p>Compute subsystem state for this timestep.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ctx</strong> (<a class="reference internal" href="#enex_analysis.dynamic_context.StepContext" title="enex_analysis.dynamic_context.StepContext"><em>StepContext</em></a>) – Current-step immutable context.</p></li>
+<li><p><strong>ctrl</strong> (<a class="reference internal" href="#enex_analysis.dynamic_context.ControlState" title="enex_analysis.dynamic_context.ControlState"><em>ControlState</em></a>) – Heat-source control decisions.</p></li>
+<li><p><strong>dt</strong> (<em>float</em>) – Time-step size [s].</p></li>
+<li><p><strong>T_tank_w_in_K</strong> (<em>float</em>) – Mains water inlet temperature [K].</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><p>Must include at least:
+- <code class="docutils literal notranslate"><span class="pre">'Q_contribution'</span></code> (float):</p>
+<blockquote>
+<div><p>Net energy contribution to tank [W].</p>
+</div></blockquote>
+<ul class="simple">
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">'E_subsystem'</span></code> (float):</dt><dd><p>Electrical power consumed [W].</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">'T_tank_w_in_override_K'</span></code> (float | None):</dt><dd><p>If the subsystem modifies the tank inlet
+temperature (e.g. mains preheat), provide
+the heated temperature [K].
+<code class="docutils literal notranslate"><span class="pre">None</span></code> means no modification.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="enex_analysis.dynamic_context.Subsystem.assemble_results">
+<span class="sig-name descname"><span class="pre">assemble_results</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ctx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ctrl</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step_state</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_solved_K</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/enex_analysis/dynamic_context.html#Subsystem.assemble_results"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#enex_analysis.dynamic_context.Subsystem.assemble_results" title="Link to this definition">¶</a></dt>
+<dd><p>Build result columns for DataFrame output.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ctx</strong> (<a class="reference internal" href="#enex_analysis.dynamic_context.StepContext" title="enex_analysis.dynamic_context.StepContext"><em>StepContext</em></a>) – Current-step immutable context.</p></li>
+<li><p><strong>ctrl</strong> (<a class="reference internal" href="#enex_analysis.dynamic_context.ControlState" title="enex_analysis.dynamic_context.ControlState"><em>ControlState</em></a>) – HP control decisions.</p></li>
+<li><p><strong>step_state</strong> (<em>dict</em>) – Dict returned by <code class="docutils literal notranslate"><span class="pre">step()</span></code>.</p></li>
+<li><p><strong>T_solved_K</strong> (<em>float</em>) – Solved tank temperature [K].</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Keyed result entries for the output DataFrame.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="enex_analysis.dynamic_context.Subsystem.calc_exergy">
+<span class="sig-name descname"><span class="pre">calc_exergy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T0_K</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/enex_analysis/dynamic_context.html#Subsystem.calc_exergy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#enex_analysis.dynamic_context.Subsystem.calc_exergy" title="Link to this definition">¶</a></dt>
+<dd><p>Compute subsystem-level exergy items.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>)</p></li>
+<li><p><strong>T0_K</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Series</span></code></span>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#enex_analysis.dynamic_context.SubsystemExergy" title="enex_analysis.dynamic_context.SubsystemExergy"><code class="xref py py-class docutils literal notranslate"><span class="pre">SubsystemExergy</span></code></a> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="enex_analysis.dynamic_context.Subsystem.calc_performance">
+<span class="sig-name descname"><span class="pre">calc_performance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/enex_analysis/dynamic_context.html#Subsystem.calc_performance"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#enex_analysis.dynamic_context.Subsystem.calc_performance" title="Link to this definition">¶</a></dt>
+<dd><p>Calculate performance at a specific condition.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="enex_analysis.dynamic_context.Subsystem.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enex_analysis.dynamic_context.Subsystem.__init__" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="enex_analysis.dynamic_context.check_hp_schedule_active">
+<span class="sig-prename descclassname"><span class="pre">enex_analysis.dynamic_context.</span></span><span class="sig-name descname"><span class="pre">check_hp_schedule_active</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hour</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hp_on_schedule</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/enex_analysis/dynamic_context.html#check_hp_schedule_active"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#enex_analysis.dynamic_context.check_hp_schedule_active" title="Link to this definition">¶</a></dt>
+<dd><p>Check whether current hour falls within HP operating schedule.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>hour</strong> (<em>float</em>) – Current time of day [h] (0.0–24.0).</p></li>
+<li><p><strong>hp_on_schedule</strong> (<em>list</em><em> of </em><em>tuple</em>) – List of <code class="docutils literal notranslate"><span class="pre">(start_hour,</span> <span class="pre">end_hour)</span></code> operating windows.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="enex_analysis.dynamic_context.determine_heat_source_on_off">
+<span class="sig-prename descclassname"><span class="pre">enex_analysis.dynamic_context.</span></span><span class="sig-name descname"><span class="pre">determine_heat_source_on_off</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T_tank_w_C</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_lower</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_upper</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_on_prev</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hour_of_day</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">on_schedule</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/enex_analysis/dynamic_context.html#determine_heat_source_on_off"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#enex_analysis.dynamic_context.determine_heat_source_on_off" title="Link to this definition">¶</a></dt>
+<dd><p>Hysteresis-based heat-source on/off decision.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>T_tank_w_C</strong> (<em>float</em>) – Current tank water temperature [°C].</p></li>
+<li><p><strong>T_lower</strong> (<em>float</em>) – Lower hysteresis bound [°C].</p></li>
+<li><p><strong>T_upper</strong> (<em>float</em>) – Upper hysteresis bound [°C].</p></li>
+<li><p><strong>is_on_prev</strong> (<em>bool</em>) – Heat-source state at the previous timestep.</p></li>
+<li><p><strong>hour_of_day</strong> (<em>float</em>) – Hour within the day (0–24).</p></li>
+<li><p><strong>on_schedule</strong> (<em>list</em><em>[</em><em>tuple</em><em>[</em><em>float</em><em>, </em><em>float</em><em>]</em><em>]</em>) – Active operating windows <code class="docutils literal notranslate"><span class="pre">(start_h,</span> <span class="pre">end_h)</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Whether the heat source should run this timestep.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="enex_analysis.dynamic_context.determine_tank_refill_flow">
+<span class="sig-prename descclassname"><span class="pre">enex_analysis.dynamic_context.</span></span><span class="sig-name descname"><span class="pre">determine_tank_refill_flow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tank_level</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dV_tank_w_out</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">V_tank_full</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tank_always_full</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prevent_simultaneous_flow</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tank_level_lower_bound</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tank_level_upper_bound</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dV_tank_w_in_refill</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_refilling</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/enex_analysis/dynamic_context.html#determine_tank_refill_flow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#enex_analysis.dynamic_context.determine_tank_refill_flow" title="Link to this definition">¶</a></dt>
+<dd><p>Determine refill flow rate from current level and operational mode.</p>
+<p>Pure tank-level management: all subsystem-specific flow
+overrides (e.g. STC mains-preheat forced refill) are the
+responsibility of the scenario class via
+<code class="docutils literal notranslate"><span class="pre">_run_subsystems</span></code> / <code class="docutils literal notranslate"><span class="pre">ctrl.dV_tank_w_in_ctrl</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dt</strong> (<em>float</em>) – Time-step size [s].</p></li>
+<li><p><strong>tank_level</strong> (<em>float</em>) – Current fractional tank level (0–1).</p></li>
+<li><p><strong>dV_tank_w_out</strong> (<em>float</em>) – Current outflow rate [m³/s].</p></li>
+<li><p><strong>V_tank_full</strong> (<em>float</em>) – Tank full volume [m³].</p></li>
+<li><p><strong>tank_always_full</strong> (<em>bool</em>) – Whether the tank is forced to stay full.</p></li>
+<li><p><strong>prevent_simultaneous_flow</strong> (<em>bool</em>) – Exclusive-flow mode flag.</p></li>
+<li><p><strong>tank_level_lower_bound</strong> (<em>float</em>) – Level lower bound for refill trigger.</p></li>
+<li><p><strong>tank_level_upper_bound</strong> (<em>float</em>) – Level upper bound for refill cut-off.</p></li>
+<li><p><strong>dV_tank_w_in_refill</strong> (<em>float</em>) – Refill flow rate [m³/s].</p></li>
+<li><p><strong>is_refilling</strong> (<em>bool</em>) – Whether we are currently in a refill cycle.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">(dV_tank_w_in,</span> <span class="pre">is_refilling)</span></code>.
+<code class="docutils literal notranslate"><span class="pre">None</span></code> means always-full sentinel (no PSF).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[float | None, bool]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="enex_analysis.dynamic_context.tank_mass_energy_residual">
+<span class="sig-prename descclassname"><span class="pre">enex_analysis.dynamic_context.</span></span><span class="sig-name descname"><span class="pre">tank_mass_energy_residual</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ctx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ctrl</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_tank_w_in_K</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_sup_w_K</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_mix_w_out_K</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">C_tank</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">UA_tank</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">V_tank_full</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subsystems</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sub_states</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/enex_analysis/dynamic_context.html#tank_mass_energy_residual"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#enex_analysis.dynamic_context.tank_mass_energy_residual" title="Link to this definition">¶</a></dt>
+<dd><p>Energy and mass balance residuals at T^{n+1}.</p>
+<p>The 3-way mixing valve ratio α(T) makes the outflow a
+nonlinear function of T^{n+1}, requiring <code class="docutils literal notranslate"><span class="pre">fsolve</span></code>.</p>
+<p>Subsystem energy contributions and tank-inlet temperature
+overrides are read from <code class="docutils literal notranslate"><span class="pre">sub_states</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>list</em><em>[</em><em>float</em><em>]</em>) – <code class="docutils literal notranslate"><span class="pre">[T_next_K,</span> <span class="pre">level_next]</span></code>.</p></li>
+<li><p><strong>ctx</strong> (<a class="reference internal" href="#enex_analysis.dynamic_context.StepContext" title="enex_analysis.dynamic_context.StepContext"><em>StepContext</em></a>) – Current-step immutable context.</p></li>
+<li><p><strong>ctrl</strong> (<a class="reference internal" href="#enex_analysis.dynamic_context.ControlState" title="enex_analysis.dynamic_context.ControlState"><em>ControlState</em></a>) – Current-step HP control decisions.</p></li>
+<li><p><strong>dt</strong> (<em>float</em>) – Time-step size [s].</p></li>
+<li><p><strong>T_tank_w_in_K</strong> (<em>float</em>) – Mains water inlet temperature [K].</p></li>
+<li><p><strong>T_sup_w_K</strong> (<em>float</em>) – Mains water supply temperature [K] (for mixing valve).</p></li>
+<li><p><strong>T_mix_w_out_K</strong> (<em>float</em>) – Target mixing-valve outlet temperature [K].</p></li>
+<li><p><strong>C_tank</strong> (<em>float</em>) – Tank thermal capacitance [J/K].</p></li>
+<li><p><strong>UA_tank</strong> (<em>float</em>) – Tank overall heat-loss coefficient [W/K].</p></li>
+<li><p><strong>V_tank_full</strong> (<em>float</em>) – Tank full volume [m³].</p></li>
+<li><p><strong>subsystems</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><a class="reference internal" href="#enex_analysis.dynamic_context.Subsystem" title="enex_analysis.dynamic_context.Subsystem"><em>Subsystem</em></a><em>]</em>) – Registered subsystem instances.</p></li>
+<li><p><strong>sub_states</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>dict</em><em>]</em>) – Per-subsystem state dicts from <code class="docutils literal notranslate"><span class="pre">step()</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">[r_energy,</span> <span class="pre">r_mass]</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list[float]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+        </article><button class="back-to-top" type="button">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+    <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+  </svg>
+  <span>Back to top</span>
+</button><div class="navigation flex print:hidden"><div class="navigation-prev">
+    <a href="enex_analysis.enex_functions.html">
+      <i class="i-lucide chevron-left"></i>
+      <div class="page-info">
+        <span>Previous</span><div class="title">enex_analysis.enex_functions</div></div>
+    </a>
+  </div><div class="navigation-next">
+    <a href="enex_analysis.simulation_runner.html">
+      <div class="page-info">
+        <span>Next</span>
+        <div class="title">enex_analysis.simulation_runner</div>
+      </div>
+      <i class="i-lucide chevron-right"></i>
+    </a>
+  </div></div></div>
+    </div>
+  </main>
+</div>
+<footer class="sy-foot">
+  <div class="sy-foot-inner sy-container mx-auto">
+    <div class="sy-foot-reserved md:flex justify-between items-center">
+      <div class="sy-foot-copyright"><p>2025, betlab</p>
+  
+  <p>
+    Made with
+    
+    <a href="https://www.sphinx-doc.org/">Sphinx</a> and
+    
+    <a href="https://shibuya.lepture.com">Shibuya theme</a>.
+  </p>
+</div>
+      <div class="sy-foot-socials">
+<a href="https://github.com/bet-lab/enex_analysis_engine" aria-label="GitHub">
+  <iconify-icon icon="simple-icons:github"></iconify-icon>
+</a></div>
+    </div>
+  </div>
+</footer>
+      <script src="../../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+      <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+      <script src="../../_static/shibuya.js?v=cac61aee"></script></body>
+</html>
