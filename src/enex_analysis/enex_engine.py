@@ -853,7 +853,7 @@ class GroundSourceHeatPump:
     # 5. Rated Performance & Design
     Q_rated_cooling: float = 20590.0 # [W]
     Q_rated_heating: float = 16450.0 # [W]
-    E_pmp: float = 40.0            # Pump power input [W]
+    E_pmp: float = 100.0            # Pump power input [W]
     dP_iu_fan_design: float = 60.0   # Design pressure drop [Pa]
     eta_iu_fan_design: float = 0.6   # Design fan efficiency
     
