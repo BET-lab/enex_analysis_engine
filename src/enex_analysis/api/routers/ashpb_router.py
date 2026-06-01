@@ -11,8 +11,8 @@ matplotlib.use("Agg")
 import dartwork_mpl as dm
 import matplotlib.pyplot as plt
 
-from enex_analysis.air_source_heat_pump_boiler import AirSourceHeatPumpBoiler
-from enex_analysis.visualization import plot_ph_diagram, plot_th_diagram
+from enex_analysis.tmhp.air_source_heat_pump_boiler import AirSourceHeatPumpBoiler
+from enex_analysis.tmhp.visualization import plot_ph_diagram, plot_th_diagram
 
 router = APIRouter()
 _annual_df = None

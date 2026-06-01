@@ -11,9 +11,9 @@ src_dir = os.path.abspath(os.path.join(docs_dir, "..", "src"))
 sys.path.insert(0, src_dir)
 
 import dartwork_mpl as dm
-from enex_analysis.refrigerant import calc_ref_state
-from enex_analysis.visualization import plot_th_diagram, plot_ph_diagram, plot_ts_diagram
-import enex_analysis.calc_util as cu
+from enex_analysis.tmhp.refrigerant import calc_ref_state
+from enex_analysis.tmhp.visualization import plot_th_diagram, plot_ph_diagram, plot_ts_diagram
+import enex_analysis.tmhp.calc_util as cu
 
 plt.switch_backend("Agg")
 dm.style.use('scientific')

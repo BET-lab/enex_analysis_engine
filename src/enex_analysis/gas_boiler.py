@@ -286,8 +286,8 @@ class GasBoiler:
         flow_state = {
             "dV_w_serv": 0.0,
             "dV_w_sup_comb": 0.0,
-            "dV_w_bypassed": 0.0,
-            "alp_serv": 0.0,
+            "dV_w_sup_mix": 0.0,
+            "alp": 0.0,
             "T_serv_w_actual_K": self.T_sup_w_K,
         }
 
@@ -340,7 +340,7 @@ class GasBoiler:
             raise ValueError("simulation_period_sec must be divisible by dt_s")
         if self.dV_w_serv_m3s < 0:
             raise ValueError("dV_w_serv_m3s must be greater than 0")
-        if dhw_usage_schedule == []:
+        if dhw_usage_schedule is None or len(dhw_usage_schedule) == 0:
             raise ValueError("dhw_usage_schedule must be provided")
 
         time = np.arange(0, simulation_period_sec, dt_s)

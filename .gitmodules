@@ -1,0 +1,3 @@
+[submodule "src/enex_analysis/tmhp"]
+	path = src/enex_analysis/tmhp
+	url = https://github.com/bet-lab/tmhp.git
