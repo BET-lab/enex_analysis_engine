@@ -16,7 +16,6 @@ import numpy as np
 
 from . import calc_util as cu
 from . import g_function as gf
-from .air_source_heat_pump_boiler import AirSourceHeatPumpBoiler
 from .components.fan import Fan
 from .constants import c_a, c_w as c_f, k_w, rho_a, rho_w as rho_f
 from .cop import (
@@ -27,15 +26,7 @@ from .cop import (
 from .enex_functions import calc_fan_power_from_dV_fan
 from .g_function import G_FLS
 
-# Phase 3 Refactoring: Re-exporting standalone boiler modules for backward compatibility
 
-# Alias for backward compatibility since HeatPumpBoiler was the original name
-HeatPumpBoiler = AirSourceHeatPumpBoiler
-
-# class - Fan & Pump
-
-
-# class - Domestic Hot Water System
 # class - AirSourceHeatPump
 @dataclass
 class AirSourceHeatPump_cooling:
