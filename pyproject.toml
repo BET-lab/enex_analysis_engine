@@ -36,7 +36,7 @@ build-backend = "hatchling.build"
 packages = ["src/enex_analysis"]
 
 [tool.uv.sources]
-dartwork-mpl = { git = "https://github.com/dartworklabs/dartwork-mpl" }
+dartwork-mpl = { git = "https://github.com/dartworklabs/dartwork-mpl.git"}
 
 [project.optional-dependencies]
 dev = [
