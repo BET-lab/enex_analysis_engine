@@ -3,7 +3,7 @@ Air Source Heat Pump Boiler (ASHPB)
 
 .. seealso::
    
-   API 레퍼런스: :mod:`enex_analysis.air_source_heat_pump_boiler`
+   API 레퍼런스: :mod:`enex_analysis.tmhp.air_source_heat_pump_boiler`
 
 System Overview
 ---------------

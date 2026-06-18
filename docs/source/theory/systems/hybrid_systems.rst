@@ -3,7 +3,7 @@ Hybrid Heat Pump Systems
 
 .. seealso::
    
-   API 레퍼런스: :mod:`enex_analysis.ashpb_stc_tank`, :mod:`enex_analysis.ashpb_stc_preheat`, :mod:`enex_analysis.ashpb_pv_ess`
+   API 레퍼런스: :mod:`enex_analysis.tmhp.ashpb_stc_tank`, :mod:`enex_analysis.tmhp.ashpb_stc_preheat`, :mod:`enex_analysis.tmhp.ashpb_pv_ess`
 
 System Overview
 ---------------

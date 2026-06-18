@@ -12,19 +12,19 @@ This module contains classes for modeling various energy systems including:
 import math
 from dataclasses import dataclass
 
-import numpy as np
-
-from . import calc_util as cu
-from . import g_function as gf
 from .components.fan import Fan
-from .constants import c_a, c_w as c_f, k_w, rho_a, rho_w as rho_f
-from .cop import (
+from .enex_functions import calc_fan_power_from_dV_fan
+from .tmhp import calc_util as cu
+from .tmhp import g_function as gf
+from .tmhp.constants import c_a, k_w, rho_a
+from .tmhp.constants import c_w as c_f
+from .tmhp.constants import rho_w as rho_f
+from .tmhp.cop import (
     calc_ASHP_cooling_COP,
     calc_ASHP_heating_COP,
     calc_GSHP_COP,
 )
-from .enex_functions import calc_fan_power_from_dV_fan
-from .g_function import G_FLS
+from .tmhp.g_function import G_FLS
 
 
 # class - AirSourceHeatPump
@@ -824,34 +824,34 @@ class GroundSourceHeatPump:
     H_b: float = 150.0 # Borehole height [m]
     D_b: float = 2.0   # Borehole burial depth [m]
     r_b: float = 0.08  # Borehole radius [m]
-    
+
     # 2. Pipe & Grout parameters
     k_p: float = 0.4      # Pipe thermal conductivity [W/mK] (HDPE)
     k_grout: float = 1.5  # Grout thermal conductivity [W/mK]
     r_out: float = 0.016  # Pipe outer radius [m] (32mm OD / 2)
     r_in: float = 0.013   # Pipe inner radius [m] (26mm ID / 2)
     D_s: float = 0.032    # Distance from the center of the borehole to the center of the pipe [m]
-    
+
     # 3. Ground parameters
     k_g: float = 2.0     # Ground thermal conductivity [W/mK]
     c_g: float = 800.0   # Ground specific heat capacity [J/(kgK)]
     rho_g: float = 2000.0 # Ground density [kg/m³]
     T_g: float = 15.0    # Initial ground temperature [°C]
-    
+
     # 4. Fluid parameters
     dV_f: float = 20.0   # Volumetric flow rate of fluid [L/min]
-    
+
     # 5. Rated Performance & Design
     Q_rated_cooling: float = 20590.0 # [W]
     Q_rated_heating: float = 16450.0 # [W]
     E_pmp: float = 100.0            # Pump power input [W]
     dP_iu_fan_design: float = 60.0   # Design pressure drop [Pa]
     eta_iu_fan_design: float = 0.6   # Design fan efficiency
-    
+
     # 6. Simulation Control
     dt_hours: int = 1
     sim_hours: int = 8760
-    
+
     # 7. Runtime Inputs (per-timestep)
     Q_r_iu: float = 0.0
     T0: float = 20.0
@@ -877,7 +877,7 @@ class GroundSourceHeatPump:
 
         # Fan parameters (VSD model)
         _hp_capacity = max(self.Q_rated_cooling, self.Q_rated_heating)
-        self.dV_iu_fan_design = _hp_capacity / (rho_a * c_a * 10.0) 
+        self.dV_iu_fan_design = _hp_capacity / (rho_a * c_a * 10.0)
         self.E_iu_fan_design = (
             self.dV_iu_fan_design * self.dP_iu_fan_design / self.eta_iu_fan_design
         )
@@ -892,7 +892,7 @@ class GroundSourceHeatPump:
         # Precompute dimensional g-function interpolator [mK/W]
         alpha = self.k_g / (self.rho_g * self.c_g)
         self.g_func_interp = gf.precompute_gfunction(
-            N_1=1, N_2=1, B=6.0, 
+            N_1=1, N_2=1, B=6.0,
             H_b=self.H_b, D_b=self.D_b, r_b=self.r_b,
             alpha_s=alpha, k_s=self.k_g,
             t_max_s=self.sim_hours * 3600.0,
@@ -920,7 +920,7 @@ class GroundSourceHeatPump:
         elif self.Q_r_iu < 0:
             mode = "heating"
             self.T_a_room = 21  # Room air temperature [°C]
-            self.dT_r_ghx = -3 # GHX refrigerant - GHX outlet water [K] 
+            self.dT_r_ghx = -3 # GHX refrigerant - GHX outlet water [K]
             self.dT_r_iu = 15 # Indoor unit refrigerant - Indoor unit inlet air [K]
             self.T_r_iu = self.T_a_room + self.dT_r_iu # Indoor unit refrigerant [°C]
             dT_a_iu = 10 # Indoor unit outlet air - Room air [K]
@@ -940,9 +940,9 @@ class GroundSourceHeatPump:
         # Temperatures in Kelvin
         self.T0_K = cu.C2K(self.T0)
         self.T_a_room_K = cu.C2K(self.T_a_room)
-        
+
         self.T_a_iu_out_K = self.T_a_room_K + dT_a_iu
-             
+
         self.T_r_iu_K = cu.C2K(self.T_r_iu)
         self.T_g_K = cu.C2K(self.T_g)
 
@@ -954,7 +954,7 @@ class GroundSourceHeatPump:
         for i in range(1, len(self.q_b_history)):
             delta_Q = self.q_b_history[i] - self.q_b_history[i - 1]
             elapsed_time = (len(self.q_b_history) - i + 1) * self.dt_sec
-            
+
             # Use dimensional g-function from interpolator [mK/W]
             g_val_dim = float(self.g_func_interp(elapsed_time))
             T_b_history_effect += delta_Q * g_val_dim
@@ -1013,10 +1013,10 @@ class GroundSourceHeatPump:
             # -----------------------------------------------------------------
             # Dimensional g-value for the current step (dt_sec) [mK/W]
             self.g_i_dim = float(self.g_func_interp(self.dt_sec))
-            self.T_b_history_effect = T_b_history_effect  
+            self.T_b_history_effect = T_b_history_effect
             self.T_b = (
-                self.T_g_K 
-                + T_b_history_effect 
+                self.T_g_K
+                + T_b_history_effect
                 + (self.q_b - self.q_b_history[-1]) * self.g_i_dim
             )
             # -----------------------------------------------------------------

@@ -18,9 +18,11 @@ try:
     import sys as _sys
 
     import enex_analysis
+    import enex_analysis.enex_engine  # noqa: F401  (load submodule for aliasing)
+    import enex_analysis.tmhp.calc_util  # noqa: F401
 
     _sys.modules["enex_analysis_engine"] = enex_analysis
-    _sys.modules["enex_analysis_engine.calc_util"] = enex_analysis.calc_util
+    _sys.modules["enex_analysis_engine.calc_util"] = enex_analysis.tmhp.calc_util
     _sys.modules["enex_analysis_engine.enex_engine"] = enex_analysis.enex_engine
 except ImportError:
     pass

@@ -9,11 +9,11 @@ Physics & Thermodynamics
    :toctree: generated/
    :recursive:
 
-   enex_analysis.thermodynamics
-   enex_analysis.refrigerant
-   enex_analysis.heat_transfer
-   enex_analysis.dhw
-   enex_analysis.cop
+   enex_analysis.tmhp.thermodynamics
+   enex_analysis.tmhp.refrigerant
+   enex_analysis.tmhp.heat_transfer
+   enex_analysis.tmhp.dhw
+   enex_analysis.tmhp.cop
 
 Utilities & Constants
 ---------------------
@@ -21,9 +21,9 @@ Utilities & Constants
    :toctree: generated/
    :recursive:
 
-   enex_analysis.calc_util
-   enex_analysis.constants
-   enex_analysis.weather
+   enex_analysis.tmhp.calc_util
+   enex_analysis.tmhp.constants
+   enex_analysis.tmhp.weather
 
 Core Functions
 --------------

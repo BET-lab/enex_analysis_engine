@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from . import calc_util as cu
+from .tmhp import calc_util as cu
 
 
 def _print_convergence_status(df: pd.DataFrame) -> None:

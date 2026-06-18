@@ -54,7 +54,7 @@ $$T_C = T_K - 273.15$$
 
 **사용 예시:**
 ```python
-from enex_analysis import calc_util as cu
+from enex_analysis.tmhp import calc_util as cu
 
 time_hours = 2.5
 time_seconds = time_hours * cu.h2s  # 9000 초

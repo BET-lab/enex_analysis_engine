@@ -32,7 +32,7 @@ T_C = K2C(298.15)  # Returns 25.0
 Available constants: `d2h`, `d2m`, `d2s`, `h2d`, `m2d`, `s2d`, `h2m`, `h2s`, `m2h`, `s2h`, `m2s`, `s2m`, `y2d`, `d2y`
 
 ```python
-from enex_analysis.calc_util import h2s, s2h
+from enex_analysis.tmhp.calc_util import h2s, s2h
 
 hours = 2
 seconds = hours * h2s  # 7200

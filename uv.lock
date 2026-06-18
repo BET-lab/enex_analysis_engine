@@ -585,7 +585,7 @@ wheels = [
 [[package]]
 name = "dartwork-mpl"
 version = "0.1.1"
-source = { git = "https://github.com/dartworklabs/dartwork-mpl#f0fd6160b6b2194e8dcc04887a6c29b2814c6b69" }
+source = { git = "https://github.com/dartworklabs/dartwork-mpl.git#f0fd6160b6b2194e8dcc04887a6c29b2814c6b69" }
 dependencies = [
     { name = "colorspacious" },
     { name = "ipython" },
@@ -704,7 +704,7 @@ docs = [
 [package.metadata]
 requires-dist = [
     { name = "coolprop", specifier = ">=7.2.0" },
-    { name = "dartwork-mpl", git = "https://github.com/dartworklabs/dartwork-mpl" },
+    { name = "dartwork-mpl", git = "https://github.com/dartworklabs/dartwork-mpl.git" },
     { name = "fastapi", specifier = ">=0.135.3" },
     { name = "ipykernel", specifier = ">=6.29.5" },
     { name = "linkify-it-py", marker = "extra == 'docs'", specifier = ">=2.0.0" },

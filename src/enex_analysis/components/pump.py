@@ -9,8 +9,8 @@ try:
 except ImportError:
     dm = None
 
-from .. import calc_util as cu
 from ..enex_functions import cubic_function
+from ..tmhp import calc_util as cu
 
 
 @dataclass

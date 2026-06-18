@@ -3,7 +3,7 @@ Ground Source Heat Pump Boiler (GSHPB)
 
 .. seealso::
    
-   API 레퍼런스: :mod:`enex_analysis.ground_source_heat_pump_boiler`
+   API 레퍼런스: :mod:`enex_analysis.tmhp.ground_source_heat_pump_boiler`
 
 System Overview
 ---------------

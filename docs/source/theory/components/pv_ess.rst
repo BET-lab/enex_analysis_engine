@@ -21,7 +21,7 @@ Raw weather data typically provides Global Horizontal Irradiance (GHI). However,
    
    **Computational Efficiency**
    
-   Executing the full ``pvlib`` position and transposition algorithms inside the 1-minute dynamic simulation loop would be computationally prohibitive. Therefore, this process is executed as a **preprocessing step** (e.g., via ``enex_analysis.weather.decompose_ghi_to_poa``). The resulting POA components (:math:`I_\text{DN}` and :math:`I_\text{dH}`) are directly fed into the simulation's ``StepContext``, ensuring high-speed dynamic solving.
+   Executing the full ``pvlib`` position and transposition algorithms inside the 1-minute dynamic simulation loop would be computationally prohibitive. Therefore, this process is executed as a **preprocessing step** (e.g., via ``enex_analysis.tmhp.weather.decompose_ghi_to_poa``). The resulting POA components (:math:`I_\text{DN}` and :math:`I_\text{dH}`) are directly fed into the simulation's ``StepContext``, ensuring high-speed dynamic solving.
 
 Mathematical Modeling
 ---------------------

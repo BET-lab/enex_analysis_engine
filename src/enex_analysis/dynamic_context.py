@@ -11,7 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Protocol
 
-from .constants import c_w, rho_w
+from .tmhp.constants import c_w, rho_w
 
 if TYPE_CHECKING:
     import pandas as pd

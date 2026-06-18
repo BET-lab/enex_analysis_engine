@@ -23,8 +23,6 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
-from . import calc_util as cu
-from .constants import c_w, ex_eff_NG, rho_w
 from .dynamic_context import (
     ControlState,
     StepContext,
@@ -33,13 +31,15 @@ from .dynamic_context import (
     determine_tank_refill_flow,
     tank_mass_energy_residual,
 )
-from .dhw import build_dhw_usage_ratio
 from .enex_functions import (
     calc_mixing_valve_flows,
     calc_mixing_valve_temp,
 )
-from .heat_transfer import calc_simple_tank_UA
-from .thermodynamics import (
+from .tmhp import calc_util as cu
+from .tmhp.constants import c_w, ex_eff_NG, rho_w
+from .tmhp.dhw import build_dhw_usage_ratio
+from .tmhp.heat_transfer import calc_simple_tank_UA
+from .tmhp.thermodynamics import (
     calc_exergy_flow,
     convert_electricity_to_exergy,
 )
@@ -254,7 +254,7 @@ class GasBoilerTank:
         """Run a steady-state performance snapshot."""
         burner_on = (Q_heat_target > 0)
         self.dV_mix_w_out = 0.0
-        
+
         result: dict = self._calc_state(
             T_tank_w,
             T0,

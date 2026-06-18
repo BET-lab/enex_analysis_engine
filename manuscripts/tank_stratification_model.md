@@ -75,7 +75,7 @@ tank.info()   # Print geometry and thermal summary
 ### Single Time Step
 
 ```python
-from enex_analysis.calc_util import C2K
+from enex_analysis.tmhp.calc_util import C2K
 
 T = np.full(10, C2K(60.0))   # Uniform 60 °C initial state
 T_in = C2K(15.0)              # Mains water temperature

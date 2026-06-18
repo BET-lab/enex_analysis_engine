@@ -8,8 +8,6 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
-from . import calc_util as cu
-from .constants import c_w, rho_w
 from .dynamic_context import (
     ControlState,
     StepContext,
@@ -17,12 +15,14 @@ from .dynamic_context import (
     determine_tank_refill_flow,
     tank_mass_energy_residual,
 )
-from .dhw import build_dhw_usage_ratio
 from .enex_functions import (
     calc_mixing_valve_flows,
     calc_mixing_valve_temp,
 )
-from .thermodynamics import calc_exergy_flow
+from .tmhp import calc_util as cu
+from .tmhp.constants import c_w, rho_w
+from .tmhp.dhw import build_dhw_usage_ratio
+from .tmhp.thermodynamics import calc_exergy_flow
 
 
 class ElectricBoiler:
