@@ -1,7 +1,7 @@
-﻿enex\_analysis.weather
+﻿enex\_analysis.tmhp.weather
 ======================
 
-.. automodule:: enex_analysis.weather
+.. automodule:: enex_analysis.tmhp.weather
 
    
    .. rubric:: Functions

@@ -1,7 +1,7 @@
-﻿enex\_analysis.dhw
+﻿enex\_analysis.tmhp.dhw
 ==================
 
-.. automodule:: enex_analysis.dhw
+.. automodule:: enex_analysis.tmhp.dhw
 
    
    .. rubric:: Functions

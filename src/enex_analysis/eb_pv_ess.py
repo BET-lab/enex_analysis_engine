@@ -5,8 +5,8 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from .tmhp import calc_util as cu
 from .electric_boiler import ElectricBoiler
+from .tmhp import calc_util as cu
 from .tmhp.subsystems import EnergyStorageSystem, PhotovoltaicSystem
 
 

@@ -1,7 +1,7 @@
-﻿enex\_analysis.refrigerant
+﻿enex\_analysis.tmhp.refrigerant
 ==========================
 
-.. automodule:: enex_analysis.refrigerant
+.. automodule:: enex_analysis.tmhp.refrigerant
 
    
    .. rubric:: Functions

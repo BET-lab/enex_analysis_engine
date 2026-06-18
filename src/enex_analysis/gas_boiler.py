@@ -11,6 +11,10 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
+from .enex_functions import (
+    calc_mixing_valve_flows,
+    calc_mixing_valve_temp,
+)
 from .tmhp import calc_util as cu
 from .tmhp.constants import (
     c_w,
@@ -18,10 +22,6 @@ from .tmhp.constants import (
     rho_w,
 )
 from .tmhp.dhw import build_dhw_usage_ratio
-from .enex_functions import (
-    calc_mixing_valve_flows,
-    calc_mixing_valve_temp,
-)
 
 
 class GasBoiler:
@@ -281,7 +281,7 @@ class GasBoiler:
         return_dict: bool = True,
     ) -> dict | pd.DataFrame:
         """Run a steady-state performance snapshot."""
-        
+
         # Empty flow state as steady state ignores dynamic withdrawal/refill
         flow_state = {
             "dV_w_serv": 0.0,

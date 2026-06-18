@@ -1,7 +1,7 @@
 ﻿enex\_analysis.uv\_treatment
 ============================
 
-.. automodule:: enex_analysis.uv_treatment
+.. automodule:: enex_analysis.tmhp.uv_treatment
 
    
    .. rubric:: Functions

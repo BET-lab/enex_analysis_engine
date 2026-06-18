@@ -9,8 +9,8 @@ Heat Pump Systems
    :toctree: generated/
    :recursive:
 
-   enex_analysis.air_source_heat_pump
-   enex_analysis.ground_source_heat_pump
+   enex_analysis.tmhp.air_source_heat_pump
+   enex_analysis.tmhp.ground_source_heat_pump
 
 Domestic Hot Water Systems
 --------------------------
@@ -29,9 +29,9 @@ Hybrid Heat Pump Boilers
    :toctree: generated/
    :recursive:
 
-   enex_analysis.air_source_heat_pump_boiler
-   enex_analysis.ground_source_heat_pump_boiler
-   enex_analysis.water_source_heat_pump_boiler
+   enex_analysis.tmhp.air_source_heat_pump_boiler
+   enex_analysis.tmhp.ground_source_heat_pump_boiler
+   enex_analysis.tmhp.water_source_heat_pump_boiler
 
 Integrated Renewable Systems
 ----------------------------
@@ -39,15 +39,15 @@ Integrated Renewable Systems
    :toctree: generated/
    :recursive:
 
-   enex_analysis.ashpb_pv_ess
-   enex_analysis.ashpb_stc_preheat
-   enex_analysis.ashpb_stc_tank
+   enex_analysis.tmhp.ashpb_pv_ess
+   enex_analysis.tmhp.ashpb_stc_preheat
+   enex_analysis.tmhp.ashpb_stc_tank
    enex_analysis.eb_pv_ess
    enex_analysis.eb_stc_preheat
    enex_analysis.eb_stc_tank
-   enex_analysis.gshpb_pv_ess
-   enex_analysis.gshpb_stc_preheat
-   enex_analysis.gshpb_stc_tank
+   enex_analysis.tmhp.gshpb_pv_ess
+   enex_analysis.tmhp.gshpb_stc_preheat
+   enex_analysis.tmhp.gshpb_stc_tank
 
 Legacy Engine
 -------------

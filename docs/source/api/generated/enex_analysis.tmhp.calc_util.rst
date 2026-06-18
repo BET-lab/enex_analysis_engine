@@ -1,7 +1,7 @@
 ﻿enex\_analysis.calc\_util
 =========================
 
-.. automodule:: enex_analysis.calc_util
+.. automodule:: enex_analysis.tmhp.calc_util
 
    
    .. rubric:: Functions

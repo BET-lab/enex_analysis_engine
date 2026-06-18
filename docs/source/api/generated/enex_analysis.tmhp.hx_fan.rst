@@ -1,7 +1,7 @@
 ﻿enex\_analysis.hx\_fan
 ======================
 
-.. automodule:: enex_analysis.hx_fan
+.. automodule:: enex_analysis.tmhp.hx_fan
 
    
    .. rubric:: Functions

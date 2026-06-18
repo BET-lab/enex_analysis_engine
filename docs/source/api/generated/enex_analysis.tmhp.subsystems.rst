@@ -1,7 +1,7 @@
-﻿enex\_analysis.subsystems
+﻿enex\_analysis.tmhp.subsystems
 =========================
 
-.. automodule:: enex_analysis.subsystems
+.. automodule:: enex_analysis.tmhp.subsystems
 
    
    .. rubric:: Classes

@@ -1,7 +1,7 @@
 ﻿enex\_analysis.heat\_transfer
 =============================
 
-.. automodule:: enex_analysis.heat_transfer
+.. automodule:: enex_analysis.tmhp.heat_transfer
 
    
    .. rubric:: Functions

@@ -80,13 +80,8 @@ from .tmhp.hx_fan import (
 from .tmhp.hx_fan import (
     calc_UA_from_dV_fan as calc_UA_from_dV_fan,
 )
-
 from .tmhp.thermodynamics import (
     calc_energy_flow,
-    calc_exergy_flow,
-    calc_refrigerant_exergy,
-    convert_electricity_to_exergy,
-    generate_entropy_exergy_term,
 )
 from .tmhp.uv_treatment import (
     calc_uv_exposure_time as calc_uv_exposure_time,

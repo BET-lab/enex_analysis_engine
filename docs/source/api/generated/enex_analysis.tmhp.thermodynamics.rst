@@ -1,7 +1,7 @@
-﻿enex\_analysis.thermodynamics
+﻿enex\_analysis.tmhp.thermodynamics
 =============================
 
-.. automodule:: enex_analysis.thermodynamics
+.. automodule:: enex_analysis.tmhp.thermodynamics
 
    
    .. rubric:: Functions

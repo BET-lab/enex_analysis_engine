@@ -20,5 +20,9 @@ if _tmhp_src.is_dir() and str(_tmhp_src) not in _sys.path:
 import tmhp as _tmhp  # noqa: E402
 
 _sys.modules[__name__ + ".tmhp"] = _tmhp
+# Also bind as a real attribute so ``enex_analysis.tmhp`` resolves via
+# attribute access (e.g. ``enex_analysis.tmhp.calc_util``), not only via
+# the import machinery's sys.modules lookup.
+tmhp = _tmhp
 
 del _sys, _Path, _tmhp_src, _tmhp

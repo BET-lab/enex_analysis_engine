@@ -7,8 +7,8 @@ Documentation for auxiliary subsystems, tanks, and treatment units.
    :toctree: generated/
    :recursive:
 
-   enex_analysis.subsystems
+   enex_analysis.tmhp.subsystems
    enex_analysis.tank_stratification_model
-   enex_analysis.hx_fan
-   enex_analysis.uv_treatment
-   enex_analysis.g_function
+   enex_analysis.tmhp.hx_fan
+   enex_analysis.tmhp.uv_treatment
+   enex_analysis.tmhp.g_function

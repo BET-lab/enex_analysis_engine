@@ -1,7 +1,7 @@
 ﻿enex\_analysis.gshpb\_stc\_tank
 ===============================
 
-.. automodule:: enex_analysis.gshpb_stc_tank
+.. automodule:: enex_analysis.tmhp.gshpb_stc_tank
 
    
    .. rubric:: Classes

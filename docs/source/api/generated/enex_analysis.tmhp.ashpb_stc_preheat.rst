@@ -1,7 +1,7 @@
 ﻿enex\_analysis.ashpb\_stc\_preheat
 ==================================
 
-.. automodule:: enex_analysis.ashpb_stc_preheat
+.. automodule:: enex_analysis.tmhp.ashpb_stc_preheat
 
    
    .. rubric:: Classes

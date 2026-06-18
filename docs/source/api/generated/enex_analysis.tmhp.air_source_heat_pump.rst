@@ -1,7 +1,7 @@
 ﻿enex\_analysis.air\_source\_heat\_pump
 ======================================
 
-.. automodule:: enex_analysis.air_source_heat_pump
+.. automodule:: enex_analysis.tmhp.air_source_heat_pump
 
    
    .. rubric:: Classes

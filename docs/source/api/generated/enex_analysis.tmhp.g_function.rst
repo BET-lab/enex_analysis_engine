@@ -1,7 +1,7 @@
 ﻿enex\_analysis.g\_function
 ==========================
 
-.. automodule:: enex_analysis.g_function
+.. automodule:: enex_analysis.tmhp.g_function
 
    
    .. rubric:: Functions

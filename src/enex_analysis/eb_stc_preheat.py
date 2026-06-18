@@ -7,9 +7,9 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pandas as pd
 
+from .electric_boiler import ElectricBoiler
 from .tmhp import calc_util as cu
 from .tmhp.constants import c_w, rho_w
-from .electric_boiler import ElectricBoiler
 from .tmhp.subsystems import SolarThermalCollector
 
 if TYPE_CHECKING:

@@ -1,7 +1,7 @@
-﻿enex\_analysis.cop
+﻿enex\_analysis.tmhp.cop
 ==================
 
-.. automodule:: enex_analysis.cop
+.. automodule:: enex_analysis.tmhp.cop
 
    
    .. rubric:: Functions
