@@ -5,7 +5,7 @@ from pathlib import Path
 import pandas as pd
 import requests
 
-from .. import calc_util as cu
+from ..tmhp import calc_util as cu
 
 CACHE_DIR = Path("00_data/.api_cache")
 

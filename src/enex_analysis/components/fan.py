@@ -9,7 +9,7 @@ try:
 except ImportError:
     dm = None
 
-from .. import calc_util as cu
+from ..tmhp import calc_util as cu
 from ..enex_functions import cubic_function, quartic_function
 
 

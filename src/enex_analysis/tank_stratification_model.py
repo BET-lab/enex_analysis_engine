@@ -9,7 +9,7 @@ and natural convection driven by buoyancy forces.
 import numpy as np
 
 from .tmhp.constants import beta, c_w, g, k_w, mu_w, rho_w
-from .heat_transfer import calc_UA_tank_arr
+from .tmhp.heat_transfer import calc_UA_tank_arr
 from .tdma import TDMA, _add_loop_advection_terms
 
 

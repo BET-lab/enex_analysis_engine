@@ -14,17 +14,17 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from . import calc_util as cu
-from . import g_function as gf
+from .tmhp import calc_util as cu
+from .tmhp import g_function as gf
 from .components.fan import Fan
 from .tmhp.constants import c_a, c_w as c_f, k_w, rho_a, rho_w as rho_f
-from .cop import (
+from .tmhp.cop import (
     calc_ASHP_cooling_COP,
     calc_ASHP_heating_COP,
     calc_GSHP_COP,
 )
 from .enex_functions import calc_fan_power_from_dV_fan
-from .g_function import G_FLS
+from .tmhp.g_function import G_FLS
 
 
 # class - AirSourceHeatPump

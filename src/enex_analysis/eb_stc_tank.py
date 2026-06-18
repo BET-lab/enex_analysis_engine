@@ -7,10 +7,10 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pandas as pd
 
-from . import calc_util as cu
+from .tmhp import calc_util as cu
 from .tmhp.constants import c_w, rho_w
 from .electric_boiler import ElectricBoiler
-from .subsystems import SolarThermalCollector
+from .tmhp.subsystems import SolarThermalCollector
 
 if TYPE_CHECKING:
     from .dynamic_context import ControlState, StepContext
@@ -164,7 +164,7 @@ class EB_STC_tank(ElectricBoiler):
         return r
 
     def _postprocess(self, df: pd.DataFrame) -> pd.DataFrame:
-        from .thermodynamics import calc_exergy_flow
+        from .tmhp.thermodynamics import calc_exergy_flow
 
         df = super()._postprocess(df)
         if "T_stc_w_in [°C]" not in df.columns or "T_stc_w_out [°C]" not in df.columns:

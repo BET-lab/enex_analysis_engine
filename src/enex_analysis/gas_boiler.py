@@ -11,13 +11,13 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
-from . import calc_util as cu
+from .tmhp import calc_util as cu
 from .tmhp.constants import (
     c_w,
     ex_eff_NG,
     rho_w,
 )
-from .dhw import build_dhw_usage_ratio
+from .tmhp.dhw import build_dhw_usage_ratio
 from .enex_functions import (
     calc_mixing_valve_flows,
     calc_mixing_valve_temp,
