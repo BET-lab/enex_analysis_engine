@@ -17,7 +17,7 @@ import numpy as np
 from . import calc_util as cu
 from . import g_function as gf
 from .components.fan import Fan
-from .constants import c_a, c_w as c_f, k_w, rho_a, rho_w as rho_f
+from .tmhp.constants import c_a, c_w as c_f, k_w, rho_a, rho_w as rho_f
 from .cop import (
     calc_ASHP_cooling_COP,
     calc_ASHP_heating_COP,

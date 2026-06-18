@@ -13,7 +13,7 @@ from scipy.interpolate import interp1d
 from scipy.special import erf
 
 from . import calc_util as cu
-from .constants import SP
+from .tmhp.constants import SP
 
 try:
     import pygfunction as gt

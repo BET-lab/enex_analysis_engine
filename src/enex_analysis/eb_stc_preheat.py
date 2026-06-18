@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 
 from . import calc_util as cu
-from .constants import c_w, rho_w
+from .tmhp.constants import c_w, rho_w
 from .electric_boiler import ElectricBoiler
 from .subsystems import SolarThermalCollector
 

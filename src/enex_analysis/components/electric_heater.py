@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from scipy.optimize import fsolve
 
 from .. import calc_util as cu
-from ..constants import sigma
+from ..tmhp.constants import sigma
 from ..heat_transfer import calc_h_vertical_plate
 
 

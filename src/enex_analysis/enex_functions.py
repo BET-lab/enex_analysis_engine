@@ -49,7 +49,7 @@ import numpy as np
 from scipy.optimize import root_scalar
 
 from . import calc_util as cu
-from .constants import c_a, c_w, rho_a, rho_w
+from .tmhp.constants import c_a, c_w, rho_a, rho_w
 from .cop import (
     calc_ASHP_cooling_COP as calc_ASHP_cooling_COP,
 )

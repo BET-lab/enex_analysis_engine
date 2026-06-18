@@ -22,7 +22,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from . import calc_util as cu
-from .constants import c_w, k_a, k_D, k_d, rho_w
+from .tmhp.constants import c_w, k_a, k_D, k_d, rho_w
 from .thermodynamics import calc_energy_flow
 
 if TYPE_CHECKING:
