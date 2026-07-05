@@ -119,5 +119,5 @@ class EB_PV_ESS(ElectricBoiler):
             df["X_tot_sys [W]"] += df["X_uv [W]"].fillna(0)
         df["Xc_sys_tot [W]"] = df.filter(regex=r"^Xc_").sum(axis=1)
         df["cop_grid [-]"] = df["Q_tank_w_out [W]"] / df["E_grid_import [W]"].replace(0, np.nan)
-        df["ex_eff_sys [-]"] = (df["Xst_tank [W]"] + df["X_tank_w_out [W]"]) / df["X_tot_sys [W]"].replace(0, np.nan)
+        df["ex_eff_sys [-]"] = (df["Xst_tank [W]"] + df["X_mix_w_out [W]"]) / df["X_tot_sys [W]"].replace(0, np.nan)
         return df
