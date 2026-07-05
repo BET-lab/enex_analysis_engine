@@ -309,10 +309,10 @@ class ElectricBoiler:
 
         df["Q_tank_w_out [W]"] = G_mix_out * (cu.C2K(df["T_mix_w_out [°C]"]) - self.T_sup_w_K)
 
-        df["X_mix_w_out [W]"] = calc_exergy_flow(G_tank_w_out, T_tank_K, T0_K)
+        df["X_tank_w_out [W]"] = calc_exergy_flow(G_tank_w_out, T_tank_K, T0_K)
         df["X_tank_w_in [W]"] = calc_exergy_flow(G_tank_w_in, self.T_tank_w_in_K, T0_K)
         df["X_mix_sup_w_in [W]"] = calc_exergy_flow(G_mix_sup_w, self.T_sup_w_K, T0_K)
-        df["X_tank_w_out [W]"] = calc_exergy_flow(G_mix_out, cu.C2K(df["T_mix_w_out [°C]"]), T0_K)
+        df["X_mix_w_out [W]"] = calc_exergy_flow(G_mix_out, cu.C2K(df["T_mix_w_out [°C]"]), T0_K)
 
         # Totals
         X_tot = df["E_heater [W]"].fillna(0)
@@ -331,14 +331,14 @@ class ElectricBoiler:
         X_in_tank = X_in_tank + X_sub_in_tank_add
 
         X_out_tank = df["X_tank_loss [W]"] + df["Xst_tank [W]"]
-        if "X_mix_w_out [W]" in df.columns:
-            X_out_tank = X_out_tank + df["X_mix_w_out [W]"].fillna(0)
+        if "X_tank_w_out [W]" in df.columns:
+            X_out_tank = X_out_tank + df["X_tank_w_out [W]"].fillna(0)
         X_out_tank = X_out_tank + X_sub_out_tank_add
 
         df["Xc_tank [W]"] = X_in_tank - X_out_tank
 
         # Efficiency
-        df["X_eff_sys [-]"] = df["X_tank_w_out [W]"].fillna(0) / df["X_tot [W]"].replace(0, np.nan)
+        df["X_eff_sys [-]"] = df["X_mix_w_out [W]"].fillna(0) / df["X_tot [W]"].replace(0, np.nan)
 
         return df
 
